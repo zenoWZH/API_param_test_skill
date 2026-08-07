@@ -16,7 +16,7 @@ triggers:
   - "新供应商接入"
   - "继续测试"
   - "接着测"
-metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["python3","bash"]},"config":{"env":{"LLM_API_TEST_DATA_DIR":{"description":"数据目录（密钥/配置/报告/工作流状态）","default":"~/.config/llm-api-test","required":false},"WEB_CONSOLE_PORT":{"description":"Web 控制台端口","default":"8090","required":false}}}}}
+metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["bash","curl"]},"config":{"env":{"LLM_API_TEST_DATA_DIR":{"description":"数据目录（密钥/配置/报告/工作流状态）","default":"~/.config/llm-api-test","required":false},"WEB_CONSOLE_PORT":{"description":"Web 控制台端口","default":"8090","required":false}}}}}
 ---
 
 # LLM API Test（供应商准入与测试）
@@ -29,10 +29,10 @@ metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["python3","bash"]},"co
 
 ## 安装/初始化
 
-skill 完全自包含，不依赖外部仓库：
+skill 完全自包含，不依赖外部仓库；Python 环境由 uv 管理（setup 自动检测或安装 uv，优先用系统 Python 3.11+，缺失时自动下载受管 3.12）：
 
 ```bash
-bash {baseDir}/scripts/setup.sh   # 建 venv、装依赖、初始化数据目录（含 providers.local.yaml 模板）
+bash {baseDir}/scripts/setup.sh   # uv 建 venv、装依赖、初始化数据目录（含 providers.local.yaml 模板）
 ```
 
 初始化后引导用户编辑 `$DATA/.env`（API key）与 `$DATA/providers.local.yaml`（供应商定义，模板见 `{baseDir}/app/providers.local.example.yaml`）。

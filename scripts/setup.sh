@@ -24,23 +24,53 @@ for candidate in python3.13 python3.12 python3.11 python3; do
     fi
   fi
 done
-if [[ -z "$PYBIN" ]]; then
-  echo "error: Python 3.11+ is required (datetime.UTC is used by image tests)." >&2
-  echo "  Debian/Ubuntu: sudo apt install python3.11 (or newer)" >&2
-  exit 1
-fi
-echo "using $PYBIN ($version)"
 
-if [[ ! -x "$SKILL_ROOT/.venv/bin/python" ]]; then
-  if ! "$PYBIN" -m venv "$SKILL_ROOT/.venv" 2>/dev/null; then
-    rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
-    echo "error: failed to create virtualenv (venv module missing?)." >&2
-    echo "  Debian/Ubuntu: sudo apt install ${PYBIN}-venv" >&2
+UV=""
+for candidate in uv "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv"; do
+  if command -v "$candidate" >/dev/null 2>&1; then
+    UV="$candidate"
+    break
+  fi
+done
+if [[ -z "$UV" ]]; then
+  echo "uv not found; installing standalone uv..."
+  if command -v curl >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    UV="$HOME/.local/bin/uv"
+  else
+    echo "error: uv and curl are both missing." >&2
+    echo "  install uv first: https://docs.astral.sh/uv/getting-started/installation/" >&2
     exit 1
   fi
 fi
-"$SKILL_ROOT/.venv/bin/pip" install --quiet --upgrade pip
-"$SKILL_ROOT/.venv/bin/pip" install --quiet -r "$APP_ROOT/requirements.txt" pytest
+if [[ ! -x "$UV" ]]; then
+  resolved="$(command -v "$UV" 2>/dev/null || true)"
+  [[ -n "$resolved" ]] && UV="$resolved"
+fi
+if [[ ! -x "$UV" ]]; then
+  echo "error: uv installation did not produce an executable (got: $UV)" >&2
+  exit 1
+fi
+echo "using $UV ($("$UV" --version))"
+
+if [[ ! -x "$SKILL_ROOT/.venv/bin/python" ]]; then
+  if [[ -n "$PYBIN" ]]; then
+    echo "using system $PYBIN ($version)"
+    if ! "$UV" venv --python "$PYBIN" "$SKILL_ROOT/.venv"; then
+      rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
+      echo "error: uv failed to create virtualenv from $PYBIN" >&2
+      exit 1
+    fi
+  else
+    echo "no system Python 3.11+; uv will fetch a managed Python 3.12"
+    if ! "$UV" venv --python 3.12 "$SKILL_ROOT/.venv"; then
+      rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
+      echo "error: uv failed to fetch/create Python 3.12 virtualenv" >&2
+      exit 1
+    fi
+  fi
+fi
+"$UV" pip install --python "$SKILL_ROOT/.venv/bin/python" --quiet -r "$APP_ROOT/requirements.txt" pytest
 
 mkdir -p "$DATA_DIR/reports/jobs" "$DATA_DIR/workflows"
 touch "$DATA_DIR/.env" "$DATA_DIR/upstream_fingerprints.json"

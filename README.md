@@ -9,7 +9,7 @@
 ```bash
 # 1. 直接把仓库克隆为 skill（目标路径按实际调整）
 git clone git@github.com:zenoWZH/API_param_test_skill.git ~/.openclaw/workspace/skills/llm-api-test
-# 2. 初始化（自动校验 Python 3.11+ 并建 venv、装依赖、初始化数据目录）
+# 2. 初始化（自动检测/安装 uv，由 uv 创建 venv 并装依赖；无 Python 3.11+ 时 uv 会自动下载受管 Python 3.12）
 bash ~/.openclaw/workspace/skills/llm-api-test/scripts/setup.sh
 # 3. 配置密钥与供应商：编辑数据目录下的 .env 和 providers.local.yaml
 #    （setup 已从 app/providers.local.example.yaml 生成模板，按注释填入即可）
@@ -17,7 +17,7 @@ bash ~/.openclaw/workspace/skills/llm-api-test/scripts/setup.sh
 bash ~/.openclaw/workspace/skills/llm-api-test/scripts/console.sh start
 ```
 
-前置要求：Python ≥ 3.11 且带 venv 模块（Debian/Ubuntu：`sudo apt install python3.11 python3.11-venv`）；setup.sh 缺失时会给出明确提示。
+前置要求：仅需 `bash` + `curl`（用于自动安装 uv）；Python 由 uv 提供（优先系统 3.11+，缺失时自动下载受管 3.12），不再需要预装 python3-venv。
 
 ## 可直接粘贴给 openclaw 的安装提示词
 
