@@ -1,26 +1,36 @@
-# API_param_test_skill
+# llm-api-test（openclaw skill）
 
-将 [yibuapi-llm-loadtest](../yibuapi-llm-loadtest)（多供应商 LLM 参数/缓存/压测控制台）改造为 openclaw skill `llm-api-test`。
+多供应商 LLM 测试工具包：参数合规 / 缓存 / API 溯源 / 图片参数 / 并发压测 + 供应商准入工作流 + Web 控制台。
 
-## 目标
+## 给 openclaw 的安装命令
 
-- openclaw 可 host 起 web console，用户在浏览器中操作。
-- 用户可用自然语言下令：对某 provider + model 跑参数测试 / 缓存测试 / 图片参数测试 / 压测。
-- 内置供应商准入工作流（mermaid 状态机），可从头执行或中途接手。
-- 测试产物（verdict/summary JSON）由 agent 读取并总结报告。
+本仓库根目录就是 skill 本体。在本机执行（openclaw agent 可直接运行）：
 
-## 目录规划
-
-```text
-llm-api-test/          # skill 包（待构建）
-├── SKILL.md           # agent 操作指令
-├── app/               # vendored 原仓库代码 + trace_test.py + workflow.yaml
-├── scripts/           # setup.sh / console.sh / run_test.py / jobs.py / result.py / workflow.py
-└── references/        # 测试指南 + 供应商准入工作流文档
+```bash
+# 1. 直接把仓库克隆为 skill（目标路径按实际调整）
+git clone git@github.com:zenoWZH/API_param_test_skill.git ~/.openclaw/workspace/skills/llm-api-test
+# 2. 初始化（python3.11+，建 venv、装依赖、初始化数据目录）
+bash ~/.openclaw/workspace/skills/llm-api-test/scripts/setup.sh
+# 3. 可选：从原测试仓库复制初始密钥/供应商配置/溯源语料库
+bash ~/.openclaw/workspace/skills/llm-api-test/scripts/setup.sh --from /home/wangzhouhao/projects/yibuapi-llm-loadtest
+# 4. 启动 Web 控制台
+bash ~/.openclaw/workspace/skills/llm-api-test/scripts/console.sh start
 ```
 
-数据目录（运行时生成，不进 skill 包）：`~/.config/llm-api-test/`（密钥、报告、工作流实例状态）。
+## 可直接粘贴给 openclaw 的安装提示词
 
-## 计划
+> 请安装并使用 llm-api-test skill：执行 `git clone git@github.com:zenoWZH/API_param_test_skill.git <你的 workspace skills 目录>/llm-api-test`，运行其中的 `scripts/setup.sh`（如需迁移现有测试配置，加 `--from /home/wangzhouhao/projects/yibuapi-llm-loadtest`），然后用 `scripts/console.sh start` 启动 Web 控制台并把访问 URL 告诉我。之后按照该 skill 的 SKILL.md 工作：我说“测试某供应商某模型”时走供应商准入工作流（workflow.py），我说单点测试时用 run_test.py；测试结果用 result.py 读取并向我中文总结。注意：写密钥配置和注册 profile 前必须征得我同意。
 
-完整实施计划见 [.kilo/plans/1785982927567-openclaw-llm-api-test-skill.md](.kilo/plans/1785982927567-openclaw-llm-api-test-skill.md)。
+## 安全说明
+
+- Web 控制台默认监听 `0.0.0.0:8090` 且**无鉴权**，局域网内任何人都可发起付费 API 测试。仅需本机访问时：`WEB_CONSOLE_HOST=127.0.0.1 bash scripts/console.sh start`。
+- 密钥与私有供应商配置只存放在数据目录（默认 `~/.config/llm-api-test/`），权限 600，不随 skill 分发。
+- 所有测试真实调用付费 API，agent 执行前应与用户确认。
+
+## 目录说明
+
+```text
+app/        vendored 测试引擎（源自 yibuapi-llm-loadtest，含 P1/P2/P4 补丁与新增 trace_test.py）
+scripts/    setup.sh / console.sh / run_test.py / jobs.py / result.py / workflow.py / skill_env.py
+references/ 测试判读指南与供应商准入工作流说明
+```

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 SKILL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA_DIR="${LLM_API_TEST_DATA_DIR:-$HOME/.config/llm-api-test}"
 PID_FILE="$DATA_DIR/console.pid"
@@ -30,7 +31,7 @@ case "${1:-status}" in
   start)
     if alive; then
       echo "console already running (pid $(cat "$PID_FILE"))"
-      "$0" url
+      "$SELF" url
       exit 0
     fi
     mkdir -p "$DATA_DIR"
@@ -44,7 +45,7 @@ case "${1:-status}" in
     sleep 2
     if alive; then
       echo "console started (pid $(cat "$PID_FILE"))"
-      "$0" url
+      "$SELF" url
     else
       echo "console failed to start; see $LOG_FILE" >&2
       tail -20 "$LOG_FILE" >&2
@@ -63,7 +64,7 @@ case "${1:-status}" in
   status)
     if alive; then
       echo "running (pid $(cat "$PID_FILE"))"
-      "$0" url
+      "$SELF" url
       exit 0
     fi
     echo "not running"
