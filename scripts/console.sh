@@ -11,7 +11,7 @@ PORT="${WEB_CONSOLE_PORT:-8090}"
 PY="$SKILL_ROOT/.venv/bin/python"
 [[ -x "$PY" ]] || PY="$(command -v python3)"
 
-while IFS= read -r line; do export "$line"; done < <("$PY" "$SKILL_ROOT/scripts/skill_env.py" printenv)
+eval "$("$PY" "$SKILL_ROOT/scripts/skill_env.py" printenv)"
 export WEB_CONSOLE_HOST="$HOST"
 export WEB_CONSOLE_PORT="$PORT"
 
