@@ -98,10 +98,10 @@ def _auto_outcome(node: dict, instance: dict) -> str | None:
     if auto == "verdict_pass":
         return "pass" if verdict.get("pass") is True else "fail"
     if auto == "verdict_match":
-        match = verdict.get("match_expected")
-        if match is None:
-            match = verdict.get("pass")
-        return "match" if match is True else "mismatch"
+        passed = verdict.get("pass")
+        if passed is None:
+            return None
+        return "match" if passed is True else "mismatch"
     return None
 
 
@@ -130,6 +130,9 @@ def _run_command_for(node: dict, instance: dict, extra: list[str]) -> list[str]:
     ]
     if node.get("needs_expect") and instance.get("expected_upstream"):
         cmd += ["--expect", str(instance["expected_upstream"])]
+    cmd += list(
+        (instance.get("node_args") or {}).get(instance.get("current_node")) or []
+    )
     cmd += extra
     return cmd
 
@@ -281,6 +284,30 @@ def cmd_advance(args: argparse.Namespace) -> int:
         return 2
     outcome = args.outcome
     kind = node.get("kind")
+    if (
+        kind == "auto_test"
+        and not args.job_id
+        and not (instance.get("job_ids") or {}).get(node_id)
+    ):
+        print(
+            json.dumps(
+                {
+                    "error": "auto_test node requires a launched job first",
+                    "hint": "run: workflow.py next --execute (or advance --job-id <id>)",
+                    "node": node_id,
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return 2
+    if args.job_id:
+        record_node = (
+            node.get("source_node")
+            if kind == "decision" and node.get("source_node")
+            else node_id
+        )
+        instance.setdefault("job_ids", {})[record_node] = args.job_id
     if args.auto and (kind == "decision" or node.get("auto")):
         outcome = _auto_outcome(node, instance)
         if outcome is None:
@@ -329,8 +356,6 @@ def cmd_advance(args: argparse.Namespace) -> int:
         "ts": time.time(),
     }
     instance.setdefault("history", []).append(entry)
-    if args.job_id:
-        instance.setdefault("job_ids", {})[node_id] = args.job_id
     if kind == "human_gate":
         instance.setdefault("human_gates", {})[node_id] = {
             "outcome": outcome,
@@ -474,6 +499,24 @@ def cmd_onboard_apply(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_set_args(args: argparse.Namespace) -> int:
+    import shlex
+
+    instance = _load_instance(args.provider, args.model)
+    if not instance:
+        print(json.dumps({"error": "no instance"}, ensure_ascii=False), file=sys.stderr)
+        return 2
+    instance.setdefault("node_args", {})[args.node] = shlex.split(args.args)
+    _save_instance(instance)
+    print(
+        json.dumps(
+            {"node": args.node, "args": instance["node_args"][args.node]},
+            ensure_ascii=False,
+        )
+    )
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Supplier onboarding workflow state machine."
@@ -513,6 +556,12 @@ def main() -> int:
     p.add_argument("--notes", default=None)
     p.add_argument("--job-id", default=None)
     p.set_defaults(func=cmd_advance)
+
+    p = sub.add_parser("set-args")
+    add_pm(p)
+    p.add_argument("--node", required=True, help="node id, e.g. concurrency_test")
+    p.add_argument("--args", required=True, help="extra run_test.py args, shell-style")
+    p.set_defaults(func=cmd_set_args)
 
     p = sub.add_parser("onboard-propose")
     add_pm(p)

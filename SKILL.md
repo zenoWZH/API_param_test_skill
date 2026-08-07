@@ -67,6 +67,8 @@ $PY {baseDir}/scripts/workflow.py next --provider <P> --model <M>
 # 推进节点：自动判定（decision 节点从 verdict 读取）或人工结论
 $PY {baseDir}/scripts/workflow.py advance --provider <P> --model <M> --auto
 $PY {baseDir}/scripts/workflow.py advance --provider <P> --model <M> --outcome pass --notes "价格已核对"
+# 调整某个测试节点的运行参数（如缩短压测时长做探针）
+$PY {baseDir}/scripts/workflow.py set-args --provider <P> --model <M> --node concurrency_test --args '--extra-json {"staircase_plan":{"steps":[10,30],"step_duration":"1m"}}'
 # 所有实例
 $PY {baseDir}/scripts/workflow.py list
 ```
@@ -117,7 +119,14 @@ $PY {baseDir}/app/scripts/trace_test.py collect --provider <aws渠道provider>  
 ## 配置与密钥
 
 - 新供应商：协助用户把 `api_key_env` 写入 `$DATA/.env`、provider 定义写入 `$DATA/providers.local.yaml`（参考 `{baseDir}/app/providers.local.example.yaml` 与 `{baseDir}/app/config.yaml`）。**写入前展示内容并征得用户明确同意**。
-- 未注册模型的限制：参数/压测任务要求模型在能力注册表有 profile；新模型先在 `$DATA/model_capability_profiles.local.yaml` 登记（workflow onboard 就是干这个的，早期可先登记最小条目）。
+- 未注册模型的限制：参数/压测任务要求模型在能力注册表有 profile。用注册助手完成未验证登记（proposal 展示 → 用户批准 → `--yes`）：
+
+```bash
+$PY {baseDir}/scripts/register_model.py --provider <P> --model <M> --family <已有family>   # 打印提案
+$PY {baseDir}/scripts/register_model.py --provider <P> --model <M> --family <F> --yes      # 批准后才写入
+```
+
+family 必须是注册表中已有的（如 deepseek/kimi/gpt/claude...）；全新 family 需人工维护注册表。
 
 ## 停止任务
 

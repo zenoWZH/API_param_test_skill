@@ -9,7 +9,8 @@ nodes:
     prompt: >-
       请提供该供应商的 base_url、API key、待测模型清单。拿到后我会协助写入数据目录的
       .env 与 providers.local.yaml（写入前会展示内容并征得你同意）。若该模型尚未在
-      model_capability_profiles 注册，需要先登记一个未验证的 profile 才能跑参数测试。
+      model_capability_profiles 注册，需先用 scripts/register_model.py 登记未验证
+      profile（同样先展示提案、经你批准才写入），否则参数/压测任务会被拒绝启动。
     next: check_history
   check_history:
     label: "② 以前测试过?"
