@@ -83,7 +83,11 @@ def _history_tested(provider: str, model: str) -> bool:
 def _auto_outcome(node: dict, instance: dict) -> str | None:
     auto = node.get("auto")
     if auto == "history_lookup":
-        return "tested" if _history_tested(instance["provider"], instance["model"]) else "not_tested"
+        return (
+            "tested"
+            if _history_tested(instance["provider"], instance["model"])
+            else "not_tested"
+        )
     source_node = node.get("source_node")
     job_id = (instance.get("job_ids") or {}).get(source_node or "")
     if not job_id:
@@ -101,10 +105,21 @@ def _auto_outcome(node: dict, instance: dict) -> str | None:
     return None
 
 
+def _python_prefix() -> list[str]:
+    import shutil
+
+    uv = shutil.which("uv")
+    if not uv:
+        candidate = Path.home() / ".local" / "bin" / "uv"
+        uv = str(candidate) if candidate.exists() else None
+    if uv:
+        return [uv, "run", "--python", str(skill_env.venv_python())]
+    return [str(skill_env.venv_python())]
+
+
 def _run_command_for(node: dict, instance: dict, extra: list[str]) -> list[str]:
     run = node.get("run") or {}
-    cmd = [
-        str(skill_env.venv_python()),
+    cmd = _python_prefix() + [
         str(skill_env.SKILL_ROOT / "scripts" / "run_test.py"),
         "--type",
         str(run.get("type")),
@@ -182,7 +197,9 @@ def _describe_node(wf: dict, instance: dict) -> dict:
     kind = node.get("kind")
     if kind == "human_gate":
         description["prompt"] = node.get("prompt")
-        description["valid_outcomes"] = list((node.get("outcomes") or {}).keys()) or None
+        description["valid_outcomes"] = (
+            list((node.get("outcomes") or {}).keys()) or None
+        )
     elif kind == "auto_test":
         description["command"] = _run_command_for(node, instance, ["--background"])
         description["after"] = (
@@ -204,29 +221,43 @@ def _describe_node(wf: dict, instance: dict) -> dict:
 def cmd_status(args: argparse.Namespace) -> int:
     instance = _load_instance(args.provider, args.model)
     if not instance:
-        print(json.dumps({"error": "no instance; use start"}, ensure_ascii=False), file=sys.stderr)
+        print(
+            json.dumps({"error": "no instance; use start"}, ensure_ascii=False),
+            file=sys.stderr,
+        )
         return 2
-    print(json.dumps(_describe_node(_load_workflow_def(), instance), ensure_ascii=False, indent=2))
+    print(
+        json.dumps(
+            _describe_node(_load_workflow_def(), instance), ensure_ascii=False, indent=2
+        )
+    )
     return 0
 
 
 def cmd_next(args: argparse.Namespace) -> int:
     instance = _load_instance(args.provider, args.model)
     if not instance:
-        print(json.dumps({"error": "no instance; use start"}, ensure_ascii=False), file=sys.stderr)
+        print(
+            json.dumps({"error": "no instance; use start"}, ensure_ascii=False),
+            file=sys.stderr,
+        )
         return 2
     wf = _load_workflow_def()
     description = _describe_node(wf, instance)
     node = (wf.get("nodes") or {}).get(instance["current_node"]) or {}
     if node.get("kind") == "auto_test" and args.execute:
-        cmd = _run_command_for(node, instance, [] if args.foreground else ["--background"])
+        cmd = _run_command_for(
+            node, instance, [] if args.foreground else ["--background"]
+        )
         proc = subprocess.run(cmd, capture_output=True, text=True)
         try:
             payload = json.loads(proc.stdout.strip().splitlines()[-1])
         except Exception:
             payload = {"stdout": proc.stdout[-2000:], "stderr": proc.stderr[-2000:]}
         if payload.get("job_id"):
-            instance.setdefault("job_ids", {})[instance["current_node"]] = payload["job_id"]
+            instance.setdefault("job_ids", {})[instance["current_node"]] = payload[
+                "job_id"
+            ]
             _save_instance(instance)
         description["executed"] = payload
         description["returncode"] = proc.returncode
@@ -243,7 +274,10 @@ def cmd_advance(args: argparse.Namespace) -> int:
     node_id = instance["current_node"]
     node = (wf.get("nodes") or {}).get(node_id)
     if node is None:
-        print(json.dumps({"error": f"unknown node {node_id}"}, ensure_ascii=False), file=sys.stderr)
+        print(
+            json.dumps({"error": f"unknown node {node_id}"}, ensure_ascii=False),
+            file=sys.stderr,
+        )
         return 2
     outcome = args.outcome
     kind = node.get("kind")
@@ -252,7 +286,10 @@ def cmd_advance(args: argparse.Namespace) -> int:
         if outcome is None:
             print(
                 json.dumps(
-                    {"error": "cannot auto-resolve outcome (missing verdict?)", "node": node_id},
+                    {
+                        "error": "cannot auto-resolve outcome (missing verdict?)",
+                        "node": node_id,
+                    },
                     ensure_ascii=False,
                 ),
                 file=sys.stderr,
@@ -271,12 +308,18 @@ def cmd_advance(args: argparse.Namespace) -> int:
             return 2
         next_node = outcomes[outcome]
     elif kind == "terminal":
-        print(json.dumps({"error": "instance is done"}, ensure_ascii=False), file=sys.stderr)
+        print(
+            json.dumps({"error": "instance is done"}, ensure_ascii=False),
+            file=sys.stderr,
+        )
         return 2
     else:
         next_node = node.get("next")
         if not next_node:
-            print(json.dumps({"error": "node has no next"}, ensure_ascii=False), file=sys.stderr)
+            print(
+                json.dumps({"error": "node has no next"}, ensure_ascii=False),
+                file=sys.stderr,
+            )
             return 2
     entry = {
         "node": node_id,
@@ -380,7 +423,9 @@ def cmd_onboard_apply(args: argparse.Namespace) -> int:
     if not args.yes:
         print(
             json.dumps(
-                {"error": "refused: re-run with --yes only after explicit user approval"},
+                {
+                    "error": "refused: re-run with --yes only after explicit user approval"
+                },
                 ensure_ascii=False,
             ),
             file=sys.stderr,
@@ -410,7 +455,12 @@ def cmd_onboard_apply(args: argparse.Namespace) -> int:
         yaml.safe_dump(merged, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )
     instance.setdefault("history", []).append(
-        {"node": "onboard", "outcome": "applied", "notes": args.notes, "ts": time.time()}
+        {
+            "node": "onboard",
+            "outcome": "applied",
+            "notes": args.notes,
+            "ts": time.time(),
+        }
     )
     instance["current_node"] = "done"
     _save_instance(instance)
@@ -425,7 +475,9 @@ def cmd_onboard_apply(args: argparse.Namespace) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Supplier onboarding workflow state machine.")
+    parser = argparse.ArgumentParser(
+        description="Supplier onboarding workflow state machine."
+    )
     sub = parser.add_subparsers(dest="command", required=True)
 
     def add_pm(p: argparse.ArgumentParser) -> None:
@@ -448,7 +500,9 @@ def main() -> int:
 
     p = sub.add_parser("next")
     add_pm(p)
-    p.add_argument("--execute", action="store_true", help="run auto_test nodes immediately")
+    p.add_argument(
+        "--execute", action="store_true", help="run auto_test nodes immediately"
+    )
     p.add_argument("--foreground", action="store_true")
     p.set_defaults(func=cmd_next)
 

@@ -24,7 +24,7 @@ metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["bash","curl"]},"confi
 多供应商 LLM 测试工具包：Web 控制台 + CLI 测试 + 供应商准入工作流。
 所有测试都会**真实调用付费 API**：执行前必须向用户确认 provider、model 与测试类型。
 
-路径约定：`{baseDir}` = skill 根目录。Python 一律使用 `{baseDir}/.venv/bin/python`（若不存在先跑 setup）。
+路径约定：`{baseDir}` = skill 根目录。Python 环境由 uv 管理（`{baseDir}/.venv`，若不存在先跑 setup）；**所有 Python 命令一律通过 uv 执行**：`uv run --python {baseDir}/.venv/bin/python <script> ...`。若 `uv` 不在 PATH，用 `~/.local/bin/uv` 替代。
 数据目录默认 `~/.config/llm-api-test/`（下称 `$DATA`），存放 `.env`、`providers.local.yaml`、注册表覆盖层、溯源语料库、报告与工作流状态。
 
 ## 安装/初始化
@@ -57,7 +57,7 @@ CLI 发起的任务也会出现在控制台（运行中与历史）。
 状态机定义：`{baseDir}/app/workflow.yaml`；说明文档：`{baseDir}/references/supplier-onboarding-workflow.md`。
 
 ```bash
-PY={baseDir}/.venv/bin/python
+PY="uv run --python {baseDir}/.venv/bin/python"
 # 开始新供应商准入（也可 --entry profile_maintenance 处理原厂模型变动；--expect-upstream 声明宣称上游）
 $PY {baseDir}/scripts/workflow.py start --provider <P> --model <M> [--expect-upstream anthropic_official]
 # 中途接手：先看状态

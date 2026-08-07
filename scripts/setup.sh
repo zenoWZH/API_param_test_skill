@@ -13,18 +13,6 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-PYBIN=""
-for candidate in python3.13 python3.12 python3.11 python3; do
-  if command -v "$candidate" >/dev/null 2>&1; then
-    version="$("$candidate" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
-    major="${version%%.*}"; minor="${version##*.}"
-    if [[ "$major" == "3" && "$minor" -ge 11 ]]; then
-      PYBIN="$candidate"
-      break
-    fi
-  fi
-done
-
 UV=""
 for candidate in uv "$HOME/.local/bin/uv" "$HOME/.cargo/bin/uv"; do
   if command -v "$candidate" >/dev/null 2>&1; then
@@ -54,20 +42,11 @@ fi
 echo "using $UV ($("$UV" --version))"
 
 if [[ ! -x "$SKILL_ROOT/.venv/bin/python" ]]; then
-  if [[ -n "$PYBIN" ]]; then
-    echo "using system $PYBIN ($version)"
-    if ! "$UV" venv --python "$PYBIN" "$SKILL_ROOT/.venv"; then
-      rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
-      echo "error: uv failed to create virtualenv from $PYBIN" >&2
-      exit 1
-    fi
-  else
-    echo "no system Python 3.11+; uv will fetch a managed Python 3.12"
-    if ! "$UV" venv --python 3.12 "$SKILL_ROOT/.venv"; then
-      rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
-      echo "error: uv failed to fetch/create Python 3.12 virtualenv" >&2
-      exit 1
-    fi
+  echo "creating uv-managed Python 3.12 environment..."
+  if ! "$UV" venv --managed-python --python 3.12 "$SKILL_ROOT/.venv"; then
+    rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
+    echo "error: uv failed to fetch/create the managed Python 3.12 virtualenv" >&2
+    exit 1
   fi
 fi
 "$UV" pip install --python "$SKILL_ROOT/.venv/bin/python" --quiet -r "$APP_ROOT/requirements.txt" pytest
