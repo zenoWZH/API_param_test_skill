@@ -26,12 +26,18 @@ for candidate in python3.13 python3.12 python3.11 python3; do
 done
 if [[ -z "$PYBIN" ]]; then
   echo "error: Python 3.11+ is required (datetime.UTC is used by image tests)." >&2
+  echo "  Debian/Ubuntu: sudo apt install python3.11 (or newer)" >&2
   exit 1
 fi
 echo "using $PYBIN ($version)"
 
 if [[ ! -x "$SKILL_ROOT/.venv/bin/python" ]]; then
-  "$PYBIN" -m venv "$SKILL_ROOT/.venv"
+  if ! "$PYBIN" -m venv "$SKILL_ROOT/.venv" 2>/dev/null; then
+    rm -rf "$SKILL_ROOT/.venv" 2>/dev/null || true
+    echo "error: failed to create virtualenv (venv module missing?)." >&2
+    echo "  Debian/Ubuntu: sudo apt install ${PYBIN}-venv" >&2
+    exit 1
+  fi
 fi
 "$SKILL_ROOT/.venv/bin/pip" install --quiet --upgrade pip
 "$SKILL_ROOT/.venv/bin/pip" install --quiet -r "$APP_ROOT/requirements.txt" pytest
@@ -41,7 +47,11 @@ touch "$DATA_DIR/.env" "$DATA_DIR/upstream_fingerprints.json"
 if [[ ! -s "$DATA_DIR/upstream_fingerprints.json" ]]; then
   echo '{"schema_version": 1, "entries": []}' > "$DATA_DIR/upstream_fingerprints.json"
 fi
-chmod 600 "$DATA_DIR/.env"
+if [[ ! -f "$DATA_DIR/providers.local.yaml" ]]; then
+  cp "$APP_ROOT/providers.local.example.yaml" "$DATA_DIR/providers.local.yaml"
+  echo "created $DATA_DIR/providers.local.yaml from example template"
+fi
+chmod 600 "$DATA_DIR/.env" "$DATA_DIR/providers.local.yaml"
 
 if [[ -n "$FROM_DIR" ]]; then
   if [[ -f "$FROM_DIR/.env" && ! -s "$DATA_DIR/.env" ]]; then
@@ -66,4 +76,5 @@ fi
 echo "setup complete"
 echo "  skill:  $SKILL_ROOT"
 echo "  data:   $DATA_DIR"
-echo "  next:   bash $SKILL_ROOT/scripts/console.sh start"
+echo "  next:   1) edit $DATA_DIR/.env and providers.local.yaml (add API keys/providers)"
+echo "          2) bash $SKILL_ROOT/scripts/console.sh start"

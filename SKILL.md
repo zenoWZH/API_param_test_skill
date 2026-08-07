@@ -29,10 +29,13 @@ metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["python3","bash"]},"co
 
 ## 安装/初始化
 
+skill 完全自包含，不依赖外部仓库：
+
 ```bash
-bash {baseDir}/scripts/setup.sh                 # 建 venv、装依赖、初始化数据目录
-bash {baseDir}/scripts/setup.sh --from /path/to/yibuapi-llm-loadtest   # 可选：复制初始 .env/providers.local.yaml/语料库
+bash {baseDir}/scripts/setup.sh   # 建 venv、装依赖、初始化数据目录（含 providers.local.yaml 模板）
 ```
+
+初始化后引导用户编辑 `$DATA/.env`（API key）与 `$DATA/providers.local.yaml`（供应商定义，模板见 `{baseDir}/app/providers.local.example.yaml`）。
 
 ## Web 控制台（前端）
 
