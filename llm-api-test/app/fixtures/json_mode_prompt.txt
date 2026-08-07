@@ -1,0 +1,5 @@
+请只返回一个合法 JSON object，不要输出 Markdown。JSON 需要包含字段：
+{"summary": "一句话摘要", "items": ["要点1", "要点2", "要点3"]}
+
+主题：用 JSON 总结 Python 性能优化的三个方向。
+

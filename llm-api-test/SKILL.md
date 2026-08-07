@@ -1,0 +1,127 @@
+---
+name: llm-api-test
+description: LLM 供应商准入与测试控制台。对任意供应商+模型执行参数合规、缓存、API 溯源（上游来源）、图片参数与并发压测，并可按内置供应商准入工作流从头或中途推进测试流程。带 Web 控制台前端。
+author: wangzhouhao
+version: 1.0.0
+triggers:
+  - "参数测试"
+  - "缓存测试"
+  - "压测"
+  - "并发测试"
+  - "溯源"
+  - "param test"
+  - "cache test"
+  - "测试供应商"
+  - "测试模型"
+  - "新供应商接入"
+  - "继续测试"
+  - "接着测"
+metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["python3","bash"]},"config":{"env":{"LLM_API_TEST_DATA_DIR":{"description":"数据目录（密钥/配置/报告/工作流状态）","default":"~/.config/llm-api-test","required":false},"WEB_CONSOLE_PORT":{"description":"Web 控制台端口","default":"8090","required":false}}}}}
+---
+
+# LLM API Test（供应商准入与测试）
+
+多供应商 LLM 测试工具包：Web 控制台 + CLI 测试 + 供应商准入工作流。
+所有测试都会**真实调用付费 API**：执行前必须向用户确认 provider、model 与测试类型。
+
+路径约定：`{baseDir}` = skill 根目录。Python 一律使用 `{baseDir}/.venv/bin/python`（若不存在先跑 setup）。
+数据目录默认 `~/.config/llm-api-test/`（下称 `$DATA`），存放 `.env`、`providers.local.yaml`、注册表覆盖层、溯源语料库、报告与工作流状态。
+
+## 安装/初始化
+
+```bash
+bash {baseDir}/scripts/setup.sh                 # 建 venv、装依赖、初始化数据目录
+bash {baseDir}/scripts/setup.sh --from /path/to/yibuapi-llm-loadtest   # 可选：复制初始 .env/providers.local.yaml/语料库
+```
+
+## Web 控制台（前端）
+
+```bash
+bash {baseDir}/scripts/console.sh start     # 后台启动，默认 0.0.0.0:8090（无鉴权）
+bash {baseDir}/scripts/console.sh status    # 状态 + URL
+bash {baseDir}/scripts/console.sh stop
+bash {baseDir}/scripts/console.sh logs
+```
+
+用户可在浏览器里选择供应商/模型发起测试、查看实时进度与历史报告。
+CLI 发起的任务也会出现在控制台（运行中与历史）。
+
+## 模式一：供应商准入工作流（默认推荐）
+
+流程：①拿 Key → ②是否测过 → ③参数合规测试 →（④不过→⑤API 溯源→⑥判定）→ ⑦人工价格核对 → ⑨并发测试(staircase) → ⑫注册能力 profile。
+人工交涉/性能核实为人工节点，交涉后回到①。验真测试不属于本 skill。
+
+状态机定义：`{baseDir}/app/workflow.yaml`；说明文档：`{baseDir}/references/supplier-onboarding-workflow.md`。
+
+```bash
+PY={baseDir}/.venv/bin/python
+# 开始新供应商准入（也可 --entry profile_maintenance 处理原厂模型变动；--expect-upstream 声明宣称上游）
+$PY {baseDir}/scripts/workflow.py start --provider <P> --model <M> [--expect-upstream anthropic_official]
+# 中途接手：先看状态
+$PY {baseDir}/scripts/workflow.py status --provider <P> --model <M>
+# 查看当前节点该做什么（auto_test 节点会给出可直接执行的命令）
+$PY {baseDir}/scripts/workflow.py next --provider <P> --model <M>
+# 推进节点：自动判定（decision 节点从 verdict 读取）或人工结论
+$PY {baseDir}/scripts/workflow.py advance --provider <P> --model <M> --auto
+$PY {baseDir}/scripts/workflow.py advance --provider <P> --model <M> --outcome pass --notes "价格已核对"
+# 所有实例
+$PY {baseDir}/scripts/workflow.py list
+```
+
+节点类型处理方式：
+- `human_gate`：把 `prompt` 转述给用户，得到结论后 `advance --outcome ...`（valid_outcomes 见 status 输出）。
+- `auto_test`：执行 status/next 输出中的 `command`（`--background` 发起），用 `jobs.py` 轮询，结束后 `result.py` 总结，再 `advance --auto --job-id <id>`。
+- `decision`：优先 `advance --auto`；失败时手动读 result 后指定 `--outcome`。
+- `onboard`（⑫注册）：**必须人工批准**——
+
+```bash
+$PY {baseDir}/scripts/workflow.py onboard-propose --provider <P> --model <M>   # 生成 YAML 提案，展示给用户
+$PY {baseDir}/scripts/workflow.py onboard-apply --provider <P> --model <M> --yes   # 仅用户明确批准后执行
+```
+
+## 模式二：单点测试（不进入工作流）
+
+```bash
+$PY {baseDir}/scripts/run_test.py --type param_test   --provider <P> --model <M> [--runs 2] [--reference-source <S>]
+$PY {baseDir}/scripts/run_test.py --type cache_suite  --provider <P> --model <M> [--cache-measured-requests 50]
+$PY {baseDir}/scripts/run_test.py --type trace_test   --provider <P> --model <M> [--expect <上游名>]
+$PY {baseDir}/scripts/run_test.py --type staircase    --provider <P> --model <M>
+$PY {baseDir}/scripts/run_test.py --type quick_load   --provider <P> --model <M> --users 10 --duration 2m
+$PY {baseDir}/scripts/run_test.py --type soak         --provider <P> --model <M>
+$PY {baseDir}/scripts/run_test.py --type image_param_test --provider <P> --model <M> [--extra-json '{"include_2k":true}']
+```
+
+加 `--background` 立即返回 job_id；前台模式会等结束并返回退出码。
+
+```bash
+$PY {baseDir}/scripts/jobs.py [--running] [--id <job_id>]   # 任务列表/状态（含运行中）
+$PY {baseDir}/scripts/result.py --id <job_id> [--full]      # 精简结果 JSON → 用中文向用户总结
+```
+
+总结要求：给出 pass/fail、关键指标（参数兼容性/缓存命中率/RPM/TPM/上游匹配度）、失败点，以及报告目录路径。
+
+## API 溯源语料库（一次性准备）
+
+溯源（trace_test）用响应指纹比对判定 token 的真实上游（如官方/AWS/Vertex）。语料库在 `$DATA/upstream_fingerprints.json`，初始为空，需先用**已知直连渠道**采集参考指纹：
+
+```bash
+$PY {baseDir}/app/scripts/trace_test.py collect --provider <官方直连provider> --model <M> --save-upstream anthropic_official
+$PY {baseDir}/app/scripts/trace_test.py collect --provider <aws渠道provider>   --model <M> --save-upstream aws_bedrock
+```
+
+语料为空时 compare 会报错并提示建库——不要跳过这一步。
+
+## 配置与密钥
+
+- 新供应商：协助用户把 `api_key_env` 写入 `$DATA/.env`、provider 定义写入 `$DATA/providers.local.yaml`（参考 `{baseDir}/app/providers.local.example.yaml` 与 `{baseDir}/app/config.yaml`）。**写入前展示内容并征得用户明确同意**。
+- 未注册模型的限制：参数/压测任务要求模型在能力注册表有 profile；新模型先在 `$DATA/model_capability_profiles.local.yaml` 登记（workflow onboard 就是干这个的，早期可先登记最小条目）。
+
+## 停止任务
+
+控制台任务用前端 stop 按钮；CLI 任务：`kill <pid>`（pid 见 `jobs.py --id` 输出或 `$DATA/reports/jobs/<job_id>/run.json`）。
+
+## 故障排查
+
+- `console.sh logs` 看控制台日志；任务日志在 `$DATA/reports/jobs/<job_id>/job.log`。
+- 报 “Missing registered text model/API/route profile” → 模型未注册 profile，见上文。
+- Python 必须 ≥3.11；依赖问题重跑 `setup.sh`。

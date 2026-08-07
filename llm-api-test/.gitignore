@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+providers.local.yaml
+*.local.yaml
+reports/

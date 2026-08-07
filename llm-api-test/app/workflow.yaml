@@ -1,0 +1,99 @@
+version: 1
+name: supplier-onboarding
+description: 供应商准入测试流程（参数合规 → 溯源 → 价格 → 并发 → 注册 profile）
+entry: acquire_key
+nodes:
+  acquire_key:
+    label: "① 拿到供应商 Key"
+    kind: human_gate
+    prompt: >-
+      请提供该供应商的 base_url、API key、待测模型清单。拿到后我会协助写入数据目录的
+      .env 与 providers.local.yaml（写入前会展示内容并征得你同意）。若该模型尚未在
+      model_capability_profiles 注册，需要先登记一个未验证的 profile 才能跑参数测试。
+    next: check_history
+  check_history:
+    label: "② 以前测试过?"
+    kind: decision
+    auto: history_lookup
+    outcomes:
+      tested: supplier_quote
+      not_tested: param_test
+  param_test:
+    label: "③ 参数（输入/输出）合规测试"
+    kind: auto_test
+    run:
+      type: param_test
+    next: param_decision
+  param_decision:
+    label: "④ 参数测试是否通过?"
+    kind: decision
+    auto: verdict_pass
+    source_node: param_test
+    outcomes:
+      "pass": price_check
+      "fail": trace_test
+  trace_test:
+    label: "⑤ API 溯源测试（上游来源）"
+    kind: auto_test
+    run:
+      type: trace_test
+    needs_expect: true
+    next: trace_decision
+  trace_decision:
+    label: "⑥ 上游来源是否符合宣称?"
+    kind: decision
+    auto: verdict_match
+    source_node: trace_test
+    outcomes:
+      match: price_check
+      mismatch: negotiate
+  price_check:
+    label: "⑦ 人工价格核对"
+    kind: human_gate
+    prompt: "请核对该供应商报价（输入/输出 token 单价、缓存价格）并告知是否通过。"
+    outcomes:
+      "pass": concurrency_test
+      "fail": negotiate
+  supplier_quote:
+    label: "拿到供应商报价"
+    kind: human_gate
+    prompt: "该供应商此前测试过。请提供最新报价后开始并发测试。"
+    next: concurrency_test
+  concurrency_test:
+    label: "⑨ 并发测试（staircase）"
+    kind: auto_test
+    run:
+      type: staircase
+    next: concurrency_decision
+  concurrency_decision:
+    label: "⑩ 并发测试是否通过?"
+    kind: decision
+    auto: verdict_pass
+    source_node: concurrency_test
+    outcomes:
+      "pass": onboard
+      "fail": verify_perf_requirements
+  verify_perf_requirements:
+    label: "⑪ 核实性能要求"
+    kind: human_gate
+    prompt: "并发未达标。请与供应商核实性能要求（承诺 RPM/TPM）并记录结论。"
+    next: negotiate
+  negotiate:
+    label: "人工：与供应商交涉"
+    kind: human_gate
+    prompt: "请与供应商交涉（价格/性能/上游不符）。交涉完成后回到 ① 重新拿 Key 或更新配置。"
+    next: acquire_key
+  profile_maintenance:
+    label: "人工：参数规格维护（原厂模型变动）"
+    kind: human_gate
+    prompt: "原厂发布了参数/模型变动。该模型是否已接入？未接入走参数测试，已接入直接更新注册表。"
+    outcomes:
+      not_onboarded: param_test
+      onboarded: onboard
+  onboard:
+    label: "⑫ 注册模型能力 profile"
+    kind: onboard
+    next: done
+  done:
+    label: "完成（验真测试为人工后续事项，不属于本 skill）"
+    kind: terminal

@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="820" viewBox="0 0 1440 820" role="img" aria-labelledby="title desc">
+  <title id="title">图片参数测试控制台示意图</title>
+  <desc id="desc">展示图片模型的 Route、API Form、测试套件、高分辨率确认和图片实际结果校验。</desc>
+  <defs><style>
+    .bg{fill:#f7f8fb}.panel{fill:#fff;stroke:#d6dbe3;stroke-width:1.4}.soft{fill:#f9fafb;stroke:#d6dbe3}.blue{fill:#2563eb}.green{fill:#ecfdf3;stroke:#9ad7bc}.amber{fill:#fffaeb;stroke:#fdb022}.t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h1{font:bold 22px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h2{font:bold 16px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.small{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#657188}.white{fill:#fff;font-weight:700}.bold{font-weight:700}.num{fill:#2563eb}.numtext{font:bold 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#fff;text-anchor:middle;dominant-baseline:middle}.line{stroke:#d6dbe3}.ok{fill:#067647}.warn{fill:#b54708}
+  </style></defs>
+  <rect class="bg" width="1440" height="820"/><rect class="panel" x="28" y="22" width="1384" height="776" rx="12"/>
+  <text class="h1" x="54" y="58">图片（多模态）参数测试</text><text class="small" x="54" y="82">同样遵循 Model → Route → API Form，但验收必须检查真实图片</text>
+  <rect class="panel" x="54" y="108" width="1332" height="282" rx="8"/>
+  <circle class="num" cx="78" cy="136" r="15"/><text class="numtext" x="78" y="136">1</text><text class="h2" x="104" y="142">图片参数测试 Setup</text>
+  <text class="small" x="78" y="180">Provider</text><rect class="soft" x="78" y="190" width="220" height="42" rx="6"/><text class="t" x="92" y="216">示例 Provider ▾</text>
+  <text class="small" x="312" y="180">Model</text><rect class="soft" x="312" y="190" width="220" height="42" rx="6"/><text class="t" x="326" y="216">gpt-image-2 ▾</text>
+  <text class="small" x="546" y="180">Route Profile</text><rect class="soft" x="546" y="190" width="220" height="42" rx="6"/><text class="t" x="560" y="216">vendor_direct ▾</text>
+  <text class="small" x="780" y="180">API Form</text><rect class="soft" x="780" y="190" width="248" height="42" rx="6"/><text class="t" x="794" y="216">openai_images_generations ▾</text>
+  <text class="small" x="1042" y="180">Suite</text><rect class="soft" x="1042" y="190" width="160" height="42" rx="6"/><text class="t" x="1056" y="216">resolution ▾</text>
+  <text class="small" x="1216" y="180">Output format</text><rect class="soft" x="1216" y="190" width="146" height="42" rx="6"/><text class="t" x="1230" y="216">png ▾</text>
+  <rect class="amber" x="78" y="256" width="302" height="38" rx="6"/><text class="t warn" x="94" y="280">☐ include 4K · 我确认高成本请求</text>
+  <rect class="amber" x="392" y="256" width="334" height="38" rx="6"/><text class="t warn" x="408" y="280">☐ skip negative · 非法参数也可能计费</text>
+  <rect class="soft" x="738" y="256" width="208" height="38" rx="6"/><text class="t" x="754" y="280">☑ visual forensics</text>
+  <rect class="green" x="78" y="316" width="228" height="30" rx="15"/><text class="small ok" x="94" y="336">model profile: registered</text>
+  <rect class="soft" x="316" y="316" width="176" height="30" rx="15"/><text class="small" x="332" y="336">14 cases</text>
+  <rect class="blue" x="1124" y="310" width="238" height="42" rx="6"/><text class="t white" x="1170" y="336">运行图片参数测试</text>
+  <text class="small" x="78" y="374">full / 2K / 4K 和负向用例可能计费；界面要求显式确认并提前展示 case 数。</text>
+
+  <rect class="panel" x="54" y="410" width="1332" height="300" rx="8"/>
+  <circle class="num" cx="78" cy="438" r="15"/><text class="numtext" x="78" y="438">2</text><text class="h2" x="104" y="444">Case Results · HTTP 200 之后仍要继续验证</text>
+  <line class="line" x1="78" y1="488" x2="1362" y2="488"/>
+  <text class="small bold" x="88" y="478">Case</text><text class="small bold" x="280" y="478">Request</text><text class="small bold" x="466" y="478">HTTP</text><text class="small bold" x="550" y="478">Actual image</text><text class="small bold" x="716" y="478">Format</text><text class="small bold" x="828" y="478">Count</text><text class="small bold" x="936" y="478">Decode</text><text class="small bold" x="1048" y="478">Identity/usage</text><text class="small bold" x="1244" y="478">Status</text>
+  <text class="t" x="88" y="526">baseline_1024</text><text class="small" x="280" y="526">1024×1024, n=1</text><text class="small ok" x="466" y="526">200</text><text class="small ok" x="550" y="526">1024×1024</text><text class="small ok" x="716" y="526">PNG</text><text class="small ok" x="828" y="526">1</text><text class="small ok" x="936" y="526">valid</text><text class="small" x="1048" y="526">audited</text><text class="small ok bold" x="1244" y="526">PASS</text>
+  <line class="line" x1="78" y1="544" x2="1362" y2="544"/>
+  <text class="t" x="88" y="582">batch_n2</text><text class="small" x="280" y="582">1024×1024, n=2</text><text class="small ok" x="466" y="582">200</text><text class="small ok" x="550" y="582">2 × 1024²</text><text class="small ok" x="716" y="582">PNG</text><text class="small ok" x="828" y="582">2</text><text class="small ok" x="936" y="582">valid</text><text class="small" x="1048" y="582">audited</text><text class="small ok bold" x="1244" y="582">PASS</text>
+  <line class="line" x1="78" y1="600" x2="1362" y2="600"/>
+  <text class="t" x="88" y="638">reject_bad_size</text><text class="small" x="280" y="638">非法尺寸</text><text class="small ok" x="466" y="638">400</text><text class="small" x="550" y="638">—</text><text class="small" x="716" y="638">—</text><text class="small" x="828" y="638">0</text><text class="small" x="936" y="638">n/a</text><text class="small" x="1048" y="638">expected rejection</text><text class="small ok bold" x="1244" y="638">PASS</text>
+  <rect class="green" x="78" y="660" width="1284" height="34" rx="6"/><text class="small ok" x="94" y="682">验收链：响应存在 → 下载/base64 解码 → 数量正确 → 格式正确 → 实际像素正确 → token/identity 审计</text>
+  <text class="small" x="54" y="754">示意数据不代表真实供应商结果；图片预览和 lightbox 在实际界面中位于结果表右侧。</text>
+</svg>

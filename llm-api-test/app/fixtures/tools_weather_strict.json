@@ -1,0 +1,25 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "get_weather",
+      "description": "Get current weather for a city.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name, for example Beijing or Shanghai."
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["celsius", "fahrenheit"]
+          }
+        },
+        "required": ["city", "unit"],
+        "additionalProperties": false
+      }
+    }
+  }
+]

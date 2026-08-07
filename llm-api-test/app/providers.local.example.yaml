@@ -1,0 +1,139 @@
+# Copy to providers.local.yaml for private provider definitions.
+# providers.local.yaml is ignored by git.
+# Put key values in .env and reference them with api_key_env.
+# Global request timeout lives in config.yaml -> api.timeout_sec.
+# Jobs started from the web console can override it per run via LOADTEST_TIMEOUT_SEC.
+
+providers:
+  yibu:
+    api_key_env: "YIBU_API_KEY"
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+    # Optional. Adaptive RPM+TPM tests use 131072 as a safe fallback when omitted.
+    # models:
+    #   context_windows:
+    #     deepseek-v4-pro: 131072
+
+  # other_provider:
+  #   label: "Other OpenAI-compatible Provider"
+  #   base_url: "https://example.com/v1"
+  #   api_key_env: "OTHER_PROVIDER_API_KEY"
+  #   backend: proxy_unknown
+  #   default_transport: chat_completions
+  #   api_interfaces:
+  #     chat_completions:
+  #       path: /chat/completions
+  #       auth: bearer
+  #   models:
+  #     default: "glm-5.2"
+  #     candidates:
+  #       - "glm-5.2"
+  #     families:
+  #       glm-5.2: glm
+  #     # Unknown reseller/proxy sources must stay dynamic_aggregator. Do not
+  #     # label them vendor_direct merely because the API is OpenAI-compatible.
+  #     routes:
+  #       glm-5.2:
+  #         dynamic_aggregator:
+  #           api_forms:
+  #             openai_chat_completions: {}
+  #     default_routes:
+  #       glm-5.2: dynamic_aggregator
+  #     default_api_forms:
+  #       glm-5.2:
+  #         dynamic_aggregator: openai_chat_completions
+  #     context_windows:
+  #       glm-5.2: 131072
+  #     # Identity aliases are never inferred from model-name similarity.
+  #     identity_aliases:
+  #       glm-5.2: [glm-5.2-20260701]
+  #     # Optional exact local tokenizer. Install requirements-token-audit.txt.
+  #     token_counters:
+  #       glm-5.2:
+  #         kind: tokenizer_json
+  #         path: fixtures/tokenizers/glm-5.2.json
+  #         exact_dimensions: [output]
+  #   # Optional independent provider count-token endpoint.
+  #   # api_interfaces:
+  #   #   token_count:
+  #   #     path: /token-count
+  #   #     auth: bearer
+  #   #     transports: [chat_completions]
+  #   #     request_wrapper: request
+  #   #     response_field: usage.input_tokens
+
+  # xinyunai_deepseek_0731:
+  #   label: "XinyunAI DeepSeek V4 Flash 0731"
+  #   base_url: "https://api.xinyunai.cloud/v1"
+  #   api_key_env: "XINYUNAI_DEEPSEEK_0731_API_KEY"
+  #   backend: proxy_unknown
+  #   default_transport: chat_completions
+  #   api_interfaces:
+  #     chat_completions:
+  #       path: /chat/completions
+  #       auth: bearer
+  #   models:
+  #     default: "deepseek-v4-flash-0731"
+  #     candidates:
+  #       - "deepseek-v4-flash-0731"
+  #     families:
+  #       deepseek-v4-flash-0731: deepseek
+  #     # XinyunAI is an aggregator route. The exact returned model is audited,
+  #     # but a matching response model cannot certify the physical upstream.
+  #     routes:
+  #       deepseek-v4-flash-0731:
+  #         dynamic_aggregator:
+  #           api_forms:
+  #             openai_chat_completions:
+  #               reference_source: deepseek_xinyunai_v4_flash_0731_openai_compat
+  #     default_routes:
+  #       deepseek-v4-flash-0731: dynamic_aggregator
+  #     default_api_forms:
+  #       deepseek-v4-flash-0731:
+  #         dynamic_aggregator: openai_chat_completions
+
+  # aliyun_maas:
+  #   label: "Aliyun MaaS"
+  #   base_url: "https://<workspace>.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
+  #   backend: proxy_unknown
+  #   default_transport: chat_completions
+  #   api_interfaces:
+  #     chat_completions:
+  #       path: /chat/completions
+  #       auth: bearer
+  #   api_key_env: "ALIYUN_MAAS_API_KEY"
+  #   models:
+  #     default: "qwen3.7-max"
+  #     candidates:
+  #       - "qwen3.7-max"
+  #       - "glm-5.2"
+  #       - "kimi-k2.6"
+  #       - "deepseek-v4-pro"
+  #     families:
+  #       qwen3.7-max: qwen
+  #       glm-5.2: glm
+  #       kimi-k2.6: kimi
+  #       deepseek-v4-pro: deepseek
+  #     routes:
+  #       qwen3.7-max: &aliyun_routes
+  #         aliyun_maas:
+  #           api_forms:
+  #             openai_chat_completions: {}
+  #       glm-5.2: *aliyun_routes
+  #       kimi-k2.6: *aliyun_routes
+  #       deepseek-v4-pro: *aliyun_routes
+  #     default_routes:
+  #       qwen3.7-max: aliyun_maas
+  #       glm-5.2: aliyun_maas
+  #       kimi-k2.6: aliyun_maas
+  #       deepseek-v4-pro: aliyun_maas
+  #     default_api_forms:
+  #       qwen3.7-max: &aliyun_default_form
+  #         aliyun_maas: openai_chat_completions
+  #       glm-5.2: *aliyun_default_form
+  #       kimi-k2.6: *aliyun_default_form
+  #       deepseek-v4-pro: *aliyun_default_form

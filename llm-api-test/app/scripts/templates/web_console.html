@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Loadtest Console</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='web_console.css') }}?v={{ static_version }}">
+  <script defer src="{{ url_for('static', filename='web_console.js') }}?v={{ static_version }}"></script>
+</head>
+<body>
+  <header class="app-header">
+    <div>
+      <h1>LLM Loadtest Console</h1>
+      <p>Provider 兼容性、压测和 Cache 观测控制台。</p>
+      <span id="capabilityCoverage" class="pill">model profiles: loading</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="test-nav" aria-label="测试类型">
+      <button id="tabParam" class="test-tab active" data-tab="param" type="button">文字参数测试</button>
+      <button id="tabImage" class="test-tab" data-tab="image" type="button">图片（多模态）参数测试</button>
+      <button id="tabLoad" class="test-tab" data-tab="load" type="button">压测</button>
+      <button id="tabCache" class="test-tab" data-tab="cache" type="button">Cache 测试</button>
+    </section>
+
+    <section class="global-job">
+      <div>
+        <div class="eyebrow">Current Job</div>
+        <div id="globalJobTitle" class="job-title">No job yet.</div>
+        <div id="globalJobMeta" class="muted">选择测试类型并启动一个 job。</div>
+      </div>
+      <div class="global-controls">
+        <label>API timeout (s)<input id="timeoutSec" type="number" min="1" step="1" inputmode="numeric"></label>
+      </div>
+      <button id="globalStop" class="danger" type="button">停止当前 Job</button>
+    </section>
+
+    <div id="actionError" class="notice"></div>
+
+    <section id="paramView" class="test-view active">
+      <div class="surface">
+        <div class="section-head">
+          <h2>文字参数测试 Setup</h2>
+          <span id="paramBusyHint" class="pill">ready</span>
+        </div>
+        <div class="controls">
+          <label>Provider<select id="paramProvider"></select></label>
+          <label>Model<select id="paramModel"></select></label>
+          <label>Route Profile<select id="paramRouteProfile"></select></label>
+          <label>API Form<select id="paramApiForm"></select></label>
+          <label>Reference Source<select id="referenceSource"></select></label>
+          <label title="Auto 按 Reference Source/传输协议选择；其他项可强制使用指定响应协议。">Tool validation protocol
+            <select id="toolValidationMode">
+              <option value="auto">Auto (by Reference)</option>
+              <option value="openai_compat">OpenAI-compatible tool_calls</option>
+              <option value="gemini_native">Gemini Native functionCall</option>
+              <option value="claude_native">Claude Native tool_use</option>
+            </select>
+          </label>
+          <label>每个 profile 测试次数<input id="paramTestRuns" type="number" min="1" max="1000" step="1" inputmode="numeric" value="3"></label>
+        </div>
+        <div class="row">
+          <span id="paramKeyStatus" class="pill">key: unknown</span>
+          <span id="paramFamilyStatus" class="pill">family: unknown</span>
+          <span id="paramConfiguredRoute" class="pill">configured route: unknown</span>
+          <span id="paramObservedFingerprint" class="pill">observed upstream: n/a</span>
+          <span id="paramProfileStatus" class="pill">model profile: unknown</span>
+          <span id="referenceMode" class="pill">reference: default</span>
+          <span id="toolValidationHint" class="pill">tool validation: auto</span>
+          <span id="paramRunHint" class="pill">0 cells</span>
+          <button id="resetReference" type="button">Reset reference default</button>
+          <button id="startParam" class="primary" type="button">运行参数测试</button>
+          <button id="stopParam" class="danger" type="button">停止当前 Job</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="section-head">
+          <h2>文字参数测试 Progress</h2>
+          <span id="paramResultSource" class="pill">result: none</span>
+        </div>
+        <div class="progress-head">
+          <span id="paramProgressLabel">No progress yet.</span>
+          <span id="paramProgressDetail"></span>
+        </div>
+        <div class="progress"><div id="paramProgressBar"></div></div>
+        <div id="paramMetrics" class="metric-grid"></div>
+        <h3>Report Files</h3>
+        <div id="paramFiles" class="file-list"></div>
+      </div>
+
+      <div class="surface">
+        <h2>Reference Parameter Specs</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Parameter</th><th>Official / Contract</th><th>Model profile expectation</th><th>Coverage</th></tr></thead>
+            <tbody id="paramSpecs"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="surface">
+        <h2>Model Parameter Test Matrix</h2>
+        <div class="table-wrap">
+          <table class="matrix-table">
+            <thead id="paramResultsHead"><tr><th>Model Parameter</th><th>Runs</th></tr></thead>
+            <tbody id="paramResults"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="section-head">
+          <h2>Token Audit</h2>
+          <span class="pill">exact evidence gates · estimates are display-only</span>
+        </div>
+        <div class="table-wrap">
+          <table class="token-audit-table">
+            <thead>
+              <tr><th>Profile / Run</th><th>Input</th><th>Output</th><th>Components</th><th>Arithmetic</th><th>Audit</th></tr>
+            </thead>
+            <tbody id="paramTokenAudit"><tr><td colspan="6" class="muted">No token audit data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="section-head">
+          <h2>Model Identity Audit</h2>
+          <span class="pill">observable evidence · explicit aliases only</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Profile / Run</th><th>Requested</th><th>Returned</th><th>Transport / Backend</th><th>Status</th><th>Evidence / Conflicts</th></tr></thead>
+            <tbody id="paramModelIdentity"><tr><td colspan="6" class="muted">No model identity data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="surface">
+        <h2>Failed / Incompatible Case Log</h2>
+        <pre id="paramFailedCaseLog">No failed or incompatible parameter test cases.</pre>
+      </div>
+
+      <div class="surface">
+        <h2>Log Tail</h2>
+        <pre id="paramLogTail"></pre>
+      </div>
+    </section>
+
+    <section id="imageView" class="test-view">
+      <div class="surface">
+        <div class="section-head">
+          <h2>图片（多模态）参数测试 Setup</h2>
+          <span id="imageBusyHint" class="pill">ready</span>
+        </div>
+        <div id="imageEmptyState" class="image-empty" hidden>没有配置可用的图片 Provider。</div>
+        <div class="controls image-controls">
+          <label>Provider<select id="imageProvider"></select></label>
+          <label>Model<select id="imageModel"></select></label>
+          <label>Route Profile<select id="imageRouteProfile"></select></label>
+          <label id="imageApiFormWrap">API Form<select id="imageApiForm"></select></label>
+          <label>Suite<select id="imageSuite"><option value="smoke">smoke</option><option value="resolution">resolution</option><option value="full">full · requires high-resolution confirmation</option></select></label>
+          <label id="imageQualityWrap">Quality<select id="imageQuality"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="auto">auto</option></select></label>
+          <label id="imageOutputFormatWrap">Output format<select id="imageOutputFormat"><option value="png">png</option><option value="jpeg">jpeg</option><option value="webp">webp</option></select></label>
+        </div>
+        <div class="image-options">
+          <label id="imageInclude2kWrap" class="check-label" hidden><input id="imageInclude2k" type="checkbox">include Grok 2K · 我确认高成本请求</label>
+          <label id="imageInclude4kWrap" class="check-label"><input id="imageInclude4k" type="checkbox">include 4K · 我确认高成本请求</label>
+          <label id="imageNoNegativeWrap" class="check-label" title="非法参数若被 Provider 接受，仍可能生成图片并计费。"><input id="imageNoNegative" type="checkbox">skip negative · 接受非法参数也可能计费</label>
+          <label id="imageNoCrossControlWrap" class="check-label"><input id="imageNoCrossControl" type="checkbox">skip cross control</label>
+          <label class="check-label"><input id="imageVisualForensics" type="checkbox" checked>visual forensics</label>
+        </div>
+        <div class="row">
+          <span id="imageKeyStatus" class="pill">key: unknown</span>
+          <span id="imageFamilyStatus" class="pill">family: unknown</span>
+          <span id="imageConfiguredRoute" class="pill">configured route: unknown</span>
+          <span id="imageObservedFingerprint" class="pill">observed upstream: n/a</span>
+          <span id="imageProfileStatus" class="pill">model profile: unknown</span>
+          <span id="imageCaseHint" class="pill">0 cases</span>
+          <span id="imageCostHint" class="pill">billing: review case count</span>
+          <button id="startImage" class="primary" type="button">运行图片参数测试</button>
+          <button id="stopImage" class="danger" type="button">停止当前 Job</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="section-head">
+          <h2>图片参数测试 Progress</h2>
+          <span id="imageResultSource" class="pill">result: none</span>
+        </div>
+        <div class="progress-head">
+          <span id="imageProgressLabel">No progress yet.</span>
+          <span id="imageProgressDetail"></span>
+        </div>
+        <div class="progress"><div id="imageProgressBar"></div></div>
+        <div id="imageMetrics" class="metric-grid"></div>
+        <div id="imageSummary" class="image-summary-grid"></div>
+        <h3>Report Files</h3>
+        <div id="imageFiles" class="file-list"></div>
+      </div>
+
+      <div class="surface">
+        <h2>Case Results</h2>
+        <div class="table-wrap">
+          <table class="image-results-table">
+            <thead><tr><th>Case</th><th>Request</th><th>Expected</th><th>HTTP</th><th>Latency</th><th>Actual image</th><th>Format</th><th>Token / identity</th><th>Status</th><th>Preview</th></tr></thead>
+            <tbody id="imageResults"><tr><td colspan="10" class="muted">No image test results.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="surface">
+        <h2>Log Tail</h2>
+        <pre id="imageLogTail"></pre>
+      </div>
+    </section>
+
+    <section id="loadView" class="test-view">
+      <div class="surface">
+        <div class="section-head">
+          <h2>快速压测 Setup</h2>
+          <span id="loadBusyHint" class="pill">ready</span>
+        </div>
+        <div class="controls">
+          <label>Provider<select id="loadProvider"></select></label>
+          <label>Model<select id="loadModel"></select></label>
+          <label>Workload<select id="workload"><option value="throughput">throughput (existing mix)</option><option value="throughput_streaming">throughput_streaming (TTFT / E2E)</option><option value="throughput_rpm">throughput_rpm (short)</option><option value="throughput_balanced">throughput_balanced</option><option value="throughput_tpm">throughput_tpm (long context)</option><option value="mixed_compat">mixed_compat</option></select></label>
+          <label>Users<input id="users" type="number" min="1"></label>
+          <label>Spawn rate<input id="spawnRate" type="number" min="1"></label>
+          <label>Duration<input id="duration" placeholder="2m"></label>
+          <label>Request mode<select id="requestMode"><option value="unique">unique（默认，禁用提示缓存干扰）</option><option value="fixed">fixed（显式缓存测试）</option></select></label>
+          <label title="快速压测和 Staircase 都以此值限制业务请求发送速率；Staircase 同时将它作为达标目标。">RPM cap / goal<input id="targetRpm" type="number" min="0" step="1" inputmode="numeric" placeholder="0 = unlimited"></label>
+          <label title="快速压测和 Staircase 都以此值限制 token 发送速率；Staircase 同时将它作为达标目标。">TPM cap / goal<input id="targetTpm" type="number" min="0" step="1" inputmode="numeric" placeholder="0 = unlimited"></label>
+        </div>
+        <div class="row">
+          <span id="loadKeyStatus" class="pill">key: unknown</span>
+          <span id="loadFamilyStatus" class="pill">family: unknown</span>
+          <span id="loadProfileStatus" class="pill">model profile: unknown</span>
+          <span id="adaptiveSizingHint" class="pill">adaptive sizing: inactive</span>
+          <button id="startQuickLoad" class="primary" type="button">开始快速压测</button>
+          <button id="stopLoad" class="danger" type="button">停止当前 Job</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <div class="section-head"><h2>Staircase / Soak Plan</h2><span class="pill">独立参数，不复用 Quick Load users/duration</span></div>
+        <h3>Staircase</h3>
+        <div class="controls">
+          <label>Steps (users, comma separated)<input id="staircaseSteps" placeholder="10,20,40"></label>
+          <label>Step duration<input id="staircaseStepDuration" placeholder="5m"></label>
+          <label>Spawn rate<input id="staircaseSpawnRate" type="number" min="1"></label>
+          <label>Warmup users<input id="staircaseWarmupUsers" type="number" min="1"></label>
+          <label>Warmup duration<input id="staircaseWarmupDuration" placeholder="1m"></label>
+          <label>Warmup<select id="staircaseWarmupEnabled"><option value="true">enabled</option><option value="false">disabled</option></select></label>
+          <label>Auto extend<select id="staircaseAutoExtend"><option value="false">disabled</option><option value="true">enabled</option></select></label>
+          <label>Increment users<input id="staircaseIncrementUsers" type="number" min="1"></label>
+          <label>Max users<input id="staircaseMaxUsers" type="number" min="1"></label>
+        </div>
+        <div class="row"><button id="startStaircase" type="button">运行 Staircase</button></div>
+        <h3>Soak</h3>
+        <div class="controls">
+          <label>Users<input id="soakUsers" type="number" min="1"></label>
+          <label>Spawn rate<input id="soakSpawnRate" type="number" min="1"></label>
+          <label>Duration<input id="soakDuration" placeholder="1h"></label>
+        </div>
+        <div class="row"><button id="startSoak" type="button">运行 Soak</button></div>
+      </div>
+
+      <div class="surface">
+        <h2>压测 Results</h2>
+        <div class="progress-head">
+          <span id="loadProgressLabel">No progress yet.</span>
+          <span id="loadProgressDetail"></span>
+        </div>
+        <div class="progress"><div id="loadProgressBar"></div></div>
+        <div id="loadMetrics" class="metric-sections"></div>
+        <div id="loadAdaptiveNotice" class="notice"></div>
+        <h3>实时吞吐与成功率</h3>
+        <div id="loadChartStatus" class="chart-status muted">等待第一批请求完成。</div>
+        <div class="chart-grid">
+          <div>
+            <div class="chart-title">成功率 / RPM</div>
+            <div id="loadRpmChart" class="line-chart"></div>
+          </div>
+          <div>
+            <div class="chart-title">成功率 / TPM</div>
+            <div id="loadTpmChart" class="line-chart"></div>
+          </div>
+        </div>
+        <h3>Report Files</h3>
+        <div id="loadFiles" class="file-list"></div>
+      </div>
+
+      <div class="surface">
+        <div class="section-head">
+          <h2>历史压测结果</h2>
+          <button id="refreshLoadResults" type="button">刷新结果</button>
+        </div>
+        <div class="controls">
+          <label>Result<select id="loadResultSelect"></select></label>
+        </div>
+        <div id="loadResultMeta" class="muted">No saved load result selected.</div>
+        <div id="loadResultMetrics" class="metric-sections"></div>
+        <div id="loadResultAdaptiveNotice" class="notice"></div>
+        <h3>吞吐与成功率曲线</h3>
+        <div id="loadResultChartStatus" class="chart-status muted">No saved load result selected.</div>
+        <div class="chart-grid">
+          <div>
+            <div class="chart-title">成功率 / RPM</div>
+            <div id="loadResultRpmChart" class="line-chart"></div>
+          </div>
+          <div>
+            <div class="chart-title">成功率 / TPM</div>
+            <div id="loadResultTpmChart" class="line-chart"></div>
+          </div>
+        </div>
+        <h3>Stats</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Requests</th>
+                <th>Fails</th>
+                <th>Success</th>
+                <th>RPM</th>
+                <th>Median</th>
+                <th>Avg</th>
+                <th>P95</th>
+                <th>P99</th>
+                <th>Max</th>
+                <th>Failure Classes</th>
+              </tr>
+            </thead>
+            <tbody id="loadResultStats"></tbody>
+          </table>
+        </div>
+        <h3>Report Files</h3>
+        <div id="loadResultFiles" class="file-list"></div>
+      </div>
+
+      <div class="surface">
+        <h2>Log Tail</h2>
+        <pre id="loadLogTail"></pre>
+      </div>
+    </section>
+
+    <section id="cacheView" class="test-view">
+      <div class="surface">
+        <div class="section-head">
+          <h2>Cache 测试 Setup</h2>
+          <span id="cacheBusyHint" class="pill">ready</span>
+        </div>
+        <div class="controls cache-core-controls">
+          <label>Provider<select id="cacheProvider"></select></label>
+          <label>Model<select id="cacheModel"></select></label>
+        </div>
+        <div id="cacheProgressiveFields" class="controls cache-progressive-controls">
+          <label>会话数<input id="cacheSessions" type="number" min="1" max="1000"></label>
+          <label>每会话轮数<input id="cacheRounds" type="number" min="2" max="100"></label>
+          <label>内容档位<select id="cacheContentProfile"><option value="small">Small · 短内容</option><option value="realistic">Realistic · 客户默认</option><option value="large">Large · 长内容</option></select></label>
+          <label>工具阶段<select id="cacheToolStage"></select></label>
+        </div>
+        <div id="cacheFlowPreview" class="cache-flow-preview"></div>
+
+        <details id="cacheAdvanced" class="cache-options">
+          <summary>高级设置</summary>
+          <div id="cacheProgressiveAdvanced" class="controls cache-option-grid">
+            <label class="check-label"><input id="cacheCustomContent" type="checkbox">使用自定义内容范围</label>
+            <label id="cacheCustomUserWrap">每轮 user 字符<input id="cacheCustomUserChars" placeholder="200,2000"></label>
+            <label id="cacheCustomToolWrap">Tool result 字符<input id="cacheCustomToolResultChars" placeholder="500,5000"></label>
+            <label>控制用例<select id="cacheControlMode"><option value="auto">自动 · 3+3</option><option value="custom">自定义</option><option value="off">关闭 · 仅 observe</option></select></label>
+            <label id="cachePositiveWrap">Positive control pairs<input id="cachePositivePairs" type="number" min="0" max="1000"></label>
+            <label id="cacheNegativeWrap">Negative controls<input id="cacheNegativeRequests" type="number" min="0" max="1000"></label>
+            <label>Seed 后等待秒数<input id="cacheWaitAfterSeed" type="number" min="0" step="0.1"></label>
+            <label>最大输出 tokens<input id="cacheMaxTokens" type="number" min="1"></label>
+            <label>最大运行秒数<input id="cacheMaxRunSeconds" type="number" min="1"></label>
+            <label>连续失败熔断<input id="cacheFailureLimit" type="number" min="1"></label>
+            <label>随机种子<input id="cacheSeed" type="number"></label>
+          </div>
+        </details>
+
+        <details id="cacheDiagnostics" class="cache-options">
+          <summary>诊断模式 · 旧场景</summary>
+          <p class="muted option-help">诊断结果使用旧口径，不会与 v9 渐进会话趋势混合。</p>
+          <div class="controls cache-option-grid">
+            <label>诊断场景<select id="cacheDiagnosticScenario"><option value="">关闭 · 使用渐进会话</option><option value="kilocode_agent_session">kilocode_agent_session · v11</option><option value="growing_conversation">growing_conversation · legacy</option><option value="shared_prefix">shared_prefix · legacy</option></select></label>
+          </div>
+          <div id="cacheKilocodeDiagnosticFields" class="controls cache-option-grid">
+            <label>Steps<input id="cacheKilocodeSteps" type="number" min="2" max="500"></label>
+            <label>Trajectory<select id="cacheKilocodeTrajectoryMode"><option value="scripted">scripted · 固定 20 步</option><option value="random">random · 加权随机</option></select></label>
+            <label>Positive control pairs<input id="cacheDiagnosticPositivePairs" type="number" min="0" max="1000"></label>
+            <label>Negative controls<input id="cacheDiagnosticNegativeRequests" type="number" min="0" max="1000"></label>
+          </div>
+          <div id="cacheLegacyDiagnosticFields" class="controls cache-option-grid">
+            <label>Measured requests<input id="cacheMeasuredRequests" type="number" min="1" max="1000"></label>
+            <label>Warmup requests<input id="cacheWarmupRequests" type="number" min="0" max="1000"></label>
+            <label>Warmup 后等待秒数<input id="cacheWaitAfterWarmup" type="number" min="0" step="0.1"></label>
+          </div>
+        </details>
+
+        <div id="cacheLargeRunConfirmWrap" class="large-run-confirm">
+          <label class="check-label"><input id="cacheConfirmLarge" type="checkbox">我确认运行超过 100 个请求</label>
+        </div>
+        <div class="row">
+          <span id="cacheKeyStatus" class="pill">key: unknown</span>
+          <span id="cacheFamilyStatus" class="pill">family: unknown</span>
+          <span id="cacheProfileStatus" class="pill">model profile: unknown</span>
+          <button id="startCache" class="primary" type="button">运行 Cache 测试</button>
+          <button id="stopCache" class="danger" type="button">停止当前 Job</button>
+        </div>
+      </div>
+
+      <div class="surface">
+        <h2>Cache 流程预览</h2>
+        <div id="cacheSummary" class="summary-grid"></div>
+      </div>
+
+      <div class="surface">
+        <h2>Cache Results</h2>
+        <div class="progress-head">
+          <span id="cacheProgressLabel">No progress yet.</span>
+          <span id="cacheProgressDetail"></span>
+        </div>
+        <div class="progress"><div id="cacheProgressBar"></div></div>
+        <div id="cacheMetrics" class="metric-grid"></div>
+        <div id="cacheStageWrap" class="cache-result-section">
+          <h3>分阶段明细</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>阶段</th><th>请求</th><th>成功</th><th>Usage 覆盖</th><th>Input tokens</th><th>结构前缀 tokens</th><th>结构上限</th><th>Cached tokens</th><th>实际命中率</th><th>缓存效率</th><th>命中请求</th></tr></thead>
+              <tbody id="cacheStageRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="cacheTrustWrap" class="cache-result-section">
+          <h3>测量可信度 · 控制样本不计入客户命中率</h3>
+          <div id="cacheTrustMetrics" class="metric-grid"></div>
+        </div>
+        <details id="cacheEffectivePlanWrap" class="cache-options cache-result-section">
+          <summary>最终生效计划</summary>
+          <pre id="cacheEffectivePlan"></pre>
+        </details>
+        <h3>Report Files</h3>
+        <div id="cacheFiles" class="file-list"></div>
+      </div>
+
+      <div class="surface">
+        <h2>Log Tail</h2>
+        <pre id="cacheLogTail"></pre>
+      </div>
+    </section>
+  </main>
+  <div id="imageLightbox" class="image-lightbox" hidden role="dialog" aria-modal="true" aria-label="图片预览">
+    <button id="imageLightboxClose" class="image-lightbox-close" type="button" aria-label="关闭图片预览">×</button>
+    <img id="imageLightboxImage" alt="图片参数测试结果预览">
+    <div id="imageLightboxCaption" class="image-lightbox-caption"></div>
+  </div>
+</body>
+</html>

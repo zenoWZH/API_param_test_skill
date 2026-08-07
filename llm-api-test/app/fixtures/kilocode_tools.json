@@ -1,0 +1,240 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "bash",
+      "description": "Executes a given command in a persistent shell session with optional timeout. Use for terminal operations such as builds, tests, package managers, git, and docker. Do not use for file reading, writing, editing, or searching when a dedicated tool exists for that operation.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "command": {
+            "type": "string",
+            "description": "The command to execute. Quote file paths that contain spaces with double quotes."
+          },
+          "workdir": {
+            "type": "string",
+            "description": "The working directory to run the command in. Defaults to the current workspace directory. Use this instead of 'cd' commands."
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Optional timeout in milliseconds. Commands time out after 120000ms when omitted."
+          },
+          "description": {
+            "type": "string",
+            "description": "A clear, concise description of what this command does in five to ten words."
+          }
+        },
+        "required": ["command"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "read",
+      "description": "Reads a file or directory from the local filesystem. Returns file contents with line numbers, or directory entries one per line. Can also read image files and PDFs and return them as attachments.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "The absolute path to the file or directory to read."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The one-indexed line number to start reading from. Use for later sections of large files."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The maximum number of lines to read. Defaults to 2000 lines from the start of the file."
+          }
+        },
+        "required": ["filePath"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "edit",
+      "description": "Performs exact string replacements in files. The target text must match exactly, including indentation. Fails when the target text is not found or is found multiple times without sufficient surrounding context.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "The absolute path to the file to modify."
+          },
+          "oldString": {
+            "type": "string",
+            "description": "The exact text to replace, preserving the indentation as it appears in the file."
+          },
+          "newString": {
+            "type": "string",
+            "description": "The replacement text. Must be different from oldString."
+          },
+          "replaceAll": {
+            "type": "boolean",
+            "description": "Replace every occurrence of oldString across the file. Useful for renaming a symbol."
+          }
+        },
+        "required": ["filePath", "oldString", "newString"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "write",
+      "description": "Writes a file to the local filesystem. Overwrites the existing file if one exists at the provided path. Prefer editing existing files; only create new files when the task explicitly requires them.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "The absolute path of the file to write."
+          },
+          "content": {
+            "type": "string",
+            "description": "The complete content to write to the file."
+          }
+        },
+        "required": ["filePath", "content"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "grep",
+      "description": "Fast content search across the codebase using regular expressions. Returns file paths and line numbers with at least one match. Filter files by pattern with the include parameter.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "The regular expression pattern to search for in file contents."
+          },
+          "path": {
+            "type": "string",
+            "description": "The directory to search in. Defaults to the current working directory."
+          },
+          "include": {
+            "type": "string",
+            "description": "File pattern to include in the search, for example '*.py' or '*.{ts,tsx}'."
+          }
+        },
+        "required": ["pattern"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "glob",
+      "description": "Fast file pattern matching that works with any codebase size. Returns matching file paths sorted by modification time. Use when you need to find files by name patterns.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "The glob pattern to match files against, for example '**/*.js' or 'src/**/*.ts'."
+          },
+          "path": {
+            "type": "string",
+            "description": "The directory to search in. Omit to use the current working directory."
+          }
+        },
+        "required": ["pattern"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "semantic_search",
+      "description": "Finds code snippets by semantic meaning and returns ranked matches with file paths and line ranges. Use before you know exact identifiers, or to find related implementations of a concept across the workspace.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "The search query expressed in natural language, in English."
+          },
+          "path": {
+            "type": "string",
+            "description": "Limit the search to a specific subdirectory relative to the current workspace. Leave empty for the entire workspace."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "codebase_search",
+      "description": "An AI-powered search agent that performs intelligent multi-step searches across the repository given a natural language question, returning only the most relevant spans. Best used at the start of large codebase explorations.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "A specific and descriptive natural language question about the code you are looking for. Not regex or keyword dumps."
+          }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "task",
+      "description": "Launches a new agent to handle a complex, multistep task autonomously. Use for open-ended exploration or parallelizable units of work. Provide a highly detailed task description and specify exactly what the agent should return.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "A short three-to-five word description of the task."
+          },
+          "prompt": {
+            "type": "string",
+            "description": "The full task for the agent to perform, including what information to return in its final message."
+          },
+          "subagent_type": {
+            "type": "string",
+            "description": "The type of specialized agent to use, for example 'explore' for fast codebase exploration or 'general' for multi-step work."
+          }
+        },
+        "required": ["description", "prompt", "subagent_type"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "webfetch",
+      "description": "Fetches content from a specified URL and converts it to the requested format. Read-only; does not modify any files. Results may be summarized if the content is very large.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "The fully-formed valid URL to fetch content from. HTTP URLs are upgraded to HTTPS."
+          },
+          "format": {
+            "type": "string",
+            "description": "The format to return the content in: 'markdown' (default), 'text', or 'html'."
+          },
+          "timeout": {
+            "type": "integer",
+            "description": "Optional timeout in seconds, up to 120."
+          }
+        },
+        "required": ["url"]
+      }
+    }
+  }
+]

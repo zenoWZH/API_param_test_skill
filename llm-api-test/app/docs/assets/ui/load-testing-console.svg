@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="980" viewBox="0 0 1440 980" role="img" aria-labelledby="title desc">
+  <title id="title">压测控制台示意图</title><desc id="desc">展示 Quick Load、Staircase、Soak 设置，以及吞吐、成功率和延迟结果。</desc>
+  <defs><style>
+    .bg{fill:#f7f8fb}.panel{fill:#fff;stroke:#d6dbe3;stroke-width:1.4}.soft{fill:#f9fafb;stroke:#d6dbe3}.blue{fill:#2563eb}.green{fill:#ecfdf3;stroke:#9ad7bc}.amber{fill:#fffaeb;stroke:#fdb022}.purple{fill:#f5f3ff;stroke:#c4b5fd}.t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h1{font:bold 22px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h2{font:bold 16px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.metric{font:bold 21px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}.small{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#657188}.white{fill:#fff;font-weight:700}.bold{font-weight:700}.num{fill:#2563eb}.numtext{font:bold 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#fff;text-anchor:middle;dominant-baseline:middle}.line{stroke:#d6dbe3}.ok{fill:#067647}.warn{fill:#b54708}.chart1{fill:none;stroke:#2563eb;stroke-width:3}.chart2{fill:none;stroke:#10b981;stroke-width:3}.grid{stroke:#e5e7eb;stroke-width:1}
+  </style></defs>
+  <rect class="bg" width="1440" height="980"/><rect class="panel" x="28" y="22" width="1384" height="936" rx="12"/>
+  <text class="h1" x="54" y="58">压测</text><text class="small" x="54" y="82">Quick、Staircase、Streaming 与 Soak 使用同一模型能力约束，但回答不同问题</text>
+
+  <rect class="panel" x="54" y="108" width="1332" height="244" rx="8"/>
+  <circle class="num" cx="78" cy="136" r="15"/><text class="numtext" x="78" y="136">1</text><text class="h2" x="104" y="142">快速压测 Setup · RPM/TPM 在这里是发送上限</text>
+  <text class="small" x="78" y="180">Provider</text><rect class="soft" x="78" y="190" width="190" height="42" rx="6"/><text class="t" x="92" y="216">示例 Provider ▾</text>
+  <text class="small" x="280" y="180">Model</text><rect class="soft" x="280" y="190" width="220" height="42" rx="6"/><text class="t" x="294" y="216">deepseek-v4-flash ▾</text>
+  <text class="small" x="512" y="180">Workload</text><rect class="soft" x="512" y="190" width="220" height="42" rx="6"/><text class="t" x="526" y="216">throughput_balanced ▾</text>
+  <text class="small" x="744" y="180">Users / Spawn</text><rect class="soft" x="744" y="190" width="150" height="42" rx="6"/><text class="t" x="758" y="216">10 / 2</text>
+  <text class="small" x="906" y="180">Duration</text><rect class="soft" x="906" y="190" width="126" height="42" rx="6"/><text class="t" x="920" y="216">2m</text>
+  <text class="small" x="1044" y="180">Request mode</text><rect class="soft" x="1044" y="190" width="148" height="42" rx="6"/><text class="t" x="1058" y="216">unique ▾</text>
+  <text class="small" x="1204" y="180">RPM / TPM cap</text><rect class="soft" x="1204" y="190" width="158" height="42" rx="6"/><text class="t" x="1218" y="216">500 / 0</text>
+  <rect class="green" x="78" y="260" width="208" height="30" rx="15"/><text class="small ok" x="94" y="280">model profile: registered</text>
+  <rect class="amber" x="298" y="260" width="258" height="30" rx="15"/><text class="small warn" x="314" y="280">adaptive sizing: inactive</text>
+  <rect class="blue" x="1142" y="252" width="220" height="42" rx="6"/><text class="t white" x="1188" y="278">开始快速压测</text>
+  <text class="small" x="78" y="326">unique 会注入 nonce，避免 Provider prompt cache 虚增普通业务容量；fixed 仅用于显式缓存对照。</text>
+
+  <rect class="panel" x="54" y="372" width="650" height="252" rx="8"/>
+  <circle class="num" cx="78" cy="400" r="15"/><text class="numtext" x="78" y="400">2</text><text class="h2" x="104" y="406">Staircase Plan · RPM/TPM 在这里是达标目标</text>
+  <text class="small" x="78" y="446">Steps (users)</text><rect class="soft" x="78" y="456" width="260" height="42" rx="6"/><text class="t" x="92" y="482">10, 20, 40, 80</text>
+  <text class="small" x="350" y="446">Step duration</text><rect class="soft" x="350" y="456" width="142" height="42" rx="6"/><text class="t" x="364" y="482">5m</text>
+  <text class="small" x="504" y="446">Spawn rate</text><rect class="soft" x="504" y="456" width="150" height="42" rx="6"/><text class="t" x="518" y="482">5</text>
+  <rect class="soft" x="78" y="516" width="180" height="38" rx="6"/><text class="t" x="94" y="540">Warmup enabled</text>
+  <rect class="soft" x="270" y="516" width="180" height="38" rx="6"/><text class="t" x="286" y="540">Auto extend</text>
+  <rect class="soft" x="462" y="516" width="192" height="38" rx="6"/><text class="t" x="478" y="540">Max users: 120</text>
+  <rect class="blue" x="454" y="570" width="200" height="38" rx="6"/><text class="t white" x="493" y="594">运行 Staircase</text>
+  <text class="small" x="78" y="594">某阶质量失败即停止扩阶；记录最高合格阶与首个失败阶。</text>
+
+  <rect class="panel" x="718" y="372" width="668" height="252" rx="8"/>
+  <circle class="num" cx="742" cy="400" r="15"/><text class="numtext" x="742" y="400">3</text><text class="h2" x="768" y="406">Soak Plan · 在已知安全容量上验证长期稳定性</text>
+  <text class="small" x="742" y="446">Users</text><rect class="soft" x="742" y="456" width="180" height="42" rx="6"/><text class="t" x="756" y="482">80</text>
+  <text class="small" x="936" y="446">Spawn rate</text><rect class="soft" x="936" y="456" width="180" height="42" rx="6"/><text class="t" x="950" y="482">5</text>
+  <text class="small" x="1130" y="446">Duration</text><rect class="soft" x="1130" y="456" width="232" height="42" rx="6"/><text class="t" x="1144" y="482">1h</text>
+  <rect class="purple" x="742" y="516" width="620" height="48" rx="6"/><text class="t bold" x="760" y="538">稳定性关注：success / 429 / 5xx / P95 / RPM drift</text><text class="small" x="760" y="556">只看“进程没崩”不能判 Soak 通过</text>
+  <rect class="blue" x="1162" y="576" width="200" height="38" rx="6"/><text class="t white" x="1208" y="600">运行 Soak</text>
+  <text class="small" x="742" y="596">先用 Staircase 的最高合格阶确定 Users。</text>
+
+  <rect class="panel" x="54" y="644" width="1332" height="260" rx="8"/>
+  <circle class="num" cx="78" cy="672" r="15"/><text class="numtext" x="78" y="672">4</text><text class="h2" x="104" y="678">压测 Results · 吞吐、质量和时间趋势一起读</text>
+  <rect class="green" x="78" y="708" width="180" height="66" rx="7"/><text class="small" x="94" y="732">Business RPM</text><text class="metric ok" x="94" y="760">612</text>
+  <rect class="soft" x="270" y="708" width="180" height="66" rx="7"/><text class="small" x="286" y="732">Attempted RPM</text><text class="metric" x="286" y="760">640</text>
+  <rect class="green" x="462" y="708" width="180" height="66" rx="7"/><text class="small" x="478" y="732">Success</text><text class="metric ok" x="478" y="760">99.4%</text>
+  <rect class="amber" x="654" y="708" width="180" height="66" rx="7"/><text class="small" x="670" y="732">429</text><text class="metric warn" x="670" y="760">0.3%</text>
+  <rect class="soft" x="846" y="708" width="180" height="66" rx="7"/><text class="small" x="862" y="732">P95 E2E</text><text class="metric" x="862" y="760">4.2s</text>
+  <rect class="soft" x="1038" y="708" width="180" height="66" rx="7"/><text class="small" x="1054" y="732">Total TPM</text><text class="metric" x="1054" y="760">184k</text>
+  <rect class="green" x="1230" y="708" width="132" height="66" rx="7"/><text class="small" x="1246" y="732">Drift</text><text class="metric ok" x="1246" y="760">3.1%</text>
+  <line class="grid" x1="78" y1="812" x2="1362" y2="812"/><line class="grid" x1="78" y1="846" x2="1362" y2="846"/>
+  <polyline class="chart1" points="78,858 190,842 302,848 414,824 526,830 638,814 750,822 862,804 974,810 1086,796 1198,802 1362,790"/>
+  <polyline class="chart2" points="78,870 190,864 302,856 414,858 526,846 638,850 750,838 862,842 974,830 1086,834 1198,826 1362,824"/>
+  <text class="small" x="78" y="890">蓝：business RPM / TPM 趋势　绿：success rate　Streaming workload 另显示 TTFT/TPOT coverage</text>
+  <text class="small" x="54" y="934">示意数值只解释界面和指标关系，不代表当前 Provider 的容量结论。</text>
+</svg>

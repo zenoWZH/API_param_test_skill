@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="940" viewBox="0 0 1440 940" role="img" aria-labelledby="title desc">
+  <title id="title">Cache 测试控制台示意图</title><desc id="desc">展示渐进客户会话设置、请求流程预览、缓存核心指标、阶段明细与控制组可信度。</desc>
+  <defs><style>
+    .bg{fill:#f7f8fb}.panel{fill:#fff;stroke:#d6dbe3;stroke-width:1.4}.soft{fill:#f9fafb;stroke:#d6dbe3}.blue{fill:#2563eb}.green{fill:#ecfdf3;stroke:#9ad7bc}.amber{fill:#fffaeb;stroke:#fdb022}.purple{fill:#f5f3ff;stroke:#c4b5fd}.t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h1{font:bold 22px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h2{font:bold 16px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.metric{font:bold 22px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#172033}.small{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#657188}.white{fill:#fff;font-weight:700}.bold{font-weight:700}.num{fill:#2563eb}.numtext{font:bold 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#fff;text-anchor:middle;dominant-baseline:middle}.line{stroke:#d6dbe3}.ok{fill:#067647}.warn{fill:#b54708}.arrow{stroke:#657188;stroke-width:2;fill:none;marker-end:url(#head)}
+  </style><marker id="head" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L7,3 z" fill="#657188"/></marker></defs>
+  <rect class="bg" width="1440" height="940"/><rect class="panel" x="28" y="22" width="1384" height="896" rx="12"/>
+  <text class="h1" x="54" y="58">Cache 测试</text><text class="small" x="54" y="82">客户场景、结构探针和正负控制分开统计</text>
+  <rect class="panel" x="54" y="108" width="1332" height="252" rx="8"/>
+  <circle class="num" cx="78" cy="136" r="15"/><text class="numtext" x="78" y="136">1</text><text class="h2" x="104" y="142">Cache 测试 Setup</text>
+  <text class="small" x="78" y="180">Provider</text><rect class="soft" x="78" y="190" width="242" height="42" rx="6"/><text class="t" x="92" y="216">示例 Provider ▾</text>
+  <text class="small" x="334" y="180">Model</text><rect class="soft" x="334" y="190" width="242" height="42" rx="6"/><text class="t" x="348" y="216">deepseek-v4-flash-0731 ▾</text>
+  <text class="small" x="590" y="180">会话数</text><rect class="soft" x="590" y="190" width="150" height="42" rx="6"/><text class="t" x="604" y="216">10</text>
+  <text class="small" x="754" y="180">每会话轮数</text><rect class="soft" x="754" y="190" width="150" height="42" rx="6"/><text class="t" x="768" y="216">4</text>
+  <text class="small" x="918" y="180">内容档位</text><rect class="soft" x="918" y="190" width="200" height="42" rx="6"/><text class="t" x="932" y="216">Realistic ▾</text>
+  <text class="small" x="1132" y="180">工具阶段</text><rect class="soft" x="1132" y="190" width="230" height="42" rx="6"/><text class="t" x="1146" y="216">第 3 轮 + follow-up ▾</text>
+  <rect class="purple" x="78" y="258" width="1020" height="58" rx="7"/><text class="t bold" x="94" y="282">流程预览：10 sessions × 4 rounds + tool follow-up</text><text class="small" x="94" y="302">客户请求 50 · 结构探针 1 · 正控 3 pairs · 负控 3 · 预计总请求 60</text>
+  <rect class="blue" x="1124" y="264" width="238" height="42" rx="6"/><text class="t white" x="1175" y="290">运行 Cache 测试</text>
+  <text class="small" x="78" y="342">高级设置控制字符范围、控制组数量、等待时间和运行预算；正式测试不允许关闭必需控制组。</text>
+
+  <rect class="panel" x="54" y="380" width="1332" height="150" rx="8"/>
+  <circle class="num" cx="78" cy="408" r="15"/><text class="numtext" x="78" y="408">2</text><text class="h2" x="104" y="414">客户会话五阶段</text>
+  <rect class="soft" x="78" y="448" width="180" height="44" rx="6"/><text class="t" x="148" y="475">seed</text><path class="arrow" d="M266 470 H294"/>
+  <rect class="soft" x="302" y="448" width="190" height="44" rx="6"/><text class="t" x="348" y="475">direct_growth</text><path class="arrow" d="M500 470 H528"/>
+  <rect class="soft" x="536" y="448" width="190" height="44" rx="6"/><text class="t" x="580" y="475">tool_initial</text><path class="arrow" d="M734 470 H762"/>
+  <rect class="soft" x="770" y="448" width="190" height="44" rx="6"/><text class="t" x="805" y="475">tool_followup</text><path class="arrow" d="M968 470 H996"/>
+  <rect class="soft" x="1004" y="448" width="190" height="44" rx="6"/><text class="t" x="1045" y="475">final_growth</text>
+  <rect class="amber" x="1210" y="440" width="152" height="60" rx="7"/><text class="small warn" x="1226" y="464">结构探针/控制组</text><text class="small" x="1226" y="484">不计入客户命中率</text>
+
+  <rect class="panel" x="54" y="550" width="1332" height="166" rx="8"/>
+  <circle class="num" cx="78" cy="578" r="15"/><text class="numtext" x="78" y="578">3</text><text class="h2" x="104" y="584">Cache Results · 先看覆盖，再看命中和效率</text>
+  <rect class="green" x="78" y="614" width="236" height="76" rx="7"/><text class="small" x="94" y="638">Usage coverage</text><text class="metric ok" x="94" y="672">100%</text>
+  <rect class="soft" x="326" y="614" width="236" height="76" rx="7"/><text class="small" x="342" y="638">结构命中上限</text><text class="metric" x="342" y="672">0.908</text>
+  <rect class="green" x="574" y="614" width="236" height="76" rx="7"/><text class="small" x="590" y="638">实际命中率</text><text class="metric ok" x="590" y="672">0.564</text>
+  <rect class="soft" x="822" y="614" width="236" height="76" rx="7"/><text class="small" x="838" y="638">缓存效率</text><text class="metric" x="838" y="672">0.621</text>
+  <rect class="green" x="1070" y="614" width="292" height="76" rx="7"/><text class="small" x="1086" y="638">Telemetry audit</text><text class="metric ok" x="1086" y="672">PASS</text>
+
+  <rect class="panel" x="54" y="736" width="1332" height="136" rx="8"/>
+  <circle class="num" cx="78" cy="764" r="15"/><text class="numtext" x="78" y="764">4</text><text class="h2" x="104" y="770">测量可信度</text>
+  <rect class="green" x="78" y="800" width="386" height="46" rx="6"/><text class="t ok bold" x="96" y="826">正向控制：cold → warm cached 增长</text>
+  <rect class="green" x="478" y="800" width="386" height="46" rx="6"/><text class="t ok bold" x="496" y="826">负向控制：唯一前缀命中低于上限</text>
+  <rect class="soft" x="878" y="800" width="484" height="46" rx="6"/><text class="t" x="896" y="826">逐请求：cached ≤ input 且 ≤ 可复用前缀</text>
+  <text class="small" x="54" y="900">示意数值用于展示判读顺序，不代表当前 Provider 实测结果；延迟仅作辅助证据。</text>
+</svg>

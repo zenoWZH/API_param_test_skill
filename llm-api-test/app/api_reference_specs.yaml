@@ -1,0 +1,1338 @@
+reference_sources:
+  openai_chat_base:
+    label: "GPT baseline over OpenAI Chat Completions"
+    model_family: gpt
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://platform.openai.com/docs/api-reference/chat/create"
+    default_for_families:
+      - "gpt"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "sampling_non_thinking" }
+      top_p: { coverage: "sampling_non_thinking" }
+      max_tokens: { coverage: "json_output / tool_calls / tool_choice_required" }
+      stop: { coverage: "stop_sequences" }
+      response_format: { coverage: "json_output" }
+      tools: { coverage: "tool_calls / tool_choice_required" }
+      tool_choice: { coverage: "tool_choice_required" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "sampling_non_thinking"
+      - "json_output"
+      - "stop_sequences"
+      - "tool_calls"
+      - "tool_choice_required"
+
+  # The wire shape is OpenAI-compatible, but the model contract belongs to Kimi.
+  kimi_openai_compat:
+    label: "Kimi OpenAI-compatible Chat Completions"
+    model_family: kimi
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    evidence: family_contract_unverified
+    official_sources:
+      - "https://platform.moonshot.ai/docs/api/chat"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "sampling_non_thinking" }
+      top_p: { coverage: "sampling_non_thinking" }
+      max_tokens: { coverage: "json_output / tool_calls / tool_choice_required" }
+      stop: { coverage: "stop_sequences" }
+      response_format: { coverage: "json_output" }
+      tools: { coverage: "tool_calls / tool_choice_required" }
+      tool_choice: { coverage: "tool_choice_required" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "sampling_non_thinking"
+      - "json_output"
+      - "stop_sequences"
+      - "tool_calls"
+      - "tool_choice_required"
+
+  minimax_openai_compat:
+    label: "MiniMax OpenAI-compatible Chat Completions"
+    model_family: minimax
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    evidence: family_contract_unverified
+    official_sources:
+      - "https://platform.minimaxi.com/document/ChatCompletion%20v2"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "sampling_non_thinking" }
+      top_p: { coverage: "sampling_non_thinking" }
+      max_tokens: { coverage: "json_output / tool_calls / tool_choice_required" }
+      stop: { coverage: "stop_sequences" }
+      response_format: { coverage: "json_output" }
+      tools: { coverage: "tool_calls / tool_choice_required" }
+      tool_choice: { coverage: "tool_choice_required" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "sampling_non_thinking"
+      - "json_output"
+      - "stop_sequences"
+      - "tool_calls"
+      - "tool_choice_required"
+
+  # Kimi K3 is OpenAI wire-compatible but not a generic OpenAI model contract.
+  # Keep its always-thinking, preserved-history, dynamic-tool and immutable
+  # parameter probes together so every vendor is compared against Moonshot's
+  # official K3 verifier rather than the generic Chat Completions surface.
+  kimi_k3_openai_compat:
+    label: "Kimi K3 OpenAI-compatible Chat Completions"
+    model_family: kimi
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://github.com/MoonshotAI/Kimi-K3#6-model-usage"
+      - "https://platform.kimi.ai/docs/api/chat"
+      - "https://github.com/MoonshotAI/Kimi-Vendor-Verifier"
+      - "https://github.com/MoonshotAI/Kimi-Vendor-Verifier/tree/main/tests/k3_features"
+      - "https://github.com/MoonshotAI/Kimi-Vendor-Verifier/tree/main/tests/params"
+    families:
+      - "kimi"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "kimi_k3_stream / kimi_k3_stream_usage" }
+      stream_options.include_usage: { coverage: "kimi_k3_stream_usage" }
+      temperature: { coverage: "all profiles; fixed to 1.0 except kimi_k3_reject_temperature" }
+      top_p: { coverage: "all profiles; fixed to 0.95 except kimi_k3_reject_top_p" }
+      max_completion_tokens: { coverage: "all profiles" }
+      reasoning_effort: { coverage: "all profiles; explicit low/high/max, with max used by non-effort probes" }
+      response.reasoning_content: { coverage: "kimi_k3_stream / kimi_k3_stream_usage / kimi_k3_reasoning_low / kimi_k3_reasoning_high / kimi_k3_reasoning_max / kimi_k3_preserved_thinking / kimi_k3_prompt_cache_key / kimi_k3_dynamic_tools" }
+      messages[].reasoning_content: { coverage: "kimi_k3_preserved_thinking" }
+      prompt_cache_key: { coverage: "kimi_k3_prompt_cache_key" }
+      messages[].tools: { coverage: "kimi_k3_dynamic_tools; non-standard dynamic tool declaration on an empty system message" }
+      tool_choice: { coverage: "kimi_k3_dynamic_tools; official values auto|none|required" }
+      presence_penalty: { coverage: "kimi_k3_reject_presence_penalty; must remain 0" }
+      frequency_penalty: { coverage: "kimi_k3_reject_frequency_penalty; must remain 0" }
+      n: { coverage: "kimi_k3_reject_n; must remain 1" }
+    test_profiles:
+      - "kimi_k3_stream"
+      - "kimi_k3_stream_usage"
+      - "kimi_k3_reasoning_low"
+      - "kimi_k3_reasoning_high"
+      - "kimi_k3_reasoning_max"
+      - "kimi_k3_preserved_thinking"
+      - "kimi_k3_prompt_cache_key"
+      - "kimi_k3_dynamic_tools"
+      - "kimi_k3_reject_temperature"
+      - "kimi_k3_reject_top_p"
+      - "kimi_k3_reject_presence_penalty"
+      - "kimi_k3_reject_frequency_penalty"
+      - "kimi_k3_reject_n"
+
+  # GPT-5.x Chat Completions: classic stop/temperature probes are intentionally omitted.
+  # Official reasoning models reject stop; several reject non-default temperature.
+  # Function tools on Chat Completions: omit reasoning_effort (official also accepts none;
+  # some NewAPI proxies reject the field entirely when tools are present).
+  openai_gpt5_chat:
+    label: "OpenAI GPT-5.x Chat Completions"
+    model_family: gpt
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://platform.openai.com/docs/api-reference/chat/create"
+      - "https://developers.openai.com/api/docs/guides/reasoning"
+      - "https://developers.openai.com/api/docs/guides/migrate-to-responses"
+    families:
+      - "gpt"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "gpt5_chat_stream / gpt5_chat_stream_usage" }
+      stream_options.include_usage: { coverage: "gpt5_chat_stream_usage" }
+      max_completion_tokens: { coverage: "gpt5_chat_max_completion_tokens / gpt5_chat_reasoning_low / gpt5_chat_json / gpt5_chat_tools" }
+      reasoning_effort: { coverage: "gpt5_chat_reasoning_none / gpt5_chat_reasoning_low; official values none|low|medium|high|xhigh (model-dependent)" }
+      response_format: { coverage: "gpt5_chat_json" }
+      tools: { coverage: "gpt5_chat_tools" }
+      tool_choice: { coverage: "gpt5_chat_tools; use required and omit reasoning_effort on Chat Completions" }
+    test_profiles:
+      - "gpt5_chat_stream"
+      - "gpt5_chat_stream_usage"
+      - "gpt5_chat_max_completion_tokens"
+      - "gpt5_chat_reasoning_none"
+      - "gpt5_chat_reasoning_low"
+      - "gpt5_chat_json"
+      - "gpt5_chat_tools"
+
+  openai_gpt56_chat:
+    label: "OpenAI GPT-5.6 Chat Completions"
+    model_family: gpt
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
+      - "https://developers.openai.com/api/docs/guides/model-guidance?model=gpt-5.6"
+      - "https://platform.openai.com/docs/api-reference/chat/create"
+    families:
+      - "gpt"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "gpt5_chat_stream / gpt5_chat_stream_usage" }
+      stream_options.include_usage: { coverage: "gpt5_chat_stream_usage" }
+      max_completion_tokens: { coverage: "all profiles" }
+      reasoning_effort: { coverage: "gpt5_chat_reasoning_none / gpt5_chat_reasoning_low / gpt5_chat_reasoning_medium / gpt5_chat_reasoning_high / gpt5_chat_reasoning_xhigh / gpt5_chat_reasoning_max / gpt5_chat_tools; GPT-5.6 values none|low|medium|high|xhigh|max" }
+      response_format: { coverage: "gpt5_chat_json" }
+      tools: { coverage: "gpt5_chat_tools; official Chat Completions tool path requires effective reasoning_effort=none" }
+      tool_choice: { coverage: "gpt5_chat_tools" }
+      temperature: { supported: false, coverage: "gpt5_chat_reject_temperature; non-default sampling is rejected" }
+      stop: { supported: false, coverage: "gpt5_chat_reject_stop" }
+    test_profiles:
+      - "gpt5_chat_stream"
+      - "gpt5_chat_stream_usage"
+      - "gpt5_chat_max_completion_tokens"
+      - "gpt5_chat_reasoning_none"
+      - "gpt5_chat_reasoning_low"
+      - "gpt5_chat_reasoning_medium"
+      - "gpt5_chat_reasoning_high"
+      - "gpt5_chat_reasoning_xhigh"
+      - "gpt5_chat_reasoning_max"
+      - "gpt5_chat_json"
+      - "gpt5_chat_tools"
+      - "gpt5_chat_reject_temperature"
+      - "gpt5_chat_reject_stop"
+
+  openai_responses:
+    label: "OpenAI Responses API"
+    model_family: gpt
+    api_form: openai_responses
+    route_profile: vendor_direct
+    official_sources:
+      - "https://developers.openai.com/api/reference/resources/responses"
+      - "https://developers.openai.com/api/docs/guides/migrate-to-responses"
+      - "https://developers.openai.com/api/docs/guides/reasoning"
+    families:
+      - "gpt"
+    params:
+      model: { required: true, coverage: "provider/model selection" }
+      input: { required: true, coverage: "all profiles" }
+      instructions: { coverage: "openai_responses_instructions" }
+      stream: { coverage: "openai_responses_stream / openai_responses_stream_usage" }
+      max_output_tokens: { coverage: "openai_responses_basic / openai_responses_reasoning / openai_responses_json / openai_responses_tools" }
+      reasoning.effort: { coverage: "openai_responses_reasoning / openai_responses_basic; official values none|low|medium|high|xhigh|max (model-dependent)" }
+      store: { coverage: "openai_responses_store_false" }
+      text.format: { coverage: "openai_responses_json" }
+      tools: { coverage: "openai_responses_tools" }
+      tool_choice: { coverage: "openai_responses_tools" }
+    test_profiles:
+      - "openai_responses_basic"
+      - "openai_responses_instructions"
+      - "openai_responses_stream"
+      - "openai_responses_stream_usage"
+      - "openai_responses_reasoning"
+      - "openai_responses_json"
+      - "openai_responses_store_false"
+      - "openai_responses_tools"
+
+  openai_gpt56_responses:
+    label: "OpenAI GPT-5.6 Responses API"
+    model_family: gpt
+    api_form: openai_responses
+    route_profile: vendor_direct
+    official_sources:
+      - "https://developers.openai.com/api/docs/models/gpt-5.6-sol"
+      - "https://developers.openai.com/api/docs/guides/model-guidance?model=gpt-5.6"
+      - "https://developers.openai.com/api/reference/resources/responses"
+    families:
+      - "gpt"
+    params:
+      model: { required: true, coverage: "provider/model selection" }
+      input: { required: true, coverage: "all profiles" }
+      instructions: { coverage: "openai_responses_instructions" }
+      stream: { coverage: "openai_responses_stream / openai_responses_stream_usage" }
+      max_output_tokens: { coverage: "all profiles" }
+      reasoning.effort: { coverage: "openai_responses_reasoning_none / openai_responses_reasoning_low / openai_responses_reasoning / openai_responses_reasoning_high / openai_responses_reasoning_xhigh / openai_responses_reasoning_max / openai_responses_reasoning_context_all_turns / openai_responses_reasoning_context_current_turn / openai_responses_pro_medium" }
+      reasoning.context: { coverage: "openai_responses_reasoning_context_all_turns / openai_responses_reasoning_context_current_turn" }
+      reasoning.mode: { coverage: "openai_responses_pro_medium" }
+      prompt_cache_key: { coverage: "openai_responses_explicit_cache" }
+      prompt_cache_options.mode: { coverage: "openai_responses_explicit_cache" }
+      prompt_cache_options.ttl: { coverage: "openai_responses_explicit_cache" }
+      text.verbosity: { coverage: "openai_responses_verbosity" }
+      text.format: { coverage: "openai_responses_json" }
+      store: { coverage: "openai_responses_store_false" }
+      tools: { coverage: "openai_responses_tools" }
+      tool_choice: { coverage: "openai_responses_tools" }
+    test_profiles:
+      - "openai_responses_basic"
+      - "openai_responses_instructions"
+      - "openai_responses_stream"
+      - "openai_responses_stream_usage"
+      - "openai_responses_reasoning_none"
+      - "openai_responses_reasoning_low"
+      - "openai_responses_reasoning"
+      - "openai_responses_reasoning_high"
+      - "openai_responses_reasoning_xhigh"
+      - "openai_responses_reasoning_max"
+      - "openai_responses_reasoning_context_all_turns"
+      - "openai_responses_reasoning_context_current_turn"
+      - "openai_responses_pro_medium"
+      - "openai_responses_explicit_cache"
+      - "openai_responses_verbosity"
+      - "openai_responses_json"
+      - "openai_responses_store_false"
+      - "openai_responses_tools"
+
+  # xAI Grok Chat Completions (legacy but still documented).
+  # Reasoning models reject stop / presence_penalty / frequency_penalty.
+  # grok-4.5: reasoning_effort low|medium|high (default high; cannot disable).
+  # Prefer max_completion_tokens over max_tokens for output budget.
+  # Preferred for xAI. Chat Completions remains available as grok_chat_completions.
+  # multi-agent models require this transport (chat returns 400).
+  grok_responses:
+    label: "xAI Grok Responses"
+    model_family: grok
+    api_form: openai_responses
+    route_profile: vendor_direct
+    official_sources:
+      - "https://docs.x.ai/developers/model-capabilities/text/generate-text"
+      - "https://docs.x.ai/developers/model-capabilities/text/reasoning"
+      - "https://docs.x.ai/developers/model-capabilities/text/comparison"
+      - "https://docs.x.ai/developers/grok-4-5"
+    default_for_families:
+      - "grok"
+    params:
+      input: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      instructions: { coverage: "grok_responses_instructions" }
+      stream: { coverage: "grok_responses_stream / grok_responses_stream_usage" }
+      max_output_tokens: { coverage: "grok_responses_basic / grok_responses_reasoning_* / grok_responses_json / grok_responses_tools" }
+      reasoning.effort: { coverage: "grok_responses_reasoning_low / grok_responses_reasoning_medium / grok_responses_reasoning_high / grok_responses_reasoning_effort_none; grok-4.5 values low|medium|high (cannot disable); multi-agent also uses effort for agent count" }
+      store: { coverage: "grok_responses_store_false" }
+      text.format: { coverage: "grok_responses_json" }
+      tools: { coverage: "grok_responses_tools" }
+      tool_choice: { coverage: "grok_responses_tools" }
+      stop: { coverage: "not tested on Responses; xAI accepts/ignores stop here — use grok_chat_completions reject probes" }
+    test_profiles:
+      - "grok_responses_basic"
+      - "grok_responses_instructions"
+      - "grok_responses_stream"
+      - "grok_responses_stream_usage"
+      - "grok_responses_reasoning_low"
+      - "grok_responses_reasoning_medium"
+      - "grok_responses_reasoning_high"
+      - "grok_responses_reasoning_effort_none"
+      - "grok_responses_json"
+      - "grok_responses_store_false"
+      - "grok_responses_tools"
+
+  grok_chat_completions:
+    label: "xAI Grok Chat Completions"
+    model_family: grok
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://docs.x.ai/developers/rest-api-reference/inference/chat"
+      - "https://docs.x.ai/developers/model-capabilities/text/reasoning"
+      - "https://docs.x.ai/developers/grok-4-5"
+      - "https://docs.x.ai/developers/model-capabilities/legacy/chat-completions"
+    # Optional legacy source; default for family grok is grok_responses.
+    families:
+      - "grok"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "grok_stream / grok_stream_usage" }
+      stream_options.include_usage: { coverage: "grok_stream_usage" }
+      max_completion_tokens: { coverage: "grok_max_completion_tokens / grok_reasoning_effort_* / grok_json / grok_tools" }
+      reasoning_effort: { coverage: "grok_reasoning_effort_low / grok_reasoning_effort_medium / grok_reasoning_effort_high / grok_reasoning_effort_none; official values low|medium|high (grok-4.5 cannot disable / rejects none)" }
+      response_format: { coverage: "grok_json" }
+      tools: { coverage: "grok_tools" }
+      tool_choice: { coverage: "grok_tools" }
+      stop: { coverage: "grok_reject_stop; rejected on reasoning models such as grok-4.5" }
+      presence_penalty: { coverage: "grok_reject_presence_penalty; rejected on reasoning models" }
+      frequency_penalty: { coverage: "not tested; rejected on reasoning models" }
+    test_profiles:
+      - "grok_stream"
+      - "grok_stream_usage"
+      - "grok_max_completion_tokens"
+      - "grok_reasoning_effort_low"
+      - "grok_reasoning_effort_medium"
+      - "grok_reasoning_effort_high"
+      - "grok_reasoning_effort_none"
+      - "grok_json"
+      - "grok_tools"
+      - "grok_reject_stop"
+      - "grok_reject_presence_penalty"
+
+  glm_openai_compat:
+    label: "GLM-5.2 Chat Completions"
+    model_family: glm
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://docs.bigmodel.cn/api-reference/模型-api/对话补全"
+      - "https://docs.bigmodel.cn/cn/guide/develop/openai/introduction"
+      - "https://docs.bigmodel.cn/cn/guide/start/concept-param"
+      - "https://docs.bigmodel.cn/cn/guide/start/migrate-to-glm-new"
+      - "https://docs.bigmodel.cn/cn/guide/capabilities/thinking-mode"
+      - "https://docs.bigmodel.cn/cn/guide/capabilities/stream-tool"
+    default_for_families:
+      - "glm"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "basic_stream" }
+      thinking.type: { coverage: "glm_thinking_enabled / glm_thinking_disabled" }
+      thinking.clear_thinking: { coverage: "glm_clear_thinking / glm_tool_calls_thinking; false enables preserved/interleaved thinking" }
+      reasoning_effort: { coverage: "glm_reasoning_none / glm_reasoning_minimal / glm_reasoning_low / glm_reasoning_medium / glm_reasoning_high / glm_reasoning_xhigh / glm_reasoning_max / glm_tool_calls_thinking" }
+      do_sample: { coverage: "glm_do_sample" }
+      temperature: { coverage: "glm_temperature" }
+      top_p: { coverage: "glm_top_p" }
+      max_tokens: { coverage: "glm_max_tokens" }
+      tool_stream: { coverage: "glm_tool_stream" }
+      tools: { coverage: "glm_tools / glm_tool_stream / glm_tool_calls_thinking" }
+      tool_choice: { coverage: "glm_tool_choice_auto / glm_tool_stream / glm_tool_calls_thinking; official value: auto" }
+      stop: { coverage: "stop_sequences" }
+      response_format: { coverage: "json_output" }
+      request_id: { coverage: "glm_request_id" }
+      user_id: { coverage: "glm_user_id" }
+      response.reasoning_content: { coverage: "glm_thinking_enabled / glm_thinking_disabled / glm_reasoning_none / glm_reasoning_minimal / glm_reasoning_low / glm_reasoning_medium / glm_reasoning_high / glm_reasoning_xhigh / glm_reasoning_max / glm_tool_calls_thinking" }
+    test_profiles:
+      - "basic_stream"
+      - "glm_thinking_enabled"
+      - "glm_thinking_disabled"
+      - "glm_clear_thinking"
+      - "glm_reasoning_none"
+      - "glm_reasoning_minimal"
+      - "glm_reasoning_low"
+      - "glm_reasoning_medium"
+      - "glm_reasoning_high"
+      - "glm_reasoning_xhigh"
+      - "glm_reasoning_max"
+      - "glm_do_sample"
+      - "glm_temperature"
+      - "glm_top_p"
+      - "glm_max_tokens"
+      - "glm_tool_stream"
+      - "glm_tools"
+      - "glm_tool_choice_auto"
+      - "glm_tool_calls_thinking"
+      - "json_output"
+      - "stop_sequences"
+      - "glm_request_id"
+      - "glm_user_id"
+
+  qwen_openai_compat:
+    label: "Qwen DashScope OpenAI-compatible Chat Completions (官方原生扩展)"
+    model_family: qwen
+    api_form: openai_chat_completions
+    route_profile: aliyun_maas
+    official_sources:
+      - "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions"
+      - "https://help.aliyun.com/zh/model-studio/deep-thinking"
+      - "https://help.aliyun.com/zh/model-studio/qwen3-7-max"
+      - "https://help.aliyun.com/zh/model-studio/qwen-structured-output"
+      - "https://help.aliyun.com/zh/model-studio/models"
+    default_for_families:
+      - "qwen"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "basic_stream / stream_with_usage / qwen_thinking_enabled / qwen_thinking_budget / qwen_preserve_thinking / qwen_tool_stream / qwen_enable_code_interpreter" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      max_tokens: { coverage: "qwen_max_tokens / qwen_n / qwen_logprobs; deprecated in favor of max_completion_tokens" }
+      max_completion_tokens: { coverage: "qwen_max_completion_tokens / qwen_thinking_enabled / qwen_thinking_budget / qwen_preserve_thinking" }
+      stop: { coverage: "stop_sequences" }
+      temperature: { coverage: "qwen_temperature" }
+      top_p: { coverage: "qwen_top_p" }
+      top_k: { coverage: "qwen_top_k; DashScope non-OpenAI extension via body/extra_body" }
+      repetition_penalty: { coverage: "qwen_repetition_penalty; DashScope non-OpenAI extension" }
+      presence_penalty: { coverage: "qwen_presence_penalty" }
+      seed: { coverage: "qwen_seed; official range [0, 2^31-1]" }
+      n: { coverage: "qwen_n; official 1-4, non-thinking only" }
+      response_format: { coverage: "qwen_response_format; text|json_object, requires prompt mention JSON" }
+      logprobs: { coverage: "qwen_logprobs; snapshot/open models only" }
+      top_logprobs: { coverage: "qwen_logprobs; official [0,5], requires logprobs=true" }
+      enable_thinking: { coverage: "qwen_thinking_enabled / qwen_thinking_disabled / qwen_thinking_budget / qwen_preserve_thinking" }
+      thinking_budget: { coverage: "qwen_thinking_budget" }
+      preserve_thinking: { coverage: "qwen_preserve_thinking" }
+      tools: { coverage: "qwen_tools / qwen_tool_choice_auto / qwen_parallel_tool_calls / qwen_tool_stream" }
+      tool_choice: { coverage: "qwen_tool_choice_auto / qwen_parallel_tool_calls / qwen_tool_stream" }
+      parallel_tool_calls: { coverage: "qwen_parallel_tool_calls" }
+      tool_stream: { coverage: "qwen_tool_stream; DashScope non-OpenAI extension" }
+      enable_search: { coverage: "qwen_enable_search / qwen_search_options" }
+      search_options: { coverage: "qwen_search_options; forced_search / search_strategy" }
+      enable_code_interpreter: { coverage: "qwen_enable_code_interpreter" }
+      vl_high_resolution_images: { coverage: "vl_only_not_tested" }
+      header.X-DashScope-DataInspection: { coverage: "header_only_not_tested" }
+      response.reasoning_content: { coverage: "qwen_thinking_enabled / qwen_thinking_disabled / qwen_thinking_budget / qwen_preserve_thinking" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "qwen_thinking_enabled"
+      - "qwen_thinking_disabled"
+      - "qwen_thinking_budget"
+      - "qwen_preserve_thinking"
+      - "qwen_max_tokens"
+      - "qwen_max_completion_tokens"
+      - "stop_sequences"
+      - "qwen_temperature"
+      - "qwen_top_p"
+      - "qwen_top_k"
+      - "qwen_repetition_penalty"
+      - "qwen_presence_penalty"
+      - "qwen_seed"
+      - "qwen_n"
+      - "qwen_logprobs"
+      - "qwen_response_format"
+      - "qwen_enable_search"
+      - "qwen_search_options"
+      - "qwen_enable_code_interpreter"
+      - "qwen_tools"
+      - "qwen_tool_choice_auto"
+      - "qwen_parallel_tool_calls"
+      - "qwen_tool_stream"
+
+  aliyun_glm5_openai_compat:
+    label: "Alibaba Cloud Model Studio GLM 5.x OpenAI-compatible Chat"
+    model_family: glm
+    api_form: openai_chat_completions
+    route_profile: aliyun_maas
+    official_sources:
+      - "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions"
+      - "https://help.aliyun.com/zh/model-studio/glm"
+      - "https://help.aliyun.com/zh/model-studio/text-generation-model"
+    families:
+      - "glm"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "aliyun_stream / aliyun_stream_usage / aliyun_tool_stream" }
+      stream_options.include_usage: { coverage: "aliyun_stream_usage" }
+      max_completion_tokens: { coverage: "aliyun_max_completion_tokens / aliyun_enable_thinking / aliyun_disable_thinking / aliyun_reasoning_high / aliyun_reasoning_max" }
+      enable_thinking: { coverage: "aliyun_enable_thinking / aliyun_disable_thinking" }
+      reasoning_effort: { coverage: "aliyun_reasoning_high / aliyun_reasoning_max; official high|max with low/medium and xhigh aliases" }
+      temperature: { coverage: "aliyun_temperature" }
+      top_p: { coverage: "aliyun_top_p" }
+      top_k: { coverage: "aliyun_top_k; Alibaba Cloud extension, GLM default 20" }
+      repetition_penalty: { coverage: "aliyun_repetition_penalty; Alibaba Cloud extension, GLM default 1.0" }
+      presence_penalty: { coverage: "aliyun_presence_penalty" }
+      stop: { coverage: "aliyun_stop" }
+      response_format: { coverage: "aliyun_json_object; structured output supported by GLM 5.x" }
+      tools: { coverage: "aliyun_tools / aliyun_tool_choice_auto / aliyun_tool_stream" }
+      tool_choice: { coverage: "aliyun_tool_choice_auto / aliyun_tool_stream" }
+      tool_stream: { coverage: "aliyun_tool_stream; Alibaba Cloud extension" }
+    test_profiles:
+      - "aliyun_stream"
+      - "aliyun_stream_usage"
+      - "aliyun_max_completion_tokens"
+      - "aliyun_enable_thinking"
+      - "aliyun_disable_thinking"
+      - "aliyun_reasoning_high"
+      - "aliyun_reasoning_max"
+      - "aliyun_temperature"
+      - "aliyun_top_p"
+      - "aliyun_top_k"
+      - "aliyun_repetition_penalty"
+      - "aliyun_presence_penalty"
+      - "aliyun_stop"
+      - "aliyun_json_object"
+      - "aliyun_tools"
+      - "aliyun_tool_choice_auto"
+      - "aliyun_tool_stream"
+
+  aliyun_kimi_k2_6_openai_compat:
+    label: "Alibaba Cloud Model Studio Kimi K2.6 OpenAI-compatible Chat"
+    model_family: kimi
+    api_form: openai_chat_completions
+    route_profile: aliyun_maas
+    official_sources:
+      - "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions"
+      - "https://help.aliyun.com/zh/model-studio/kimi-api"
+      - "https://help.aliyun.com/zh/model-studio/text-generation-model"
+    families:
+      - "kimi"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "aliyun_stream / aliyun_stream_usage" }
+      stream_options.include_usage: { coverage: "aliyun_stream_usage" }
+      max_completion_tokens: { coverage: "aliyun_max_completion_tokens / aliyun_enable_thinking / aliyun_disable_thinking / aliyun_preserve_thinking" }
+      enable_thinking: { coverage: "aliyun_enable_thinking / aliyun_disable_thinking" }
+      preserve_thinking: { coverage: "aliyun_preserve_thinking" }
+      temperature: { coverage: "aliyun_temperature" }
+      top_p: { coverage: "aliyun_top_p" }
+      presence_penalty: { coverage: "aliyun_presence_penalty" }
+      stop: { coverage: "aliyun_stop" }
+      tools: { coverage: "aliyun_tools / aliyun_tool_choice_auto" }
+      tool_choice: { coverage: "aliyun_tool_choice_auto; official supported value auto" }
+      top_k: { supported: false, coverage: "not supported by the Kimi series" }
+      n: { supported: false, coverage: "not supported by the Kimi series" }
+      response_format: { supported: false, coverage: "structured output not supported by Kimi K2.6" }
+    test_profiles:
+      - "aliyun_stream"
+      - "aliyun_stream_usage"
+      - "aliyun_max_completion_tokens"
+      - "aliyun_enable_thinking"
+      - "aliyun_disable_thinking"
+      - "aliyun_preserve_thinking"
+      - "aliyun_temperature"
+      - "aliyun_top_p"
+      - "aliyun_presence_penalty"
+      - "aliyun_stop"
+      - "aliyun_tools"
+      - "aliyun_tool_choice_auto"
+
+  aliyun_kimi_k2_7_code_openai_compat:
+    label: "Alibaba Cloud Model Studio Kimi K2.7 Code OpenAI-compatible Chat"
+    model_family: kimi
+    api_form: openai_chat_completions
+    route_profile: aliyun_maas
+    official_sources:
+      - "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions"
+      - "https://help.aliyun.com/zh/model-studio/kimi-api"
+      - "https://help.aliyun.com/zh/model-studio/text-generation-model"
+    families:
+      - "kimi"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "aliyun_stream / aliyun_stream_usage" }
+      stream_options.include_usage: { coverage: "aliyun_stream_usage" }
+      max_completion_tokens: { coverage: "aliyun_max_completion_tokens / aliyun_enable_thinking / aliyun_preserve_thinking" }
+      enable_thinking: { coverage: "aliyun_enable_thinking; Kimi K2.7 Code is thinking-only" }
+      preserve_thinking: { coverage: "aliyun_preserve_thinking" }
+      temperature: { coverage: "aliyun_temperature" }
+      top_p: { coverage: "aliyun_top_p" }
+      presence_penalty: { coverage: "aliyun_presence_penalty" }
+      stop: { coverage: "aliyun_stop" }
+      tools: { coverage: "aliyun_tools / aliyun_tool_choice_auto" }
+      tool_choice: { coverage: "aliyun_tool_choice_auto; official supported value auto" }
+      top_k: { supported: false, coverage: "not supported by the Kimi series" }
+      n: { supported: false, coverage: "not supported by the Kimi series" }
+      response_format: { supported: false, coverage: "structured output not supported by Kimi K2.7 Code" }
+    test_profiles:
+      - "aliyun_stream"
+      - "aliyun_stream_usage"
+      - "aliyun_max_completion_tokens"
+      - "aliyun_enable_thinking"
+      - "aliyun_preserve_thinking"
+      - "aliyun_temperature"
+      - "aliyun_top_p"
+      - "aliyun_presence_penalty"
+      - "aliyun_stop"
+      - "aliyun_tools"
+      - "aliyun_tool_choice_auto"
+
+  aliyun_deepseek_v3_2_openai_compat:
+    label: "Alibaba Cloud Model Studio DeepSeek V3.2 OpenAI-compatible Chat"
+    model_family: deepseek
+    api_form: openai_chat_completions
+    route_profile: aliyun_maas
+    official_sources:
+      - "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions"
+      - "https://help.aliyun.com/zh/model-studio/deepseek-api"
+      - "https://help.aliyun.com/zh/model-studio/text-generation-model"
+    families:
+      - "deepseek"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "aliyun_stream / aliyun_stream_usage" }
+      stream_options.include_usage: { coverage: "aliyun_stream_usage" }
+      max_completion_tokens: { coverage: "aliyun_max_completion_tokens / aliyun_enable_thinking / aliyun_disable_thinking" }
+      enable_thinking: { coverage: "aliyun_enable_thinking / aliyun_disable_thinking" }
+      temperature: { coverage: "aliyun_temperature" }
+      top_p: { coverage: "aliyun_top_p" }
+      stop: { coverage: "aliyun_stop" }
+      tools: { coverage: "aliyun_tools / aliyun_tool_choice_auto" }
+      tool_choice: { coverage: "aliyun_tool_choice_auto" }
+      top_k: { supported: false, coverage: "not supported by the DeepSeek series" }
+      response_format: { supported: false, coverage: "structured output not supported by DeepSeek V3.2" }
+    test_profiles:
+      - "aliyun_stream"
+      - "aliyun_stream_usage"
+      - "aliyun_max_completion_tokens"
+      - "aliyun_enable_thinking"
+      - "aliyun_disable_thinking"
+      - "aliyun_temperature"
+      - "aliyun_top_p"
+      - "aliyun_stop"
+      - "aliyun_tools"
+      - "aliyun_tool_choice_auto"
+
+  aliyun_deepseek_v4_openai_compat:
+    label: "Alibaba Cloud Model Studio DeepSeek V4 OpenAI-compatible Chat"
+    model_family: deepseek
+    api_form: openai_chat_completions
+    route_profile: aliyun_maas
+    official_sources:
+      - "https://help.aliyun.com/zh/model-studio/qwen-api-via-openai-chat-completions"
+      - "https://help.aliyun.com/zh/model-studio/deepseek-api"
+      - "https://help.aliyun.com/zh/model-studio/text-generation-model"
+    families:
+      - "deepseek"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      stream: { coverage: "aliyun_stream / aliyun_stream_usage" }
+      stream_options.include_usage: { coverage: "aliyun_stream_usage" }
+      max_completion_tokens: { coverage: "aliyun_max_completion_tokens / aliyun_enable_thinking / aliyun_disable_thinking / aliyun_reasoning_high / aliyun_reasoning_max" }
+      enable_thinking: { coverage: "aliyun_enable_thinking / aliyun_disable_thinking" }
+      reasoning_effort: { coverage: "aliyun_reasoning_high / aliyun_reasoning_max; official high|max" }
+      temperature: { coverage: "aliyun_temperature" }
+      top_p: { coverage: "aliyun_top_p" }
+      stop: { coverage: "aliyun_stop" }
+      tools: { coverage: "aliyun_tools / aliyun_tool_choice_auto" }
+      tool_choice: { coverage: "aliyun_tool_choice_auto" }
+      top_k: { supported: false, coverage: "not supported by the DeepSeek series" }
+      response_format: { coverage: "aliyun_json_object; structured output supported by DeepSeek V4" }
+    test_profiles:
+      - "aliyun_stream"
+      - "aliyun_stream_usage"
+      - "aliyun_max_completion_tokens"
+      - "aliyun_enable_thinking"
+      - "aliyun_disable_thinking"
+      - "aliyun_reasoning_high"
+      - "aliyun_reasoning_max"
+      - "aliyun_temperature"
+      - "aliyun_top_p"
+      - "aliyun_stop"
+      - "aliyun_json_object"
+      - "aliyun_tools"
+      - "aliyun_tool_choice_auto"
+
+  gemini_openai_compat:
+    label: "Gemini OpenAI-compatible Chat Completions"
+    model_family: gemini
+    api_form: openai_chat_completions
+    route_profile: google_ai_studio
+    official_sources:
+      - "https://ai.google.dev/gemini-api/docs/openai"
+      - "https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash"
+      - "https://ai.google.dev/gemini-api/docs/latest-model"
+      - "https://ai.google.dev/gemini-api/docs/thinking"
+      - "https://ai.google.dev/api/generate-content"
+      - "https://ai.google.dev/gemini-api/docs/safety-settings"
+    default_for_families:
+      - "gemini"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      reasoning_effort: { coverage: "gemini_reasoning_minimal / gemini_reasoning_low / gemini_reasoning_medium / gemini_reasoning_high; maps to Gemini 3 thinkingLevel" }
+      max_tokens: { coverage: "gemini_max_tokens; semantic equivalent of generationConfig.maxOutputTokens" }
+      response_format: { coverage: "json_output" }
+      stop: { coverage: "stop_sequences; semantic equivalent of generationConfig.stopSequences" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "sampling_non_thinking; semantic equivalent of generationConfig.temperature" }
+      top_p: { coverage: "sampling_non_thinking; semantic equivalent of generationConfig.topP" }
+      n: { coverage: "gemini_n; n=2 response-count probe; unsupported by Gemini 3.6 model profile" }
+      service_tier: { coverage: "gemini_service_tier" }
+      tools: { coverage: "gemini_tools" }
+      tool_choice: { coverage: "gemini_tool_choice_auto; official OpenAI-compatible example value: auto" }
+      safetySettings: { coverage: "gemini_chat_safety_settings; chat top-level extension" }
+      extra_body.google.thinking_config: { coverage: "gemini_thinking_config; Gemini-specific chat extension" }
+      extra_body.google.cached_content: { coverage: "gemini_cached_content" }
+      generationConfig.candidateCount: { coverage: "gemini_chat_candidate_count; candidateCount=2 response-count probe; unsupported by Gemini 3.6 model profile" }
+      generationConfig.maxOutputTokens: { coverage: "gemini_chat_max_output_tokens; chat alias probe for max_tokens" }
+      generationConfig.stopSequences: { coverage: "gemini_chat_stop_sequences; chat alias probe for stop" }
+      generationConfig.temperature: { coverage: "gemini_chat_temperature; chat alias probe for temperature" }
+      generationConfig.topP: { coverage: "gemini_chat_top_p; chat alias probe for top_p" }
+      generationConfig.topK: { coverage: "gemini_chat_top_k; chat top-level extension" }
+      generationConfig.seed: { coverage: "gemini_chat_seed; chat top-level extension" }
+      generationConfig.presencePenalty: { coverage: "gemini_chat_presence_penalty; chat top-level extension" }
+      generationConfig.frequencyPenalty: { coverage: "gemini_chat_frequency_penalty; chat top-level extension" }
+      generationConfig.responseMimeType: { coverage: "gemini_chat_response_mime_type; chat top-level extension" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "gemini_reasoning_minimal"
+      - "gemini_reasoning_low"
+      - "gemini_reasoning_medium"
+      - "gemini_reasoning_high"
+      - "gemini_thinking_config"
+      - "gemini_max_tokens"
+      - "sampling_non_thinking"
+      - "json_output"
+      - "stop_sequences"
+      - "gemini_n"
+      - "gemini_service_tier"
+      - "gemini_tools"
+      - "gemini_tool_choice_auto"
+      - "gemini_chat_safety_settings"
+      - "gemini_cached_content"
+      - "gemini_chat_candidate_count"
+      - "gemini_chat_max_output_tokens"
+      - "gemini_chat_stop_sequences"
+      - "gemini_chat_temperature"
+      - "gemini_chat_top_p"
+      - "gemini_chat_top_k"
+      - "gemini_chat_seed"
+      - "gemini_chat_presence_penalty"
+      - "gemini_chat_frequency_penalty"
+      - "gemini_chat_response_mime_type"
+
+  gemini_native_generate_content:
+    label: "Gemini Native GenerateContent"
+    model_family: gemini
+    api_form: gemini_generate_content
+    route_profile: google_ai_studio
+    official_sources:
+      - "https://ai.google.dev/api/generate-content"
+      - "https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash"
+      - "https://ai.google.dev/gemini-api/docs/generate-content/latest-model"
+      - "https://ai.google.dev/gemini-api/docs/generate-content/thinking"
+      - "https://ai.google.dev/api/caching"
+      - "https://ai.google.dev/gemini-api/docs/safety-settings"
+    default_for_families:
+      - "gemini"
+    params:
+      contents: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection and endpoint path" }
+      tools: { coverage: "gemini_native_tools" }
+      toolConfig: { coverage: "gemini_native_tool_config" }
+      systemInstruction: { coverage: "gemini_native_system_instruction" }
+      cachedContent: { coverage: "gemini_native_cached_content" }
+      serviceTier: { coverage: "gemini_native_service_tier" }
+      store: { coverage: "gemini_native_store" }
+      safetySettings: { coverage: "gemini_native_safety_settings / gemini_native_safety_block_none_nsfw; BLOCK_NONE NSFW probe" }
+      generationConfig.stopSequences: { coverage: "gemini_native_stop_sequences" }
+      generationConfig.responseMimeType: { coverage: "gemini_native_response_mime_type" }
+      generationConfig.responseSchema: { coverage: "gemini_native_response_schema" }
+      generationConfig.responseJsonSchema: { coverage: "gemini_native_response_json_schema" }
+      generationConfig.responseModalities: { coverage: "gemini_native_response_modalities" }
+      generationConfig.candidateCount: { coverage: "gemini_native_candidate_count; candidateCount=2 response-count probe; unsupported by Gemini 3.6 model profile" }
+      generationConfig.maxOutputTokens: { coverage: "gemini_native_max_output_tokens" }
+      generationConfig.temperature: { coverage: "gemini_native_temperature" }
+      generationConfig.topP: { coverage: "gemini_native_top_p" }
+      generationConfig.topK: { coverage: "gemini_native_top_k" }
+      generationConfig.seed: { coverage: "gemini_native_seed" }
+      generationConfig.presencePenalty: { coverage: "gemini_native_presence_penalty" }
+      generationConfig.frequencyPenalty: { coverage: "gemini_native_frequency_penalty" }
+      generationConfig.responseLogprobs: { coverage: "gemini_native_logprobs" }
+      generationConfig.logprobs: { coverage: "gemini_native_logprobs" }
+      generationConfig.enableEnhancedCivicAnswers: { coverage: "gemini_native_civic_answers" }
+      generationConfig.thinkingConfig: { coverage: "gemini_native_thinking_minimal / gemini_native_thinking_low / gemini_native_thinking_medium / gemini_native_thinking_high" }
+      response.candidates[].content.parts[].thought: { coverage: "gemini_native_thinking_medium / gemini_native_thinking_high; thought summary response semantics" }
+      generationConfig.mediaResolution: { coverage: "gemini_native_media_resolution" }
+      generationConfig.responseFormat: { coverage: "gemini_native_response_format" }
+    test_profiles:
+      - "gemini_native_tools"
+      - "gemini_native_tool_config"
+      - "gemini_native_system_instruction"
+      - "gemini_native_cached_content"
+      - "gemini_native_service_tier"
+      - "gemini_native_store"
+      - "gemini_native_safety_settings"
+      - "gemini_native_safety_block_none_nsfw"
+      - "gemini_native_stop_sequences"
+      - "gemini_native_response_mime_type"
+      - "gemini_native_response_schema"
+      - "gemini_native_response_json_schema"
+      - "gemini_native_response_modalities"
+      - "gemini_native_candidate_count"
+      - "gemini_native_max_output_tokens"
+      - "gemini_native_temperature"
+      - "gemini_native_top_p"
+      - "gemini_native_top_k"
+      - "gemini_native_seed"
+      - "gemini_native_presence_penalty"
+      - "gemini_native_frequency_penalty"
+      - "gemini_native_logprobs"
+      - "gemini_native_civic_answers"
+      - "gemini_native_thinking_minimal"
+      - "gemini_native_thinking_low"
+      - "gemini_native_thinking_medium"
+      - "gemini_native_thinking_high"
+      - "gemini_native_media_resolution"
+      - "gemini_native_response_format"
+
+  # Vertex vs AI Studio fingerprint suite. Select this reference to judge whether
+  # a reseller/gateway Gemini channel is backed by Vertex AI.
+  # Pass pattern: usageMetadata.trafficType present; labels accepted; body
+  # serviceTier does not surface as AI Studio serviceTier.
+  gemini_vertex_generate_content:
+    label: "Gemini Vertex GenerateContent (source fingerprint)"
+    model_family: gemini
+    api_form: gemini_generate_content
+    route_profile: google_vertex
+    official_sources:
+      - "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/model-reference/inference"
+      - "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/add-labels-to-api-calls"
+      - "https://docs.cloud.google.com/vertex-ai/generative-ai/docs/priority-paygo"
+      - "https://ai.google.dev/gemini-api/docs/migrate-to-cloud"
+    families:
+      - "gemini"
+    params:
+      contents: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection and endpoint path" }
+      usageMetadata.trafficType: { coverage: "gemini_vertex_traffic_type; Vertex response fingerprint (AI Studio uses serviceTier instead)" }
+      labels: { coverage: "gemini_vertex_labels; Vertex-only billing/metadata field" }
+      serviceTier: { coverage: "gemini_vertex_service_tier_body; body field is AI Studio; Vertex ignores or rejects — expect trafficType, not serviceTier" }
+      header.X-Vertex-AI-LLM-Request-Type: { coverage: "gemini_vertex_request_type_header; Vertex PayGo routing header" }
+      header.X-Vertex-AI-LLM-Shared-Request-Type: { coverage: "gemini_vertex_shared_request_type_header; Vertex Flex/Priority PayGo header" }
+    test_profiles:
+      - "gemini_vertex_traffic_type"
+      - "gemini_vertex_labels"
+      - "gemini_vertex_service_tier_body"
+      - "gemini_vertex_request_type_header"
+      - "gemini_vertex_shared_request_type_header"
+
+  claude_native_messages: &claude_native_messages_contract
+    label: "Claude Native Messages API"
+    model_family: claude
+    api_form: anthropic_messages
+    route_profile: vendor_direct
+    official_sources:
+      - "https://platform.claude.com/docs/en/api/messages"
+      - "https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking"
+      - "https://platform.claude.com/docs/en/build-with-claude/effort"
+      - "https://platform.claude.com/docs/en/about-claude/models/whats-new-sonnet-5"
+    families:
+      - "claude"
+    default_for_families:
+      - "claude"
+    params:
+      model: { required: true, coverage: "provider/model selection" }
+      messages: { required: true, coverage: "all profiles; user/assistant only" }
+      system: { coverage: "claude_native_system" }
+      max_tokens: { required: true, coverage: "claude_native_max_tokens" }
+      stream: { coverage: "claude_native_stream" }
+      stop_sequences: { coverage: "claude_native_stop_sequences" }
+      temperature: { coverage: "claude_native_temperature; 0..1" }
+      top_p: { coverage: "claude_native_top_p" }
+      tools: { coverage: "claude_native_tools / claude_native_tool_choice_auto" }
+      tool_choice: { coverage: "claude_native_tool_choice_auto" }
+      thinking.type: { coverage: "claude_native_thinking_adaptive / claude_native_thinking_disabled / claude_native_thinking_budget" }
+      thinking.budget_tokens: { coverage: "claude_native_thinking_budget" }
+      output_config.effort: { coverage: "claude_native_effort_low / claude_native_effort_medium / claude_native_effort_high / claude_native_effort_xhigh / claude_native_effort_max" }
+      metadata: { coverage: "claude_native_metadata" }
+    test_profiles:
+      - "claude_native_max_tokens"
+      - "claude_native_stream"
+      - "claude_native_system"
+      - "claude_native_temperature"
+      - "claude_native_top_p"
+      - "claude_native_stop_sequences"
+      - "claude_native_tools"
+      - "claude_native_tool_choice_auto"
+      - "claude_native_thinking_adaptive"
+      - "claude_native_thinking_disabled"
+      - "claude_native_thinking_budget"
+      - "claude_native_effort_low"
+      - "claude_native_effort_medium"
+      - "claude_native_effort_high"
+      - "claude_native_effort_xhigh"
+      - "claude_native_effort_max"
+      - "claude_native_metadata"
+
+  # Claude Fable / Fable-5 style models reject top_p, thinking.disabled, and
+  # thinking.enabled+budget_tokens. Use adaptive thinking + output_config.effort.
+  claude_fable_native_messages: &claude_fable_native_messages_contract
+    label: "Claude Fable Native Messages API"
+    model_family: claude_fable
+    api_form: anthropic_messages
+    route_profile: vendor_direct
+    official_sources:
+      - "https://platform.claude.com/docs/en/api/messages"
+      - "https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking"
+      - "https://platform.claude.com/docs/en/build-with-claude/effort"
+    families:
+      - "claude_fable"
+    default_for_families:
+      - "claude_fable"
+    params:
+      model: { required: true, coverage: "provider/model selection" }
+      messages: { required: true, coverage: "all profiles; user/assistant only" }
+      system: { coverage: "claude_native_system" }
+      max_tokens: { required: true, coverage: "claude_native_max_tokens" }
+      stream: { coverage: "claude_native_stream" }
+      stop_sequences: { coverage: "claude_native_stop_sequences" }
+      temperature: { coverage: "claude_native_temperature; 0..1" }
+      top_p: { coverage: "not tested; deprecated on Claude Fable" }
+      tools: { coverage: "claude_native_tools / claude_native_tool_choice_auto" }
+      tool_choice: { coverage: "claude_native_tool_choice_auto" }
+      thinking.type: { coverage: "claude_native_thinking_adaptive / claude_fable_thinking_effort_low / claude_fable_thinking_effort_medium / claude_fable_thinking_effort_high; adaptive only" }
+      thinking.budget_tokens: { coverage: "not tested; enabled+budget_tokens unsupported on Claude Fable" }
+      output_config.effort: { coverage: "claude_fable_thinking_effort_low / claude_fable_thinking_effort_medium / claude_fable_thinking_effort_high" }
+      metadata: { coverage: "claude_native_metadata" }
+    test_profiles:
+      - "claude_native_max_tokens"
+      - "claude_native_stream"
+      - "claude_native_system"
+      - "claude_native_temperature"
+      - "claude_native_stop_sequences"
+      - "claude_native_tools"
+      - "claude_native_tool_choice_auto"
+      - "claude_native_thinking_adaptive"
+      - "claude_fable_thinking_effort_low"
+      - "claude_fable_thinking_effort_medium"
+      - "claude_fable_thinking_effort_high"
+      - "claude_native_metadata"
+
+  claude_openai_compat:
+    label: "Claude OpenAI-compatible Chat Completions"
+    model_family: claude
+    api_form: openai_chat_completions
+    route_profile: vendor_compat
+    official_sources:
+      - "https://platform.claude.com/docs/en/api/openai-sdk"
+      - "https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking"
+      - "https://platform.claude.com/docs/en/build-with-claude/effort"
+    families:
+      - "claude"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      max_tokens: { coverage: "claude_max_tokens" }
+      max_completion_tokens: { coverage: "claude_max_tokens; accepted alias when gateway maps it" }
+      stop: { coverage: "stop_sequences" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "claude_sampling; keep near defaults for Opus 4.7+" }
+      top_p: { coverage: "claude_sampling; keep near defaults for Opus 4.7+" }
+      tools: { coverage: "claude_tools / claude_parallel_tool_calls" }
+      tool_choice: { coverage: "claude_tool_choice_auto / claude_parallel_tool_calls; official value: auto" }
+      parallel_tool_calls: { coverage: "claude_parallel_tool_calls" }
+      thinking.type: { coverage: "claude_thinking_adaptive / claude_thinking_budget; adaptive for 4.6+; enabled+budget_tokens for Opus 4.5" }
+      thinking.budget_tokens: { coverage: "claude_thinking_budget; Opus 4.5-style manual thinking" }
+      extra_body.thinking: { coverage: "claude_thinking_disabled; gateway/extra_body probe for disabled thinking" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "claude_max_tokens"
+      - "claude_sampling"
+      - "stop_sequences"
+      - "claude_tools"
+      - "claude_tool_choice_auto"
+      - "claude_parallel_tool_calls"
+      - "claude_thinking_adaptive"
+      - "claude_thinking_disabled"
+      - "claude_thinking_budget"
+
+  claude_fable_openai_compat:
+    label: "Claude Fable OpenAI-compatible Chat Completions"
+    model_family: claude_fable
+    api_form: openai_chat_completions
+    route_profile: vendor_compat
+    evidence: provider_compatibility_contract
+    official_sources:
+      - "https://platform.claude.com/docs/en/api/openai-sdk"
+    families:
+      - "claude_fable"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      max_tokens: { coverage: "claude_max_tokens" }
+      max_completion_tokens: { coverage: "claude_max_tokens; accepted alias when gateway maps it" }
+      stop: { coverage: "stop_sequences" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "claude_sampling" }
+      top_p: { coverage: "claude_sampling" }
+      tools: { coverage: "claude_tools" }
+      tool_choice: { coverage: "claude_tool_choice_auto" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "claude_max_tokens"
+      - "claude_sampling"
+      - "stop_sequences"
+      - "claude_tools"
+      - "claude_tool_choice_auto"
+
+  claude_cloud_adapter_messages:
+    <<: *claude_native_messages_contract
+    label: "Claude Messages through a cloud adapter"
+    route_profile: cloud_adapter
+    evidence: provider_compatibility_contract
+
+  claude_fable_cloud_adapter_messages:
+    <<: *claude_fable_native_messages_contract
+    label: "Claude Fable Messages through a cloud adapter"
+    route_profile: cloud_adapter
+    evidence: provider_compatibility_contract
+
+  deepseek_chat:
+    label: "DeepSeek Chat Completions"
+    model_family: deepseek
+    api_form: openai_chat_completions
+    route_profile: vendor_direct
+    official_sources:
+      - "https://api-docs.deepseek.com/api/create-chat-completion"
+      - "https://api-docs.deepseek.com/guides/thinking_mode"
+    default_for_families:
+      - "deepseek"
+    params:
+      messages: { required: true, coverage: "all profiles" }
+      model: { required: true, coverage: "provider/model selection" }
+      thinking: { coverage: "thinking_low / thinking_enabled / thinking_disabled / tool_calls_thinking" }
+      reasoning_effort: { coverage: "thinking_low / thinking_enabled / thinking_max; V4 Flash supports low/high/max" }
+      max_tokens: { coverage: "deepseek_max_tokens" }
+      response_format: { coverage: "json_output" }
+      stop: { coverage: "stop_sequences" }
+      stream: { coverage: "basic_stream / stream_with_usage" }
+      stream_options.include_usage: { coverage: "stream_with_usage" }
+      temperature: { coverage: "sampling_non_thinking" }
+      top_p: { coverage: "sampling_non_thinking" }
+      tools: { coverage: "tool_calls / tool_calls_thinking" }
+      tool_choice: { coverage: "tool_choice_required; official values include auto/none/required/named function" }
+      tools[].function.strict: { coverage: "deepseek_tool_strict; beta strict-mode tool schema" }
+      logprobs: { coverage: "logprobs" }
+      top_logprobs: { coverage: "logprobs" }
+      user_id: { coverage: "deepseek_user_id" }
+      messages[].prefix: { coverage: "beta_endpoint_only; requires https://api.deepseek.com/beta" }
+      messages[].reasoning_content: { coverage: "beta_endpoint_only; used with prefix completion in thinking mode" }
+      response.reasoning_content: { coverage: "thinking_low / thinking_enabled / thinking_max / tool_calls_thinking; must be absent or empty for thinking_disabled" }
+      frequency_penalty: { coverage: "deepseek_frequency_penalty; deprecated_no_effect" }
+      presence_penalty: { coverage: "deepseek_presence_penalty; deprecated_no_effect" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "thinking_low"
+      - "thinking_enabled"
+      - "thinking_max"
+      - "thinking_disabled"
+      - "deepseek_max_tokens"
+      - "deepseek_user_id"
+      - "sampling_non_thinking"
+      - "json_output"
+      - "stop_sequences"
+      - "logprobs"
+      - "tool_calls"
+      - "tool_choice_required"
+      - "deepseek_tool_strict"
+      - "tool_calls_thinking"
+      - "deepseek_frequency_penalty"
+      - "deepseek_presence_penalty"
+
+  # Route-specific wrappers inherit a parameter contract but deliberately
+  # carry their own family/route/form identity.  Aggregator results are adapter
+  # compatibility evidence only and cannot certify the inherited raw contract.
+  deepseek_dynamic_aggregator:
+    extends: deepseek_chat
+    label: "DeepSeek through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  deepseek_xinyunai_v4_flash_0731_openai_compat:
+    extends: deepseek_chat
+    label: "DeepSeek V4 Flash 0731 through XinyunAI Chat Completions"
+    route_profile: dynamic_aggregator
+    official_sources:
+      - "https://api-docs.deepseek.com/updates/"
+      - "https://api-docs.deepseek.com/quick_start/pricing/"
+      - "https://api-docs.deepseek.com/guides/thinking_mode/"
+      - "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731"
+    evidence: provider_live_probe_20260804
+    certification_scope: adapter_only
+    route_stability_required: true
+    params:
+      response_format: { coverage: "deepseek_json_output_256" }
+    test_profiles:
+      - "basic_stream"
+      - "stream_with_usage"
+      - "thinking_low"
+      - "thinking_enabled"
+      - "thinking_max"
+      - "thinking_disabled"
+      - "deepseek_max_tokens"
+      - "deepseek_user_id"
+      - "sampling_non_thinking"
+      - "deepseek_json_output_256"
+      - "stop_sequences"
+      - "logprobs"
+      - "tool_calls"
+      - "tool_choice_required"
+      - "deepseek_tool_strict"
+      - "tool_calls_thinking"
+      - "deepseek_frequency_penalty"
+      - "deepseek_presence_penalty"
+
+  glm_dynamic_aggregator:
+    extends: glm_openai_compat
+    label: "GLM through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  qwen_dynamic_aggregator:
+    extends: qwen_openai_compat
+    label: "Qwen through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  gemini_dynamic_openai_compat:
+    extends: gemini_openai_compat
+    label: "Gemini OpenAI-compatible through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  gemini_dynamic_generate_content:
+    extends: gemini_native_generate_content
+    label: "Gemini GenerateContent through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  claude_dynamic_messages:
+    extends: claude_native_messages
+    label: "Claude Messages through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  claude_fable_dynamic_messages:
+    extends: claude_fable_native_messages
+    label: "Claude Fable Messages through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  claude_aws_bedrock_messages:
+    extends: claude_native_messages
+    label: "Claude Messages through Amazon Bedrock"
+    route_profile: aws_bedrock
+    evidence: official_cloud_route_contract
+    certification_scope: cloud_route_contract
+    official_sources:
+      - "https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html"
+      - "https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages-request-response.html"
+
+  claude_fable_aws_bedrock_messages:
+    extends: claude_fable_native_messages
+    label: "Claude Fable Messages through Amazon Bedrock"
+    route_profile: aws_bedrock
+    evidence: official_cloud_route_contract
+    certification_scope: cloud_route_contract
+    official_sources:
+      - "https://docs.aws.amazon.com/bedrock/latest/userguide/inference-messages-api.html"
+      - "https://docs.aws.amazon.com/bedrock/latest/userguide/model-cards-anthropic.html"
+
+  claude_google_vertex_messages:
+    extends: claude_native_messages
+    label: "Claude Messages through Google Vertex AI"
+    route_profile: google_vertex
+    evidence: official_cloud_route_contract
+    certification_scope: cloud_route_contract
+    official_sources:
+      - "https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude"
+      - "https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/use-claude"
+
+  claude_fable_google_vertex_messages:
+    extends: claude_fable_native_messages
+    label: "Claude Fable Messages through Google Vertex AI"
+    route_profile: google_vertex
+    evidence: official_cloud_route_contract
+    certification_scope: cloud_route_contract
+    official_sources:
+      - "https://cloud.google.com/vertex-ai/generative-ai/docs/partner-models/use-claude"
+
+  gpt_dynamic_chat_base:
+    extends: openai_chat_base
+    label: "GPT Chat Completions through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  gpt5_dynamic_chat:
+    extends: openai_gpt5_chat
+    label: "GPT-5.x Chat Completions through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  gpt56_dynamic_chat:
+    extends: openai_gpt56_chat
+    label: "GPT-5.6 Chat Completions through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  gpt_dynamic_responses:
+    extends: openai_responses
+    label: "GPT Responses through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  gpt56_dynamic_responses:
+    extends: openai_gpt56_responses
+    label: "GPT-5.6 Responses through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  kimi_dynamic_aggregator:
+    extends: kimi_openai_compat
+    label: "Kimi through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  kimi_k3_dynamic_aggregator:
+    extends: kimi_k3_openai_compat
+    label: "Kimi K3 through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  kimi_k3_openrouter:
+    extends: kimi_k3_openai_compat
+    label: "Kimi K3 through OpenRouter"
+    route_profile: openrouter
+    evidence: openrouter_adapter_contract
+    certification_scope: adapter_only
+    route_stability_required: true
+    official_sources:
+      - "https://openrouter.ai/docs/guides/routing/provider-selection"
+      - "https://openrouter.ai/docs/guides/features/router-metadata"
+
+  minimax_dynamic_aggregator:
+    extends: minimax_openai_compat
+    label: "MiniMax through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  grok_dynamic_chat:
+    extends: grok_chat_completions
+    label: "Grok Chat Completions through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true
+
+  grok_dynamic_responses:
+    extends: grok_responses
+    label: "Grok Responses through an unpinned aggregator"
+    route_profile: dynamic_aggregator
+    evidence: upstream_unverified
+    certification_scope: adapter_only
+    route_stability_required: true

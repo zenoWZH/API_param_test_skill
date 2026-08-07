@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="940" viewBox="0 0 1440 940" role="img" aria-labelledby="title desc">
+  <title id="title">文字参数测试控制台示意图</title>
+  <desc id="desc">展示 Route-first 参数测试设置、Reference 参数、测试矩阵、Token Audit 和 Model Identity Audit。</desc>
+  <defs>
+    <style>
+      .bg{fill:#f7f8fb}.panel{fill:#fff;stroke:#d6dbe3;stroke-width:1.4}.soft{fill:#f9fafb;stroke:#d6dbe3}.blue{fill:#2563eb}.green{fill:#ecfdf3;stroke:#9ad7bc}.amber{fill:#fffaeb;stroke:#fdb022}.red{fill:#fef3f2;stroke:#f2afa8}.t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h1{font:bold 22px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.h2{font:bold 16px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#172033}.small{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans CJK SC",sans-serif;fill:#657188}.white{fill:#fff;font-weight:700}.bold{font-weight:700}.num{fill:#2563eb}.numtext{font:bold 13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;fill:#fff;text-anchor:middle;dominant-baseline:middle}.line{stroke:#d6dbe3;stroke-width:1}.ok{fill:#067647}.warn{fill:#b54708}
+    </style>
+  </defs>
+  <rect class="bg" width="1440" height="940"/>
+  <rect class="panel" x="28" y="22" width="1384" height="896" rx="12"/>
+  <text class="h1" x="54" y="58">文字参数测试</text><text class="small" x="54" y="82">当前 Web Console 字段布局示意</text>
+  <rect class="blue" x="54" y="100" width="240" height="40" rx="6"/><text class="t white" x="113" y="125">文字参数测试</text>
+  <rect class="soft" x="304" y="100" width="200" height="40" rx="6"/><text class="t" x="367" y="125">图片参数</text>
+  <rect class="soft" x="514" y="100" width="160" height="40" rx="6"/><text class="t" x="573" y="125">压测</text>
+  <rect class="soft" x="684" y="100" width="160" height="40" rx="6"/><text class="t" x="730" y="125">Cache</text>
+
+  <rect class="panel" x="54" y="164" width="1332" height="238" rx="8"/>
+  <circle class="num" cx="78" cy="190" r="15"/><text class="numtext" x="78" y="190">1</text><text class="h2" x="104" y="196">文字参数测试 Setup · 严格按 Route-first 顺序选择</text>
+  <g>
+    <text class="small" x="78" y="228">Provider</text><rect class="soft" x="78" y="238" width="238" height="42" rx="6"/><text class="t" x="92" y="264">示例 Provider ▾</text>
+    <text class="small" x="330" y="228">Model</text><rect class="soft" x="330" y="238" width="238" height="42" rx="6"/><text class="t" x="344" y="264">gemini-2.5-pro ▾</text>
+    <text class="small" x="582" y="228">Route Profile</text><rect class="soft" x="582" y="238" width="238" height="42" rx="6"/><text class="t" x="596" y="264">google_vertex ▾</text>
+    <text class="small" x="834" y="228">API Form</text><rect class="soft" x="834" y="238" width="238" height="42" rx="6"/><text class="t" x="848" y="264">gemini_generate_content ▾</text>
+    <text class="small" x="1086" y="228">Reference Source</text><rect class="soft" x="1086" y="238" width="276" height="42" rx="6"/><text class="t" x="1100" y="264">gemini_vertex_generate_content ▾</text>
+  </g>
+  <rect class="green" x="78" y="306" width="170" height="30" rx="15"/><text class="small ok" x="94" y="326">family: gemini</text>
+  <rect class="amber" x="258" y="306" width="228" height="30" rx="15"/><text class="small warn" x="274" y="326">configured route: google_vertex</text>
+  <rect class="soft" x="496" y="306" width="240" height="30" rx="15"/><text class="small" x="512" y="326">observed upstream: n/a</text>
+  <rect class="green" x="746" y="306" width="254" height="30" rx="15"/><text class="small ok" x="762" y="326">model profile: registered</text>
+  <rect class="blue" x="1164" y="304" width="198" height="38" rx="6"/><text class="t white" x="1202" y="328">运行参数测试</text>
+  <text class="small" x="78" y="370">切换 Model 会清空 Route/Form/Source；切换 Route 会清空 Form/Source 和历史结果。</text>
+
+  <rect class="panel" x="54" y="420" width="650" height="212" rx="8"/>
+  <circle class="num" cx="78" cy="446" r="15"/><text class="numtext" x="78" y="446">2</text><text class="h2" x="104" y="452">Reference Parameter Specs</text>
+  <line class="line" x1="78" y1="482" x2="680" y2="482"/><text class="small bold" x="88" y="474">Parameter</text><text class="small bold" x="244" y="474">Official</text><text class="small bold" x="390" y="474">Model expectation</text><text class="small bold" x="556" y="474">Coverage</text>
+  <text class="t" x="88" y="512">labels</text><text class="small" x="244" y="512">Vertex supported</text><text class="small ok" x="390" y="512">supported</text><text class="small" x="556" y="512">profile</text>
+  <line class="line" x1="78" y1="528" x2="680" y2="528"/><text class="t" x="88" y="558">temperature</text><text class="small" x="244" y="558">supported</text><text class="small ok" x="390" y="558">supported</text><text class="small" x="556" y="558">profile</text>
+  <line class="line" x1="78" y1="574" x2="680" y2="574"/><text class="t" x="88" y="604">response schema</text><text class="small" x="244" y="604">supported</text><text class="small warn" x="390" y="604">route-specific</text><text class="small" x="556" y="604">profile</text>
+
+  <rect class="panel" x="718" y="420" width="668" height="212" rx="8"/>
+  <circle class="num" cx="742" cy="446" r="15"/><text class="numtext" x="742" y="446">3</text><text class="h2" x="768" y="452">Model Parameter Test Matrix</text>
+  <line class="line" x1="742" y1="482" x2="1362" y2="482"/><text class="small bold" x="752" y="474">Profile</text><text class="small bold" x="1000" y="474">Run 1</text><text class="small bold" x="1100" y="474">Run 2</text><text class="small bold" x="1200" y="474">Run 3</text><text class="small bold" x="1300" y="474">Verdict</text>
+  <text class="t" x="752" y="512">gemini_vertex_labels</text><text class="small ok" x="1000" y="512">pass</text><text class="small ok" x="1100" y="512">pass</text><text class="small ok" x="1200" y="512">pass</text><text class="small ok bold" x="1300" y="512">PASS</text>
+  <line class="line" x1="742" y1="528" x2="1362" y2="528"/><text class="t" x="752" y="558">native_temperature</text><text class="small ok" x="1000" y="558">pass</text><text class="small ok" x="1100" y="558">pass</text><text class="small ok" x="1200" y="558">pass</text><text class="small ok bold" x="1300" y="558">PASS</text>
+  <line class="line" x1="742" y1="574" x2="1362" y2="574"/><text class="t" x="752" y="604">native_tools</text><text class="small ok" x="1000" y="604">pass</text><text class="small ok" x="1100" y="604">pass</text><text class="small ok" x="1200" y="604">pass</text><text class="small ok bold" x="1300" y="604">PASS</text>
+
+  <rect class="panel" x="54" y="650" width="650" height="208" rx="8"/>
+  <circle class="num" cx="78" cy="676" r="15"/><text class="numtext" x="78" y="676">4</text><text class="h2" x="104" y="682">Token Audit</text>
+  <rect class="amber" x="78" y="704" width="602" height="48" rx="6"/><text class="t bold" x="96" y="726">status: partial · coverage: 0%</text><text class="small" x="96" y="744">usage 算术正常，但没有独立精确 tokenizer 证据</text>
+  <text class="small" x="78" y="782">Input / Output / Thinking / Cached 分开归一化</text>
+  <text class="small" x="78" y="806">Boolean pass=true 不能替代 status 与 coverage</text>
+  <text class="small" x="78" y="830">估算值只显示，不进入准确性门禁</text>
+
+  <rect class="panel" x="718" y="650" width="668" height="208" rx="8"/>
+  <circle class="num" cx="742" cy="676" r="15"/><text class="numtext" x="742" y="676">5</text><text class="h2" x="768" y="682">Model Identity Audit</text>
+  <rect class="green" x="742" y="704" width="620" height="48" rx="6"/><text class="t bold ok" x="760" y="726">requested: gemini-2.5-pro · returned: gemini-2.5-pro</text><text class="small" x="760" y="744">status: match · explicit aliases only</text>
+  <text class="small" x="742" y="782">记录 response model/modelVersion、ID 前缀和 request ID</text>
+  <text class="small" x="742" y="806">configured route 与 observed upstream fingerprint 分开显示</text>
+  <text class="small" x="742" y="830">字段一致仍不能单独证明物理上游</text>
+
+  <text class="small" x="54" y="892">示意数据只用于解释控件和判读顺序，不代表任何 Provider 的实测结论。</text>
+</svg>

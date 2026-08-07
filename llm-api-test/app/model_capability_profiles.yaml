@@ -1,0 +1,1642 @@
+# Route-first capability registry. New writes use v4 only; v3 is read-only migrated.
+# Invariant: modality -> family -> route profile -> API form -> model profile.
+schema_version: 4
+modalities:
+  text:
+    families:
+      deepseek:
+        suite: deepseek_chat
+        evidence: family_contract
+        comparison_reference_source: deepseek_chat
+        pressure_profiles:
+          deepseek_chat:
+          - basic_stream
+          - stream_with_usage
+          - thinking_low
+          - thinking_disabled
+          - deepseek_max_tokens
+          - sampling_non_thinking
+          - json_output
+          - tool_calls
+          deepseek_xinyunai_v4_flash_0731_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - thinking_low
+          - thinking_enabled
+          - thinking_max
+          - thinking_disabled
+          - deepseek_max_tokens
+          - sampling_non_thinking
+          - deepseek_json_output_256
+          - tool_calls
+          aliyun_deepseek_v3_2_openai_compat:
+          - aliyun_stream
+          - aliyun_stream_usage
+          - aliyun_max_completion_tokens
+          - aliyun_disable_thinking
+          - aliyun_temperature
+          - aliyun_tools
+          aliyun_deepseek_v4_openai_compat:
+          - aliyun_stream
+          - aliyun_stream_usage
+          - aliyun_max_completion_tokens
+          - aliyun_disable_thinking
+          - aliyun_reasoning_high
+          - aliyun_temperature
+          - aliyun_json_object
+          - aliyun_tools
+        models:
+          deepseek-v4-flash: {}
+          deepseek-v4-flash-0731: {}
+          deepseek-v4-pro: {}
+          deepseek-v3.2: {}
+          deepseek-v3: {}
+          deepseek-v3.1: {}
+          deepseek-v4-flash-max:
+            evidence: family_contract_unverified
+          deepseek-v4-flash-none:
+            evidence: family_contract_unverified
+          deepseek-v4-pro-none:
+            evidence: family_contract_unverified
+          deepseek:
+            aliases:
+            - deepseek-r1
+        route_profiles:
+          aliyun_maas:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: aliyun_deepseek_v4_openai_compat
+                comparison_reference_source: aliyun_deepseek_v4_openai_compat
+                reference_sources:
+                - aliyun_deepseek_v3_2_openai_compat
+                - aliyun_deepseek_v4_openai_compat
+                model_profiles:
+                  deepseek-v4-flash:
+                    reference_sources:
+                    - aliyun_deepseek_v4_openai_compat
+                  deepseek-v4-pro:
+                    reference_sources:
+                    - aliyun_deepseek_v4_openai_compat
+                  deepseek-v3.2:
+                    reference_sources:
+                    - aliyun_deepseek_v3_2_openai_compat
+                    default_reference_source: aliyun_deepseek_v3_2_openai_compat
+            default_api_form: openai_chat_completions
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: deepseek_chat
+                comparison_reference_source: deepseek_chat
+                reference_sources:
+                - deepseek_chat
+                model_profiles:
+                  deepseek-v4-flash:
+                    reference_sources:
+                    - deepseek_chat
+                  deepseek-v4-pro:
+                    reference_sources:
+                    - deepseek_chat
+                  deepseek-v3.2:
+                    reference_sources:
+                    - deepseek_chat
+                  deepseek-v3: {}
+                  deepseek-v3.1: {}
+                  deepseek-v4-flash-max: {}
+                  deepseek-v4-flash-none: {}
+                  deepseek-v4-pro-none: {}
+                  deepseek: {}
+            default_api_form: openai_chat_completions
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: deepseek_dynamic_aggregator
+                comparison_reference_source: deepseek_dynamic_aggregator
+                reference_sources:
+                - deepseek_dynamic_aggregator
+                - deepseek_xinyunai_v4_flash_0731_openai_compat
+                model_profiles:
+                  deepseek-v4-flash:
+                    reference_sources:
+                    - deepseek_dynamic_aggregator
+                  deepseek-v4-flash-0731:
+                    default_reference_source: deepseek_xinyunai_v4_flash_0731_openai_compat
+                    comparison_reference_source: deepseek_xinyunai_v4_flash_0731_openai_compat
+                    reference_sources:
+                    - deepseek_xinyunai_v4_flash_0731_openai_compat
+                  deepseek-v4-pro: {}
+                  deepseek-v3.2: {}
+                  deepseek-v3: {}
+                  deepseek-v3.1: {}
+                  deepseek-v4-flash-max: {}
+                  deepseek-v4-flash-none: {}
+                  deepseek-v4-pro-none: {}
+                  deepseek: {}
+            default_api_form: openai_chat_completions
+      glm:
+        suite: glm_openai_compat
+        evidence: family_contract
+        comparison_reference_source: glm_openai_compat
+        pressure_profiles:
+          glm_openai_compat:
+          - basic_stream
+          - glm_thinking_disabled
+          - glm_reasoning_max
+          - glm_temperature
+          - glm_max_tokens
+          - json_output
+          - glm_tools
+          - glm_tool_calls_thinking
+          aliyun_glm5_openai_compat:
+          - aliyun_stream
+          - aliyun_stream_usage
+          - aliyun_max_completion_tokens
+          - aliyun_disable_thinking
+          - aliyun_reasoning_high
+          - aliyun_temperature
+          - aliyun_json_object
+          - aliyun_tools
+        models:
+          glm-5:
+            aliases:
+            - GLM5
+            - glm-5.0
+            expectations:
+              glm_reasoning_max: unsupported
+              glm_tool_calls_thinking: unsupported
+          glm-5.0:
+            aliases:
+            - glm-5
+            expectations:
+              glm_reasoning_max: unsupported
+              glm_tool_calls_thinking: unsupported
+          glm-5.1:
+            expectations:
+              glm_reasoning_max: unsupported
+              glm_tool_calls_thinking: unsupported
+          glm-5.2:
+            aliases:
+            - GLM5.2
+            - z-ai/glm-5.2
+            evidence: official_glm_5_2_contract
+          glm-4.5:
+            parameter_expectations:
+              reasoning_effort: unsupported
+          glm-4.6:
+            parameter_expectations:
+              reasoning_effort: unsupported
+          glm-4.7:
+            parameter_expectations:
+              reasoning_effort: unsupported
+          z-ai/glm-5.1:
+            aliases:
+            - z-ai/glm-5.1
+            expectations:
+              glm_reasoning_max: unsupported
+              glm_tool_calls_thinking: unsupported
+        route_profiles:
+          aliyun_maas:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: aliyun_glm5_openai_compat
+                comparison_reference_source: aliyun_glm5_openai_compat
+                reference_sources:
+                - aliyun_glm5_openai_compat
+                model_profiles:
+                  glm-5: {}
+                  glm-5.0: {}
+                  glm-5.1: {}
+                  glm-5.2: {}
+            default_api_form: openai_chat_completions
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: glm_openai_compat
+                comparison_reference_source: glm_openai_compat
+                reference_sources:
+                - glm_openai_compat
+                model_profiles:
+                  glm-5: {}
+                  glm-5.0: {}
+                  glm-5.1: {}
+                  glm-5.2: {}
+                  glm-4.5:
+                    reference_sources:
+                    - glm_openai_compat
+                  glm-4.6:
+                    reference_sources:
+                    - glm_openai_compat
+                  glm-4.7:
+                    reference_sources:
+                    - glm_openai_compat
+                  z-ai/glm-5.1:
+                    reference_sources:
+                    - glm_openai_compat
+            default_api_form: openai_chat_completions
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: glm_dynamic_aggregator
+                comparison_reference_source: glm_dynamic_aggregator
+                reference_sources:
+                - glm_dynamic_aggregator
+                model_profiles:
+                  glm-5: {}
+                  glm-5.0: {}
+                  glm-5.1: {}
+                  glm-5.2: {}
+                  glm-4.5: {}
+                  glm-4.6: {}
+                  glm-4.7: {}
+                  z-ai/glm-5.1: {}
+            default_api_form: openai_chat_completions
+      qwen:
+        suite: qwen_openai_compat
+        evidence: family_contract
+        comparison_reference_source: qwen_openai_compat
+        pressure_profiles:
+          qwen_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - qwen_thinking_disabled
+          - qwen_thinking_enabled
+          - qwen_thinking_budget
+          - qwen_max_tokens
+          - qwen_temperature
+          - qwen_response_format
+          - qwen_tools
+        models:
+          qwen3.7-max:
+            aliases:
+            - qwen3.7max
+            - qwen3.7-max-2026-06-08
+            evidence: official_qwen_3_7_max_contract
+          qwen3.7-plus: {}
+          qwen3.6-plus: {}
+          qwen3.5-plus:
+            expectations:
+              qwen_preserve_thinking: unsupported
+          qwen3.5-flash:
+            expectations:
+              qwen_preserve_thinking: unsupported
+        route_profiles:
+          aliyun_maas:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: qwen_openai_compat
+                comparison_reference_source: qwen_openai_compat
+                reference_sources:
+                - qwen_openai_compat
+                model_profiles:
+                  qwen3.7-max: {}
+                  qwen3.7-plus: {}
+                  qwen3.6-plus: {}
+                  qwen3.5-plus: {}
+                  qwen3.5-flash: {}
+            default_api_form: openai_chat_completions
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: qwen_dynamic_aggregator
+                comparison_reference_source: qwen_dynamic_aggregator
+                reference_sources:
+                - qwen_dynamic_aggregator
+                model_profiles:
+                  qwen3.7-max: {}
+                  qwen3.7-plus: {}
+                  qwen3.6-plus: {}
+                  qwen3.5-plus: {}
+                  qwen3.5-flash: {}
+            default_api_form: openai_chat_completions
+      gemini:
+        suite: gemini
+        evidence: family_contract
+        comparison_reference_source: gemini_openai_compat
+        pressure_profiles:
+          gemini_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - gemini_max_tokens
+          - gemini_reasoning_medium
+          - gemini_reasoning_high
+          - json_output
+          - gemini_tools
+          - gemini_chat_safety_settings
+          gemini_native_generate_content:
+          - gemini_native_system_instruction
+          - gemini_native_max_output_tokens
+          - gemini_native_thinking_medium
+          - gemini_native_thinking_high
+          - gemini_native_safety_settings
+          - gemini_native_tools
+          gemini_vertex_generate_content:
+          - gemini_vertex_traffic_type
+          - gemini_vertex_labels
+        models:
+          gemini-3.6-flash:
+            evidence: official_gemini_3_6_flash_contract
+            pressure_omit_params:
+            - temperature
+            - top_p
+            - top_k
+            parameter_expectations:
+              n: unsupported
+              generationConfig.candidateCount: unsupported
+            expectations:
+              gemini_n: unsupported
+              gemini_chat_candidate_count: unsupported
+              gemini_native_candidate_count: unsupported
+          gemini-3.5-flash: {}
+          gemini-3.5-flash-lite:
+            evidence: official_latest_gemini_contract
+            pressure_omit_params:
+            - temperature
+            - top_p
+            - top_k
+            parameter_expectations:
+              n: unsupported
+              generationConfig.candidateCount: unsupported
+            expectations:
+              gemini_n: unsupported
+              gemini_chat_candidate_count: unsupported
+              gemini_native_candidate_count: unsupported
+          gemini-3-flash:
+            aliases:
+            - gemini-3-flash-preview
+          gemini-3-pro:
+            aliases:
+            - gemini-3-pro-preview
+            expectations:
+              gemini_native_thinking_minimal: unsupported
+              gemini_native_thinking_medium: unsupported
+          gemini-3.1-pro-preview:
+            aliases:
+            - gemini-3.1-pro-high
+            - gemini-3.1-pro-preview-customtools
+            - gemini-3.1-pro-preview-thinking-128
+            expectations:
+              gemini_native_thinking_minimal: unsupported
+          gemini-3.1-flash: {}
+          gemini-3.1-flash-lite:
+            aliases:
+            - gemini-3.1-flash-lite-preview
+          gemini-2.5-flash:
+            aliases:
+            - gemini-2.5-flash-nothinking
+            expectations:
+              gemini_native_thinking_minimal: unsupported
+              gemini_native_thinking_low: unsupported
+              gemini_native_thinking_medium: unsupported
+              gemini_native_thinking_high: unsupported
+          gemini-2.5-pro:
+            aliases:
+            - gemini-2.5-pro-thinking-128
+            expectations:
+              gemini_native_thinking_minimal: unsupported
+              gemini_native_thinking_low: unsupported
+              gemini_native_thinking_medium: unsupported
+              gemini_native_thinking_high: unsupported
+          gemini-2.5-flash-lite:
+            expectations:
+              gemini_native_thinking_minimal: unsupported
+              gemini_native_thinking_low: unsupported
+              gemini_native_thinking_medium: unsupported
+              gemini_native_thinking_high: unsupported
+          gemini-3-flash-thinking-128:
+            evidence: family_contract_unverified
+        route_profiles:
+          google_ai_studio:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: gemini_openai_compat
+                comparison_reference_source: gemini_openai_compat
+                reference_sources:
+                - gemini_openai_compat
+                model_profiles:
+                  gemini-3.6-flash: {}
+                  gemini-3.5-flash: {}
+                  gemini-3.5-flash-lite: {}
+                  gemini-3-flash: {}
+                  gemini-3-pro: {}
+                  gemini-3.1-pro-preview: {}
+                  gemini-3.1-flash: {}
+                  gemini-3.1-flash-lite: {}
+                  gemini-2.5-flash: {}
+                  gemini-2.5-pro: {}
+                  gemini-2.5-flash-lite: {}
+                  gemini-3-flash-thinking-128: {}
+              gemini_generate_content:
+                transport: gemini_generate_content
+                default_reference_source: gemini_native_generate_content
+                comparison_reference_source: gemini_native_generate_content
+                reference_sources:
+                - gemini_native_generate_content
+                model_profiles:
+                  gemini-3.6-flash: {}
+                  gemini-3.5-flash: {}
+                  gemini-3.5-flash-lite: {}
+                  gemini-3-flash: {}
+                  gemini-3-pro: {}
+                  gemini-3.1-pro-preview: {}
+                  gemini-3.1-flash: {}
+                  gemini-3.1-flash-lite: {}
+                  gemini-2.5-flash: {}
+                  gemini-2.5-pro: {}
+                  gemini-2.5-flash-lite: {}
+                  gemini-3-flash-thinking-128: {}
+            default_api_form: openai_chat_completions
+          google_vertex:
+            api_forms:
+              gemini_generate_content:
+                transport: gemini_generate_content
+                default_reference_source: gemini_vertex_generate_content
+                comparison_reference_source: gemini_vertex_generate_content
+                reference_sources:
+                - gemini_vertex_generate_content
+                model_profiles:
+                  gemini-3.6-flash: {}
+                  gemini-3.5-flash: {}
+                  gemini-3.5-flash-lite: {}
+                  gemini-3-flash: {}
+                  gemini-3-pro: {}
+                  gemini-3.1-pro-preview: {}
+                  gemini-3.1-flash: {}
+                  gemini-3.1-flash-lite: {}
+                  gemini-2.5-flash: {}
+                  gemini-2.5-pro: {}
+                  gemini-2.5-flash-lite: {}
+                  gemini-3-flash-thinking-128: {}
+            default_api_form: gemini_generate_content
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: gemini_dynamic_openai_compat
+                comparison_reference_source: gemini_dynamic_openai_compat
+                reference_sources:
+                - gemini_dynamic_openai_compat
+                model_profiles:
+                  gemini-3.6-flash: {}
+                  gemini-3.5-flash: {}
+                  gemini-3.5-flash-lite: {}
+                  gemini-3-flash: {}
+                  gemini-3-pro: {}
+                  gemini-3.1-pro-preview: {}
+                  gemini-3.1-flash: {}
+                  gemini-3.1-flash-lite: {}
+                  gemini-2.5-flash: {}
+                  gemini-2.5-pro: {}
+                  gemini-2.5-flash-lite: {}
+                  gemini-3-flash-thinking-128: {}
+              gemini_generate_content:
+                transport: gemini_generate_content
+                default_reference_source: gemini_dynamic_generate_content
+                comparison_reference_source: gemini_dynamic_generate_content
+                reference_sources:
+                - gemini_dynamic_generate_content
+                model_profiles:
+                  gemini-3.6-flash: {}
+                  gemini-3.5-flash: {}
+                  gemini-3.5-flash-lite: {}
+                  gemini-3-flash: {}
+                  gemini-3-pro: {}
+                  gemini-3.1-pro-preview: {}
+                  gemini-3.1-flash: {}
+                  gemini-3.1-flash-lite: {}
+                  gemini-2.5-flash: {}
+                  gemini-2.5-pro: {}
+                  gemini-2.5-flash-lite: {}
+                  gemini-3-flash-thinking-128: {}
+            default_api_form: openai_chat_completions
+      claude:
+        suite: claude_messages
+        evidence: family_contract
+        comparison_reference_source: claude_native_messages
+        pressure_profiles:
+          claude_native_messages:
+          - claude_native_max_tokens
+          - claude_native_stream
+          - claude_native_system
+          - claude_native_temperature
+          - claude_native_tools
+          claude_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - claude_max_tokens
+          - claude_sampling
+          - claude_tools
+        models:
+          claude-haiku-4-5-20251001: {}
+          claude-opus-4-5-20251101: {}
+          claude-opus-4-6: {}
+          claude-opus-4-7: {}
+          claude-opus-4-8: {}
+          claude-opus-5:
+            evidence: official_claude_5_adaptive_effort_contract
+            pressure_omit_params:
+            - temperature
+            - top_p
+            - top_k
+            parameter_expectations:
+              top_p: unsupported
+              thinking.budget_tokens: unsupported
+            expectations:
+              claude_native_top_p: unsupported
+              claude_native_thinking_budget: unsupported
+            pressure_profiles:
+              claude_native_messages:
+              - claude_native_max_tokens
+              - claude_native_stream
+              - claude_native_system
+              - claude_native_thinking_adaptive
+              - claude_native_effort_medium
+              - claude_native_tools
+              claude_openai_compat:
+              - basic_stream
+              - stream_with_usage
+              - claude_max_tokens
+              - claude_thinking_adaptive
+              - claude_tools
+          claude-sonnet-4-5-20250929: {}
+          claude-sonnet-4-6: {}
+          claude-sonnet-5:
+            evidence: official_claude_5_adaptive_effort_contract
+            pressure_omit_params:
+            - temperature
+            - top_p
+            - top_k
+            parameter_expectations:
+              top_p: unsupported
+              thinking.budget_tokens: unsupported
+            expectations:
+              claude_native_top_p: unsupported
+              claude_native_thinking_budget: unsupported
+            pressure_profiles:
+              claude_native_messages:
+              - claude_native_max_tokens
+              - claude_native_stream
+              - claude_native_system
+              - claude_native_thinking_adaptive
+              - claude_native_effort_medium
+              - claude_native_tools
+              claude_openai_compat:
+              - basic_stream
+              - stream_with_usage
+              - claude_max_tokens
+              - claude_thinking_adaptive
+              - claude_tools
+        route_profiles:
+          cloud_adapter:
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_cloud_adapter_messages
+                comparison_reference_source: claude_cloud_adapter_messages
+                reference_sources:
+                - claude_cloud_adapter_messages
+                model_profiles:
+                  claude-haiku-4-5-20251001: {}
+                  claude-opus-4-5-20251101: {}
+                  claude-opus-4-6: {}
+                  claude-opus-4-7: {}
+                  claude-opus-4-8: {}
+                  claude-opus-5: {}
+                  claude-sonnet-4-5-20250929: {}
+                  claude-sonnet-4-6: {}
+                  claude-sonnet-5: {}
+            default_api_form: anthropic_messages
+          aws_bedrock:
+            evidence: official_cloud_route_contract
+            certification_scope: cloud_route_contract
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_aws_bedrock_messages
+                comparison_reference_source: claude_aws_bedrock_messages
+                reference_sources:
+                - claude_aws_bedrock_messages
+                model_profiles:
+                  claude-haiku-4-5-20251001: {}
+                  claude-opus-4-5-20251101: {}
+                  claude-opus-4-6: {}
+                  claude-opus-4-7: {}
+                  claude-opus-4-8: {}
+                  claude-opus-5: {}
+                  claude-sonnet-4-5-20250929: {}
+                  claude-sonnet-4-6: {}
+                  claude-sonnet-5: {}
+            default_api_form: anthropic_messages
+          google_vertex:
+            evidence: official_cloud_route_contract
+            certification_scope: cloud_route_contract
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_google_vertex_messages
+                comparison_reference_source: claude_google_vertex_messages
+                reference_sources:
+                - claude_google_vertex_messages
+                model_profiles:
+                  claude-haiku-4-5-20251001: {}
+                  claude-opus-4-5-20251101: {}
+                  claude-opus-4-6: {}
+                  claude-opus-4-7: {}
+                  claude-opus-4-8: {}
+                  claude-opus-5: {}
+                  claude-sonnet-4-5-20250929: {}
+                  claude-sonnet-4-6: {}
+                  claude-sonnet-5: {}
+            default_api_form: anthropic_messages
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_dynamic_messages
+                comparison_reference_source: claude_dynamic_messages
+                reference_sources:
+                - claude_dynamic_messages
+                model_profiles:
+                  claude-haiku-4-5-20251001: {}
+                  claude-opus-4-5-20251101: {}
+                  claude-opus-4-6: {}
+                  claude-opus-4-7: {}
+                  claude-opus-4-8: {}
+                  claude-opus-5: {}
+                  claude-sonnet-4-5-20250929: {}
+                  claude-sonnet-4-6: {}
+                  claude-sonnet-5: {}
+            default_api_form: anthropic_messages
+          vendor_direct:
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_native_messages
+                comparison_reference_source: claude_native_messages
+                reference_sources:
+                - claude_native_messages
+                model_profiles:
+                  claude-haiku-4-5-20251001: {}
+                  claude-opus-4-5-20251101: {}
+                  claude-opus-4-6: {}
+                  claude-opus-4-7: {}
+                  claude-opus-4-8: {}
+                  claude-opus-5: {}
+                  claude-sonnet-4-5-20250929: {}
+                  claude-sonnet-4-6: {}
+                  claude-sonnet-5: {}
+            default_api_form: anthropic_messages
+          vendor_compat:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: claude_openai_compat
+                comparison_reference_source: claude_openai_compat
+                reference_sources:
+                - claude_openai_compat
+                model_profiles:
+                  claude-haiku-4-5-20251001: {}
+                  claude-opus-4-5-20251101: {}
+                  claude-opus-4-6: {}
+                  claude-opus-4-7: {}
+                  claude-opus-4-8: {}
+                  claude-opus-5: {}
+                  claude-sonnet-4-5-20250929: {}
+                  claude-sonnet-4-6: {}
+                  claude-sonnet-5: {}
+            default_api_form: openai_chat_completions
+      claude_fable:
+        suite: claude_fable_messages
+        evidence: family_contract
+        comparison_reference_source: claude_fable_native_messages
+        pressure_profiles:
+          claude_fable_native_messages:
+          - claude_native_max_tokens
+          - claude_native_stream
+          - claude_native_system
+          - claude_native_temperature
+          - claude_native_tools
+          - claude_fable_thinking_effort_medium
+          claude_fable_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - claude_max_tokens
+          - claude_sampling
+          - claude_tools
+        models:
+          claude-fable-5:
+            aliases:
+            - fable5
+          claude-opus-5: {}
+        route_profiles:
+          cloud_adapter:
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_fable_cloud_adapter_messages
+                comparison_reference_source: claude_fable_cloud_adapter_messages
+                reference_sources:
+                - claude_fable_cloud_adapter_messages
+                model_profiles:
+                  claude-fable-5: {}
+                  claude-opus-5: {}
+            default_api_form: anthropic_messages
+          aws_bedrock:
+            evidence: official_cloud_route_contract
+            certification_scope: cloud_route_contract
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_fable_aws_bedrock_messages
+                comparison_reference_source: claude_fable_aws_bedrock_messages
+                reference_sources:
+                - claude_fable_aws_bedrock_messages
+                model_profiles:
+                  claude-fable-5: {}
+                  claude-opus-5: {}
+            default_api_form: anthropic_messages
+          google_vertex:
+            evidence: official_cloud_route_contract
+            certification_scope: cloud_route_contract
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_fable_google_vertex_messages
+                comparison_reference_source: claude_fable_google_vertex_messages
+                reference_sources:
+                - claude_fable_google_vertex_messages
+                model_profiles:
+                  claude-fable-5: {}
+                  claude-opus-5: {}
+            default_api_form: anthropic_messages
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_fable_dynamic_messages
+                comparison_reference_source: claude_fable_dynamic_messages
+                reference_sources:
+                - claude_fable_dynamic_messages
+                model_profiles:
+                  claude-fable-5: {}
+                  claude-opus-5: {}
+            default_api_form: anthropic_messages
+          vendor_direct:
+            api_forms:
+              anthropic_messages:
+                transport: claude_messages
+                default_reference_source: claude_fable_native_messages
+                comparison_reference_source: claude_fable_native_messages
+                reference_sources:
+                - claude_fable_native_messages
+                model_profiles:
+                  claude-fable-5: {}
+                  claude-opus-5: {}
+            default_api_form: anthropic_messages
+          vendor_compat:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: claude_fable_openai_compat
+                comparison_reference_source: claude_fable_openai_compat
+                reference_sources:
+                - claude_fable_openai_compat
+                model_profiles:
+                  claude-fable-5: {}
+                  claude-opus-5: {}
+            default_api_form: openai_chat_completions
+      gpt:
+        suite: gpt
+        evidence: family_contract
+        comparison_reference_source: openai_chat_base
+        pressure_profiles:
+          openai_chat_base:
+          - basic_stream
+          - stream_with_usage
+          - sampling_non_thinking
+          - json_output
+          - tool_calls
+          openai_gpt5_chat:
+          - gpt5_chat_stream
+          - gpt5_chat_stream_usage
+          - gpt5_chat_max_completion_tokens
+          - gpt5_chat_reasoning_low
+          - gpt5_chat_json
+          - gpt5_chat_tools
+          openai_responses:
+          - openai_responses_basic
+          - openai_responses_stream
+          - openai_responses_reasoning
+          - openai_responses_json
+          - openai_responses_tools
+        models:
+          gpt-4o: {}
+          gpt-5-mini: {}
+          gpt-5.2: {}
+          gpt-5.2-codex: {}
+          gpt-5.3-codex: {}
+          gpt-5.4:
+            aliases:
+            - gpt-5.4-2026-03-05
+            - gpt-5.4-openai-compact
+          gpt-5.4-mini:
+            aliases:
+            - gpt-5.4-mini-2026-03-17
+          gpt-5.4-nano:
+            aliases:
+            - gpt-5.4-nano-2026-03-17
+          gpt-5.5:
+            aliases:
+            - gpt-5.5-2026-04-23
+            - gpt-5.5-openai-compact
+          gpt-5.6-luna:
+            evidence: family_contract_unverified
+            comparison_reference_source: openai_gpt56_chat
+            parameter_expectations:
+              temperature: unsupported
+              stop: unsupported
+            expectations:
+              gpt5_chat_reject_temperature: unsupported
+              gpt5_chat_reject_stop: unsupported
+          gpt-5.6-sol:
+            evidence: official_gpt_5_6_sol_contract
+            comparison_reference_source: openai_gpt56_chat
+            parameter_expectations:
+              temperature: unsupported
+              stop: unsupported
+            expectations:
+              gpt5_chat_reject_temperature: unsupported
+              gpt5_chat_reject_stop: unsupported
+            pressure_profiles:
+              openai_gpt56_chat:
+              - gpt5_chat_stream
+              - gpt5_chat_stream_usage
+              - gpt5_chat_max_completion_tokens
+              - gpt5_chat_reasoning_none
+              - gpt5_chat_reasoning_low
+              - gpt5_chat_json
+              - gpt5_chat_tools
+              openai_gpt56_responses:
+              - openai_responses_basic
+              - openai_responses_stream
+              - openai_responses_reasoning_low
+              - openai_responses_json
+              - openai_responses_tools
+            pressure_omit_params:
+            - temperature
+            - top_p
+            - stop
+            - thinking
+            pressure_transport_overrides:
+              chat_completions:
+                omit_params:
+                - reasoning
+                - max_output_tokens
+                parameter_aliases:
+                  max_tokens: max_completion_tokens
+                overrides:
+                  reasoning_effort: none
+              openai_responses:
+                omit_params:
+                - reasoning_effort
+                - max_completion_tokens
+                parameter_aliases:
+                  max_tokens: max_output_tokens
+                overrides:
+                  store: false
+                  reasoning:
+                    effort: low
+          gpt-5.6-terra:
+            evidence: family_contract_unverified
+            comparison_reference_source: openai_gpt56_chat
+            parameter_expectations:
+              temperature: unsupported
+              stop: unsupported
+            expectations:
+              gpt5_chat_reject_temperature: unsupported
+              gpt5_chat_reject_stop: unsupported
+          gpt-5.6:
+            evidence: family_contract_unverified
+          gpt-image-2:
+            parameter_test_enabled: false
+            pressure_test_enabled: false
+            disabled_reason: image-only model; use the image modality suite
+        route_profiles:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: openai_chat_base
+                comparison_reference_source: openai_chat_base
+                reference_sources:
+                - openai_chat_base
+                - openai_gpt5_chat
+                - openai_gpt56_chat
+                model_profiles:
+                  gpt-4o:
+                    default_reference_source: openai_chat_base
+                    reference_sources:
+                    - openai_chat_base
+                  gpt-5-mini:
+                    default_reference_source: openai_gpt5_chat
+                    reference_sources:
+                    - openai_gpt5_chat
+                  gpt-5.2:
+                    default_reference_source: openai_gpt5_chat
+                    reference_sources:
+                    - openai_gpt5_chat
+                  gpt-5.4:
+                    default_reference_source: openai_gpt5_chat
+                    reference_sources:
+                    - openai_gpt5_chat
+                  gpt-5.4-mini:
+                    default_reference_source: openai_gpt5_chat
+                    reference_sources:
+                    - openai_gpt5_chat
+                  gpt-5.4-nano:
+                    default_reference_source: openai_gpt5_chat
+                    reference_sources:
+                    - openai_gpt5_chat
+                  gpt-5.5:
+                    default_reference_source: openai_gpt5_chat
+                    reference_sources:
+                    - openai_gpt5_chat
+                  gpt-5.6-luna:
+                    default_reference_source: openai_gpt56_chat
+                    comparison_reference_source: openai_gpt56_chat
+                    reference_sources:
+                    - openai_gpt56_chat
+                  gpt-5.6-sol:
+                    default_reference_source: openai_gpt56_chat
+                    comparison_reference_source: openai_gpt56_chat
+                    reference_sources:
+                    - openai_gpt56_chat
+                  gpt-5.6-terra:
+                    default_reference_source: openai_gpt56_chat
+                    comparison_reference_source: openai_gpt56_chat
+                    reference_sources:
+                    - openai_gpt56_chat
+                  gpt-5.6:
+                    default_reference_source: openai_gpt56_chat
+                    comparison_reference_source: openai_gpt56_chat
+                    reference_sources:
+                    - openai_gpt56_chat
+                  gpt-image-2:
+                    default_reference_source: openai_chat_base
+                    reference_sources:
+                    - openai_chat_base
+                    parameter_test_enabled: false
+                    pressure_test_enabled: false
+                    disabled_reason: image-only model; use the image modality suite
+              openai_responses:
+                transport: openai_responses
+                default_reference_source: openai_responses
+                comparison_reference_source: openai_responses
+                reference_sources:
+                - openai_responses
+                - openai_gpt56_responses
+                model_profiles:
+                  gpt-5.2:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.2-codex:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.3-codex:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.4:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.4-mini:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.4-nano:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.5:
+                    reference_sources:
+                    - openai_responses
+                  gpt-5.6-luna:
+                    default_reference_source: openai_gpt56_responses
+                    comparison_reference_source: openai_gpt56_responses
+                    reference_sources:
+                    - openai_gpt56_responses
+                  gpt-5.6-sol:
+                    default_reference_source: openai_gpt56_responses
+                    comparison_reference_source: openai_gpt56_responses
+                    reference_sources:
+                    - openai_gpt56_responses
+                  gpt-5.6-terra:
+                    default_reference_source: openai_gpt56_responses
+                    comparison_reference_source: openai_gpt56_responses
+                    reference_sources:
+                    - openai_gpt56_responses
+                  gpt-5.6:
+                    default_reference_source: openai_gpt56_responses
+                    comparison_reference_source: openai_gpt56_responses
+                    reference_sources:
+                    - openai_gpt56_responses
+            default_api_form: openai_chat_completions
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: gpt_dynamic_chat_base
+                comparison_reference_source: gpt_dynamic_chat_base
+                reference_sources:
+                - gpt_dynamic_chat_base
+                - gpt5_dynamic_chat
+                - gpt56_dynamic_chat
+                model_profiles:
+                  gpt-4o:
+                    reference_sources: [gpt_dynamic_chat_base]
+                  gpt-5-mini:
+                    default_reference_source: gpt5_dynamic_chat
+                    reference_sources: [gpt5_dynamic_chat]
+                  gpt-5.2:
+                    default_reference_source: gpt5_dynamic_chat
+                    reference_sources: [gpt5_dynamic_chat]
+                  gpt-5.4:
+                    default_reference_source: gpt5_dynamic_chat
+                    reference_sources: [gpt5_dynamic_chat]
+                  gpt-5.4-mini:
+                    default_reference_source: gpt5_dynamic_chat
+                    reference_sources: [gpt5_dynamic_chat]
+                  gpt-5.4-nano:
+                    default_reference_source: gpt5_dynamic_chat
+                    reference_sources: [gpt5_dynamic_chat]
+                  gpt-5.5:
+                    default_reference_source: gpt5_dynamic_chat
+                    reference_sources: [gpt5_dynamic_chat]
+                  gpt-5.6-luna:
+                    default_reference_source: gpt56_dynamic_chat
+                    comparison_reference_source: gpt56_dynamic_chat
+                    reference_sources: [gpt56_dynamic_chat]
+                  gpt-5.6-sol:
+                    default_reference_source: gpt56_dynamic_chat
+                    comparison_reference_source: gpt56_dynamic_chat
+                    reference_sources: [gpt56_dynamic_chat]
+                  gpt-5.6-terra:
+                    default_reference_source: gpt56_dynamic_chat
+                    comparison_reference_source: gpt56_dynamic_chat
+                    reference_sources: [gpt56_dynamic_chat]
+                  gpt-5.6:
+                    default_reference_source: gpt56_dynamic_chat
+                    comparison_reference_source: gpt56_dynamic_chat
+                    reference_sources: [gpt56_dynamic_chat]
+                  gpt-image-2:
+                    reference_sources: [gpt_dynamic_chat_base]
+                    parameter_test_enabled: false
+                    pressure_test_enabled: false
+                    disabled_reason: image-only model; use the image modality suite
+              openai_responses:
+                transport: openai_responses
+                default_reference_source: gpt_dynamic_responses
+                comparison_reference_source: gpt_dynamic_responses
+                reference_sources:
+                - gpt_dynamic_responses
+                - gpt56_dynamic_responses
+                model_profiles:
+                  gpt-5.2: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.2-codex: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.3-codex: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.4: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.4-mini: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.4-nano: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.5: {reference_sources: [gpt_dynamic_responses]}
+                  gpt-5.6-luna:
+                    default_reference_source: gpt56_dynamic_responses
+                    comparison_reference_source: gpt56_dynamic_responses
+                    reference_sources: [gpt56_dynamic_responses]
+                  gpt-5.6-sol:
+                    default_reference_source: gpt56_dynamic_responses
+                    comparison_reference_source: gpt56_dynamic_responses
+                    reference_sources: [gpt56_dynamic_responses]
+                  gpt-5.6-terra:
+                    default_reference_source: gpt56_dynamic_responses
+                    comparison_reference_source: gpt56_dynamic_responses
+                    reference_sources: [gpt56_dynamic_responses]
+                  gpt-5.6:
+                    default_reference_source: gpt56_dynamic_responses
+                    comparison_reference_source: gpt56_dynamic_responses
+                    reference_sources: [gpt56_dynamic_responses]
+            default_api_form: openai_chat_completions
+      kimi:
+        suite: kimi
+        evidence: family_contract_unverified
+        comparison_reference_source: kimi_openai_compat
+        pressure_profiles:
+          kimi_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - sampling_non_thinking
+          - json_output
+          - tool_calls
+          kimi_k3_openai_compat:
+          - kimi_k3_stream
+          - kimi_k3_stream_usage
+          - kimi_k3_reasoning_low
+          - kimi_k3_reasoning_high
+          - kimi_k3_reasoning_max
+          - kimi_k3_prompt_cache_key
+          - kimi_k3_dynamic_tools
+        models:
+          kimi-k2.5:
+            aliases:
+            - Kimi-K2.5
+            evidence: family_contract_unverified
+          kimi-k2.6:
+            evidence: family_contract_unverified
+            parameter_expectations:
+              top_k: unsupported
+              n: unsupported
+              response_format: unsupported
+            pressure_profiles:
+              aliyun_kimi_k2_6_openai_compat:
+              - aliyun_stream
+              - aliyun_stream_usage
+              - aliyun_max_completion_tokens
+              - aliyun_enable_thinking
+              - aliyun_disable_thinking
+              - aliyun_preserve_thinking
+              - aliyun_temperature
+              - aliyun_top_p
+              - aliyun_presence_penalty
+              - aliyun_stop
+              - aliyun_tools
+              - aliyun_tool_choice_auto
+          kimi-k2.7-code:
+            evidence: family_contract_unverified
+            parameter_expectations:
+              top_k: unsupported
+              n: unsupported
+              response_format: unsupported
+            pressure_profiles:
+              aliyun_kimi_k2_7_code_openai_compat:
+              - aliyun_stream
+              - aliyun_stream_usage
+              - aliyun_max_completion_tokens
+              - aliyun_enable_thinking
+              - aliyun_preserve_thinking
+              - aliyun_temperature
+              - aliyun_top_p
+              - aliyun_presence_penalty
+              - aliyun_stop
+              - aliyun_tools
+              - aliyun_tool_choice_auto
+          kimi-k3:
+            aliases:
+            - moonshotai/kimi-k3
+            - Kimi-K3
+            evidence: official_kimi_k3_contract
+            expectations:
+              kimi_k3_reject_temperature: unsupported
+              kimi_k3_reject_top_p: unsupported
+              kimi_k3_reject_presence_penalty: unsupported
+              kimi_k3_reject_frequency_penalty: unsupported
+              kimi_k3_reject_n: unsupported
+            pressure_parameter_aliases:
+              max_tokens: max_completion_tokens
+            pressure_overrides:
+              temperature: 1.0
+              top_p: 0.95
+              reasoning_effort: max
+        route_profiles:
+          aliyun_maas:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: aliyun_kimi_k2_6_openai_compat
+                comparison_reference_source: aliyun_kimi_k2_6_openai_compat
+                reference_sources:
+                - aliyun_kimi_k2_6_openai_compat
+                - aliyun_kimi_k2_7_code_openai_compat
+                model_profiles:
+                  kimi-k2.6:
+                    reference_sources:
+                    - aliyun_kimi_k2_6_openai_compat
+                    default_reference_source: aliyun_kimi_k2_6_openai_compat
+                  kimi-k2.7-code:
+                    reference_sources:
+                    - aliyun_kimi_k2_7_code_openai_compat
+                    default_reference_source: aliyun_kimi_k2_7_code_openai_compat
+            default_api_form: openai_chat_completions
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: kimi_openai_compat
+                comparison_reference_source: kimi_openai_compat
+                reference_sources:
+                - kimi_openai_compat
+                - kimi_k3_openai_compat
+                model_profiles:
+                  kimi-k2.5:
+                    reference_sources:
+                    - kimi_openai_compat
+                  kimi-k2.6:
+                    reference_sources:
+                    - kimi_openai_compat
+                  kimi-k2.7-code:
+                    reference_sources:
+                    - kimi_openai_compat
+                  kimi-k3:
+                    default_reference_source: kimi_k3_openai_compat
+                    comparison_reference_source: kimi_k3_openai_compat
+                    reference_sources:
+                    - kimi_k3_openai_compat
+            default_api_form: openai_chat_completions
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: kimi_dynamic_aggregator
+                comparison_reference_source: kimi_dynamic_aggregator
+                reference_sources:
+                - kimi_dynamic_aggregator
+                - kimi_k3_dynamic_aggregator
+                model_profiles:
+                  kimi-k2.5: {reference_sources: [kimi_dynamic_aggregator]}
+                  kimi-k2.6: {reference_sources: [kimi_dynamic_aggregator]}
+                  kimi-k2.7-code: {reference_sources: [kimi_dynamic_aggregator]}
+                  kimi-k3:
+                    default_reference_source: kimi_k3_dynamic_aggregator
+                    comparison_reference_source: kimi_k3_dynamic_aggregator
+                    reference_sources: [kimi_k3_dynamic_aggregator]
+            default_api_form: openai_chat_completions
+          openrouter:
+            evidence: openrouter_adapter_contract
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: kimi_k3_openrouter
+                comparison_reference_source: kimi_k3_openrouter
+                reference_sources:
+                - kimi_k3_openrouter
+                model_profiles:
+                  kimi-k3:
+                    reference_sources: [kimi_k3_openrouter]
+            default_api_form: openai_chat_completions
+      minimax:
+        suite: minimax
+        evidence: family_contract_unverified
+        comparison_reference_source: minimax_openai_compat
+        pressure_profiles:
+          minimax_openai_compat:
+          - basic_stream
+          - stream_with_usage
+          - sampling_non_thinking
+          - json_output
+          - tool_calls
+        models:
+          minimax-m2.5: {}
+          minimax-m2.7: {}
+          MiniMax-M3: {}
+        route_profiles:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: minimax_openai_compat
+                comparison_reference_source: minimax_openai_compat
+                reference_sources:
+                - minimax_openai_compat
+                model_profiles:
+                  minimax-m2.5: {}
+                  minimax-m2.7: {}
+                  MiniMax-M3: {}
+            default_api_form: openai_chat_completions
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: minimax_dynamic_aggregator
+                comparison_reference_source: minimax_dynamic_aggregator
+                reference_sources:
+                - minimax_dynamic_aggregator
+                model_profiles:
+                  minimax-m2.5: {}
+                  minimax-m2.7: {}
+                  MiniMax-M3: {}
+            default_api_form: openai_chat_completions
+      grok:
+        suite: grok
+        evidence: official_model_contract
+        comparison_reference_source: grok_chat_completions
+        default_expectations:
+          grok_responses_reasoning_effort_none: unsupported
+          grok_reasoning_effort_none: unsupported
+          grok_reject_stop: unsupported
+          grok_reject_presence_penalty: unsupported
+        default_parameter_expectations:
+          stop: unsupported
+          presence_penalty: unsupported
+          frequency_penalty: unsupported
+        pressure_profiles:
+          grok_responses:
+          - grok_responses_basic
+          - grok_responses_stream
+          - grok_responses_reasoning_low
+          - grok_responses_json
+          - grok_responses_tools
+          grok_chat_completions:
+          - grok_stream
+          - grok_stream_usage
+          - grok_max_completion_tokens
+          - grok_reasoning_effort_low
+          - grok_json
+          - grok_tools
+        pressure_omit_params:
+        - stop
+        - presence_penalty
+        - frequency_penalty
+        models:
+          grok-4.5: {}
+          grok-4.3:
+            expectations:
+              grok_responses_reasoning_effort_none: supported
+              grok_reasoning_effort_none: supported
+          grok-4.20-0309-reasoning: {}
+          grok-4.20-0309-non-reasoning:
+            expectations:
+              grok_responses_reasoning_low: unsupported
+              grok_responses_reasoning_medium: unsupported
+              grok_responses_reasoning_high: unsupported
+              grok_reasoning_effort_low: unsupported
+              grok_reasoning_effort_medium: unsupported
+              grok_reasoning_effort_high: unsupported
+              grok_responses_reasoning_effort_none: supported
+              grok_reasoning_effort_none: supported
+              grok_reject_stop: supported
+              grok_reject_presence_penalty: supported
+            parameter_expectations:
+              reasoning.effort: unsupported
+              reasoning_effort: unsupported
+              stop: supported
+              presence_penalty: supported
+              frequency_penalty: supported
+            pressure_omit_params:
+            - reasoning
+            - reasoning_effort
+          grok-4.20-multi-agent-0309:
+            aliases:
+            - grok-4.20-multi-agent
+            expectations:
+              grok_responses_tools: unsupported
+              grok_tools: unsupported
+              grok_responses_reasoning_effort_none: supported
+              grok_reasoning_effort_none: supported
+            parameter_expectations:
+              tools: unsupported
+              tool_choice: unsupported
+            pressure_omit_params:
+            - tools
+            - tool_choice
+        route_profiles:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: grok_chat_completions
+                comparison_reference_source: grok_chat_completions
+                reference_sources:
+                - grok_chat_completions
+                model_profiles:
+                  grok-4.5: {}
+                  grok-4.3: {}
+                  grok-4.20-0309-reasoning: {}
+                  grok-4.20-0309-non-reasoning: {}
+              openai_responses:
+                transport: openai_responses
+                default_reference_source: grok_responses
+                comparison_reference_source: grok_responses
+                reference_sources:
+                - grok_responses
+                model_profiles:
+                  grok-4.5: {}
+                  grok-4.3: {}
+                  grok-4.20-0309-reasoning: {}
+                  grok-4.20-0309-non-reasoning: {}
+                  grok-4.20-multi-agent-0309: {}
+            default_api_form: openai_responses
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_chat_completions:
+                transport: chat_completions
+                default_reference_source: grok_dynamic_chat
+                comparison_reference_source: grok_dynamic_chat
+                reference_sources:
+                - grok_dynamic_chat
+                model_profiles:
+                  grok-4.5: {}
+                  grok-4.3: {}
+                  grok-4.20-0309-reasoning: {}
+                  grok-4.20-0309-non-reasoning: {}
+              openai_responses:
+                transport: openai_responses
+                default_reference_source: grok_dynamic_responses
+                comparison_reference_source: grok_dynamic_responses
+                reference_sources:
+                - grok_dynamic_responses
+                model_profiles:
+                  grok-4.5: {}
+                  grok-4.3: {}
+                  grok-4.20-0309-reasoning: {}
+                  grok-4.20-0309-non-reasoning: {}
+                  grok-4.20-multi-agent-0309: {}
+            default_api_form: openai_responses
+  image:
+    families:
+      gpt-image-2:
+        suite: gpt_image_2
+        evidence: family_contract
+        default_parameter_expectations:
+          prompt: supported
+          size: supported
+          quality: supported
+          output_format: supported
+          output_compression: supported
+          background: supported
+          moderation: supported
+          n: supported
+        default_expectations:
+          reject_non_multiple_of_16: unsupported
+          reject_aspect_ratio_over_3_to_1: unsupported
+          reject_below_minimum_pixels: unsupported
+          reject_edge_over_3840: unsupported
+        models:
+          gpt-image-2:
+            aliases:
+            - gpt-image-2-2026-04-21
+            - gpt-image-2-c
+            - gpt-image-2-req
+            expectations:
+              reject_transparent_background: unsupported
+          gpt-image-1.5:
+            evidence: family_contract_unverified
+          gpt-image-1:
+            evidence: family_contract_unverified
+          gpt-image-1-mini:
+            evidence: family_contract_unverified
+        route_profiles:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+                model_profiles:
+                  gpt-image-2: {}
+                  gpt-image-1.5: {}
+                  gpt-image-1: {}
+                  gpt-image-1-mini: {}
+            default_api_form: openai_images_generations
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+                model_profiles:
+                  gpt-image-2: {}
+                  gpt-image-1.5: {}
+                  gpt-image-1: {}
+                  gpt-image-1-mini: {}
+            default_api_form: openai_images_generations
+      banana:
+        suite: banana
+        evidence: provider_compatibility_contract
+        default_parameter_expectations:
+          prompt: supported
+          size: supported
+          extra_body.google.image_config.aspect_ratio: supported
+          extra_body.google.image_config.image_size: supported
+          response_format.type: supported
+          response_format.mime_type: supported
+          response_format.aspect_ratio: supported
+          response_format.image_size: supported
+        default_expectations:
+          banana_reject_lowercase_1k: unsupported
+          banana_reject_aspect_ratio_7_5: unsupported
+        models:
+          gemini-2.5-flash-image:
+            evidence: legacy_official_model_plus_provider_compatibility
+          gemini-3.1-flash-image:
+            aliases:
+            - gemini-3.1-flash-image-preview
+            evidence: official_gemini_interactions_contract
+          gemini-3-pro-image:
+            evidence: official_model_plus_provider_compatibility
+          nano-banana-pro:
+            evidence: provider_alias_contract
+            aliases:
+            - nano-banana-pro-{resolution_lower}
+            - nano-banana-pro-{resolution}
+            - nano-banana-pro-1k
+            - nano-banana-pro-2k
+            - nano-banana-pro-4k
+        route_profiles:
+          provider_compat:
+            api_forms:
+              openai_chat_completions:
+                transport: chat-completions
+                model_profiles:
+                  gemini-2.5-flash-image: {}
+                  gemini-3.1-flash-image: {}
+                  gemini-3-pro-image: {}
+                  nano-banana-pro: {}
+              gemini_interactions:
+                transport: gemini-interactions
+                model_profiles:
+                  gemini-2.5-flash-image: {}
+                  gemini-3.1-flash-image: {}
+                  gemini-3-pro-image: {}
+                  nano-banana-pro: {}
+            default_api_form: openai_chat_completions
+          google_ai_studio:
+            api_forms:
+              gemini_interactions:
+                transport: gemini-interactions
+                model_profiles:
+                  gemini-2.5-flash-image: {}
+                  gemini-3.1-flash-image: {}
+                  gemini-3-pro-image: {}
+                  nano-banana-pro: {}
+            default_api_form: gemini_interactions
+      grok-imagine:
+        suite: grok_imagine
+        evidence: official_model_contract
+        default_parameter_expectations:
+          prompt: supported
+          aspect_ratio: supported
+          resolution: supported
+          n: supported
+          response_format: supported
+        default_expectations:
+          grok_reject_aspect_ratio_7_5: unsupported
+          grok_reject_resolution_4k: unsupported
+          grok_reject_n11: unsupported
+        models:
+          grok-imagine-image:
+            aliases:
+            - grok-imagine-image-2026-03-02
+          grok-imagine-image-quality: {}
+        route_profiles:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+                model_profiles:
+                  grok-imagine-image: {}
+                  grok-imagine-image-quality: {}
+            default_api_form: openai_images_generations
+          dynamic_aggregator:
+            evidence: upstream_unverified
+            certification_scope: adapter_only
+            route_stability_required: true
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+                model_profiles:
+                  grok-imagine-image: {}
+                  grok-imagine-image-quality: {}
+            default_api_form: openai_images_generations

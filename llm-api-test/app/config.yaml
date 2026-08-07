@@ -1,0 +1,1968 @@
+api:
+  base_url: "https://yibuapi.com/v1"
+  timeout_sec: 300
+
+active_provider: yibu
+
+providers:
+  yibu:
+    label: "YibuAPI"
+    base_url: "https://yibuapi.com/v1"
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+    api_key_env: "YIBU_API_KEY"
+    models:
+      default: "deepseek-v4-pro"
+      candidates:
+        - "deepseek-v4-flash"
+        - "deepseek-v4-pro"
+        - "glm-5.2"
+      families:
+        deepseek-v4-flash: deepseek
+        deepseek-v4-pro: deepseek
+        glm-5.2: glm
+      routes:
+        deepseek-v4-flash:
+          dynamic_aggregator:
+            api_forms:
+              openai_chat_completions: {}
+        deepseek-v4-pro:
+          dynamic_aggregator:
+            api_forms:
+              openai_chat_completions: {}
+        glm-5.2:
+          dynamic_aggregator:
+            api_forms:
+              openai_chat_completions: {}
+      default_routes:
+        deepseek-v4-flash: dynamic_aggregator
+        deepseek-v4-pro: dynamic_aggregator
+        glm-5.2: dynamic_aggregator
+      default_api_forms:
+        deepseek-v4-flash:
+          dynamic_aggregator: openai_chat_completions
+        deepseek-v4-pro:
+          dynamic_aggregator: openai_chat_completions
+        glm-5.2:
+          dynamic_aggregator: openai_chat_completions
+      # Only explicit aliases are trusted by model identity auditing.
+      identity_aliases: {}
+      # Optional per-model exact counters; see README token audit section.
+      token_counters: {}
+  gemini:
+    label: "Google Gemini Direct (needs GEMINI_API_KEY)"
+    base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
+    backend: gemini_ai_studio
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+      gemini_generate_content:
+        base_url: https://generativelanguage.googleapis.com/v1beta
+        path: /models/{model}:generateContent
+        auth: google_api_key
+      gemini_interactions:
+        base_url: https://generativelanguage.googleapis.com
+        path: /v1beta/interactions
+        auth: google_api_key
+    api_key_env: "GEMINI_API_KEY"
+    models:
+      default: "gemini-2.5-flash"
+      candidates:
+        - "gemini-3.5-flash"
+        - "gemini-3-flash-preview"
+        - "gemini-3.1-pro-preview"
+        - "gemini-3.1-pro-preview-customtools"
+        - "gemini-3.1-flash-lite"
+        - "gemini-2.5-flash"
+        - "gemini-2.5-pro"
+        - "gemini-2.5-flash-lite"
+      families:
+        gemini-3.5-flash: gemini
+        gemini-3-flash-preview: gemini
+        gemini-3.1-pro-preview: gemini
+        gemini-3.1-pro-preview-customtools: gemini
+        gemini-3.1-flash-lite: gemini
+        gemini-2.5-flash: gemini
+        gemini-2.5-pro: gemini
+        gemini-2.5-flash-lite: gemini
+      routes:
+        gemini-3.5-flash: &gemini_text_routes
+          google_ai_studio:
+            api_forms:
+              openai_chat_completions: {}
+              gemini_generate_content: {}
+        gemini-3-flash-preview: *gemini_text_routes
+        gemini-3.1-pro-preview: *gemini_text_routes
+        gemini-3.1-pro-preview-customtools: *gemini_text_routes
+        gemini-3.1-flash-lite: *gemini_text_routes
+        gemini-2.5-flash: *gemini_text_routes
+        gemini-2.5-pro: *gemini_text_routes
+        gemini-2.5-flash-lite: *gemini_text_routes
+      default_routes:
+        gemini-3.5-flash: google_ai_studio
+        gemini-3-flash-preview: google_ai_studio
+        gemini-3.1-pro-preview: google_ai_studio
+        gemini-3.1-pro-preview-customtools: google_ai_studio
+        gemini-3.1-flash-lite: google_ai_studio
+        gemini-2.5-flash: google_ai_studio
+        gemini-2.5-pro: google_ai_studio
+        gemini-2.5-flash-lite: google_ai_studio
+      default_api_forms:
+        gemini-3.5-flash: &gemini_text_default_forms
+          google_ai_studio: openai_chat_completions
+        gemini-3-flash-preview: *gemini_text_default_forms
+        gemini-3.1-pro-preview: *gemini_text_default_forms
+        gemini-3.1-pro-preview-customtools: *gemini_text_default_forms
+        gemini-3.1-flash-lite: *gemini_text_default_forms
+        gemini-2.5-flash: *gemini_text_default_forms
+        gemini-2.5-pro: *gemini_text_default_forms
+        gemini-2.5-flash-lite: *gemini_text_default_forms
+      identity_aliases: {}
+      token_counters: {}
+    image:
+      enabled: true
+      default: gemini-3.1-flash-image
+      models:
+        - id: gemini-3.1-flash-image
+          family: banana
+          routes:
+            google_ai_studio:
+              api_forms:
+                gemini_interactions:
+                  transport: gemini-interactions
+          default_route_profile: google_ai_studio
+          default_api_forms:
+            google_ai_studio: gemini_interactions
+
+models:
+  default: "deepseek-v4-pro"
+  candidates: ["deepseek-v4-flash", "deepseek-v4-pro", "glm-5.2"]
+
+prompts:
+  short: "用一句话介绍你自己。"
+  medium: "列出 3 个 Python 性能优化技巧，每条不超过 20 字。"
+  streaming_latency_api: "请用约一百个汉字说明如何观测流式大模型 API 的性能，分成四个长度相近的要点，不要使用表格。"
+  streaming_latency_load: "请用约一百个汉字说明如何定位大模型 API 的压测瓶颈，分成四个长度相近的要点，不要使用表格。"
+  streaming_latency_cache: "请用约一百个汉字说明如何评估大模型上下文缓存效果，分成四个长度相近的要点，不要使用表格。"
+
+param_test_inputs:
+  general:
+    - id: intro
+      prompt: "用一句话介绍你自己。"
+    - id: python_perf
+      prompt: "列出 3 个 Python 性能优化技巧，每条不超过 20 字。"
+    - id: api_loadtest
+      prompt: "用两句话解释 API 压测为什么要区分业务请求和控制请求。"
+    - id: streaming_checks
+      prompt: "列出流式响应兼容性测试中最重要的三个检查点。"
+    - id: cache_metric
+      prompt: "用一句话说明上下文缓存命中率应该如何解读。"
+  reasoning:
+    - id: decimal_compare
+      prompt: "请先分析再回答：9.11 和 9.8 哪个更大？说明小数位对齐过程。"
+    - id: arithmetic_chain
+      prompt: "请逐步计算并核验：(17 × 23) - (19 × 11) 的结果。"
+    - id: logic_order
+      prompt: "甲比乙早到，丙比甲晚到但比乙早到。请分析三人的到达顺序。"
+  json_output:
+    - id: json_python_perf
+      prompt: "请只返回一个合法 JSON object，不要输出 Markdown。JSON 需要包含字段 summary 和 items。主题：总结 Python 性能优化的三个方向。"
+    - id: json_api_latency
+      prompt: "请只返回 JSON object，字段包含 summary 和 items。主题：总结 API 延迟优化的三个要点。"
+    - id: json_cache
+      prompt: "请输出合法 JSON object，不要输出 Markdown。字段包含 summary 和 items。主题：列出上下文缓存观测的三个注意事项。"
+  tool_calls:
+    - id: weather_beijing
+      prompt: "请调用 get_weather 查询北京当前天气，单位使用 celsius。"
+    - id: weather_shanghai
+      prompt: "请调用 get_weather 查询上海当前天气，单位使用 celsius。"
+    - id: weather_hangzhou
+      prompt: "请调用 get_weather 查询杭州当前天气，单位使用 celsius。"
+
+test_cases:
+  # Short chat/native prompts receive deterministic numeric context so every
+  # generated test request has at least this many input tokens.
+  minimum_prompt_tokens: 100
+  token_accuracy:
+    enabled: true
+    evidence_policy: exact_only
+    relative_tolerance: 0.50
+    input_absolute_tolerance: 16
+    output_absolute_tolerance: 8
+    counters: {}
+
+thresholds:
+  smoke:
+    success_rate_min: 1.0
+  staircase:
+    success_rate_min: 0.99
+    p95_latency_max_ms: 30000
+    error_429_max_ratio: 0.01
+    error_5xx_max_ratio: 0.01
+    target_business_rpm_min: 1000
+    target_total_tpm_min: 0
+    count_profile_group: throughput_profiles
+    exclude_task_names:
+      - "control:list_models"
+      - "warmup:*"
+  soak_1h:
+    success_rate_min: 0.98
+    p95_latency_max_ms: 45000
+    error_429_max_ratio: 0.02
+    error_5xx_max_ratio: 0.01
+    rpm_drift_max_ratio: 0.20
+  cache:
+    mode: observe
+    require_usage_fields: true
+    positive_control_cached_ratio_min: 0.50
+    negative_control_cached_ratio_max: 0.05
+
+warmup:
+  enabled: true
+  duration: "1m"
+  users: 10
+  workload: "throughput_rpm"
+  exclude_from_verdict: true
+
+metrics:
+  history_interval_sec: 60
+  live_chart_interval_sec: 10
+  history_file: "history.jsonl"
+  records_file: "request_records.jsonl"
+  business_request_prefix: "chat:"
+  cache_min_prompt_tokens: 4000
+  failure_finish_reasons:
+    - "insufficient_system_resource"
+  warn_finish_reasons:
+    - "content_filter"
+
+adaptive_load:
+  # Enabled automatically when both target RPM and target TPM are positive.
+  # Average total tokens/request = target TPM / target RPM.
+  filter_context_unsafe_profiles: true
+  corpus_fixtures:
+    - "fixtures/long_context.txt"
+    - "fixtures/half_million_context.txt"
+  fallback_context_window_tokens: 131072
+  context_safety_ratio: 0.95
+  minimum_user_prompt_tokens: 100
+  initial_completion_tokens: 64
+  ema_alpha: 0.20
+  tolerance_ratio: 0.10
+  min_samples: 20
+  usage_coverage_warn_below: 0.90
+  bands:
+    - name: short
+      ratio: 0.5
+      weight: 25
+    - name: target
+      ratio: 1.0
+      weight: 50
+    - name: long
+      ratio: 1.5
+      weight: 25
+
+staircase:
+  workload: "throughput"
+  spawn_rate: 5
+  step_duration: "5m"
+  steps:
+    - users: 10
+    - users: 30
+    - users: 60
+    - users: 100
+    - users: 150
+  auto_extend:
+    enabled: true
+    increment_users: 30
+    max_users: 300
+
+soak:
+  workload: "throughput"
+  duration: "1h"
+  users: 80
+  spawn_rate: 5
+
+cache_test:
+  mode: "cache_suite"
+  scenario: "progressive_customer_session"
+  stable_system: "你是企业客服助手。回答应准确、简洁；需要外部信息时调用提供的工具，不要编造工具结果。"
+  sessions: 10
+  rounds_per_session: 4
+  content_profile: "realistic"
+  content_profiles:
+    small:
+      user_chars: {min: 100, max: 400}
+      tool_result_chars: {min: 300, max: 1000}
+    realistic:
+      user_chars: {min: 200, max: 2000}
+      tool_result_chars: {min: 500, max: 5000}
+    large:
+      user_chars: {min: 1000, max: 4000}
+      tool_result_chars: {min: 3000, max: 10000}
+  tool_stage:
+    enabled: true
+    round: 3
+  structure_probe:
+    enabled: true
+  controls:
+    mode: "auto"
+    auto_positive_long_prefix_pairs: 3
+    auto_negative_unique_prefix_requests: 3
+  wait_after_seed_sec: 5
+  max_run_seconds: 1800
+  consecutive_failure_limit: 3
+  seed: 20260715
+  evidence_mode: official_usage
+  fixture: "fixtures/long_context.txt"
+  max_tokens: 128
+  diagnostic_defaults:
+    kilocode_agent_session:
+      steps: 20
+      trajectory_mode: scripted
+      warmup_requests: 1
+      wait_after_seed_sec: 5
+      controls:
+        positive_long_prefix_pairs: 3
+        negative_unique_prefix_requests: 3
+      thresholds:
+        mode: gate
+        cached_input_token_ratio_min: 0.90
+        measurement_coverage_min: 0.90
+        positive_control_cached_ratio_min: 0.50
+        negative_control_cached_ratio_max: 0.10
+    growing_conversation:
+      warmup_requests: 2
+      wait_after_warmup_sec: 5
+      measured_requests: 50
+      assistant_history_max_chars: 1000
+    shared_prefix:
+      warmup_requests: 2
+      wait_after_warmup_sec: 5
+      measured_requests: 50
+  detect:
+    prefer_official_usage: true
+    header_names:
+      - "x-cache"
+      - "cf-cache-status"
+      - "x-oneapi-cache"
+    latency_fallback: true
+
+deepseek_params:
+  allow_deprecated: false
+  default:
+    max_tokens: 128
+    thinking:
+      type: disabled
+
+glm_params:
+  default:
+    max_tokens: 128
+
+qwen_params:
+  default:
+    max_tokens: 128
+    enable_thinking: false
+
+aliyun_params:
+  default: {}
+
+gemini_params:
+  default: {}
+
+claude_params:
+  default:
+    max_tokens: 128
+
+claude_fable_params:
+  default:
+    max_tokens: 128
+    thinking:
+      type: adaptive
+    output_config:
+      effort: medium
+
+grok_params:
+  default:
+    max_completion_tokens: 128
+    reasoning_effort: low
+
+throughput_profiles:
+  adaptive_context:
+    stream: false
+    thinking:
+      type: disabled
+    prompt_key: short
+    max_tokens: 128
+  baseline_short:
+    stream: false
+    thinking:
+      type: disabled
+    prompt_key: short
+    max_tokens: 128
+  baseline_medium:
+    stream: false
+    thinking:
+      type: disabled
+    prompt_key: medium
+    max_tokens: 128
+  long_context:
+    stream: false
+    thinking:
+      type: disabled
+    fixture: fixtures/long_context.txt
+    user_id: loadtest_long_context_user
+    max_tokens: 128
+  context_128k_chars:
+    stream: false
+    thinking:
+      type: disabled
+    fixture: fixtures/half_million_context.txt
+    fixture_chars: 131072
+    user_id: loadtest_context_128k_chars_user
+    max_tokens: 128
+  context_512k_chars:
+    stream: false
+    thinking:
+      type: disabled
+    fixture: fixtures/half_million_context.txt
+    fixture_chars: 524288
+    user_id: loadtest_context_512k_chars_user
+    max_tokens: 128
+  half_million_context:
+    stream: false
+    thinking:
+      type: disabled
+    fixture: fixtures/half_million_context.txt
+    user_id: loadtest_half_million_user
+    max_tokens: 128
+  streaming_latency_api:
+    stream: true
+    stream_options:
+      include_usage: true
+    thinking:
+      type: disabled
+    prompt_key: streaming_latency_api
+    temperature: 0
+    max_tokens: 160
+  streaming_latency_load:
+    stream: true
+    stream_options:
+      include_usage: true
+    thinking:
+      type: disabled
+    prompt_key: streaming_latency_load
+    temperature: 0
+    max_tokens: 160
+  streaming_latency_cache:
+    stream: true
+    stream_options:
+      include_usage: true
+    thinking:
+      type: disabled
+    prompt_key: streaming_latency_cache
+    temperature: 0
+    max_tokens: 160
+
+compatibility_profiles:
+  basic_stream:
+    stream: true
+    thinking:
+      type: disabled
+  stream_with_usage:
+    stream: true
+    thinking:
+      type: disabled
+    stream_options:
+      include_usage: true
+  thinking_enabled:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: high
+  thinking_low:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: low
+  thinking_max:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: max
+  thinking_disabled:
+    stream: false
+    thinking:
+      type: disabled
+  deepseek_max_tokens:
+    stream: false
+    thinking:
+      type: disabled
+    max_tokens: 64
+  deepseek_user_id:
+    stream: false
+    thinking:
+      type: disabled
+    user_id: loadtest_deepseek_param_user
+  deepseek_frequency_penalty:
+    stream: false
+    thinking:
+      type: disabled
+    frequency_penalty: 0.2
+    send_deprecated: true
+  deepseek_presence_penalty:
+    stream: false
+    thinking:
+      type: disabled
+    presence_penalty: 0.2
+    send_deprecated: true
+  sampling_non_thinking:
+    stream: false
+    thinking:
+      type: disabled
+    temperature: 0.7
+    top_p: 0.9
+  glm_thinking_enabled:
+    stream: false
+    thinking:
+      type: enabled
+  glm_thinking_disabled:
+    stream: false
+    thinking:
+      type: disabled
+  glm_clear_thinking:
+    stream: false
+    thinking:
+      type: enabled
+      clear_thinking: false
+  glm_reasoning_none:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: none
+  glm_reasoning_minimal:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: minimal
+  glm_reasoning_low:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: low
+  glm_reasoning_medium:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: medium
+  glm_reasoning_high:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: high
+  glm_reasoning_xhigh:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: xhigh
+  glm_reasoning_max:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: max
+  glm_do_sample:
+    stream: false
+    do_sample: false
+  glm_temperature:
+    stream: false
+    temperature: 0.7
+  glm_top_p:
+    stream: false
+    top_p: 0.9
+  glm_max_tokens:
+    stream: false
+    max_tokens: 128
+  glm_tool_stream:
+    stream: true
+    tool_stream: true
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+  glm_tools:
+    stream: false
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+  glm_tool_choice_auto:
+    extends: glm_tools
+    tool_choice: auto
+  glm_tool_calls_thinking:
+    stream: false
+    thinking:
+      type: enabled
+      clear_thinking: false
+    reasoning_effort: max
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+    multi_turn: true
+    pass_reasoning_content: true
+  glm_tool_calls:
+    extends: glm_tool_choice_auto
+    multi_turn: true
+  glm_request_id:
+    stream: false
+    request_id: loadtest-glm-request
+  glm_user_id:
+    stream: false
+    user_id: loadtest_glm_user
+  qwen_thinking_enabled:
+    omit_params: [max_tokens]
+    stream: true
+    enable_thinking: true
+    max_completion_tokens: 128
+  qwen_thinking_disabled:
+    stream: false
+    enable_thinking: false
+  qwen_thinking_budget:
+    omit_params: [max_tokens]
+    stream: true
+    enable_thinking: true
+    thinking_budget: 64
+    max_completion_tokens: 128
+  qwen_preserve_thinking:
+    omit_params: [max_tokens]
+    stream: false
+    enable_thinking: true
+    preserve_thinking: true
+    max_completion_tokens: 512
+    messages:
+      - role: user
+        content: "Tell me three random numbers."
+      - role: assistant
+        reasoning_content: "I'll start by listing five numbers: 473, 921, 235, 215, 222, and I'll tell you the first three."
+        content: "473, 921, 235"
+      - role: user
+        content: "What are the other two numbers you have in mind? Reply with only those two numbers."
+  qwen_max_tokens:
+    stream: false
+    enable_thinking: false
+    max_tokens: 128
+  qwen_max_completion_tokens:
+    omit_params: [max_tokens]
+    stream: false
+    enable_thinking: false
+    max_completion_tokens: 128
+  qwen_temperature:
+    stream: false
+    enable_thinking: false
+    temperature: 0.7
+  qwen_top_p:
+    stream: false
+    enable_thinking: false
+    top_p: 0.8
+  qwen_top_k:
+    stream: false
+    enable_thinking: false
+    top_k: 20
+  qwen_repetition_penalty:
+    stream: false
+    enable_thinking: false
+    repetition_penalty: 1.05
+  qwen_presence_penalty:
+    stream: false
+    enable_thinking: false
+    presence_penalty: 0.2
+  qwen_seed:
+    stream: false
+    enable_thinking: false
+    seed: 123456789
+  qwen_enable_search:
+    stream: false
+    enable_thinking: false
+    enable_search: false
+  qwen_search_options:
+    stream: false
+    enable_thinking: false
+    enable_search: true
+    search_options:
+      forced_search: false
+      search_strategy: turbo
+  qwen_n:
+    stream: false
+    enable_thinking: false
+    n: 2
+    max_tokens: 64
+  qwen_logprobs:
+    stream: false
+    enable_thinking: false
+    logprobs: true
+    top_logprobs: 5
+    max_tokens: 64
+  # OpenAI-compatible JSON mode: response_format.type=json_object requires
+  # the user/system prompt to contain the word "JSON". Param tests sample from
+  # param_test_inputs.json_output for any profile with this shape.
+  qwen_response_format:
+    stream: false
+    enable_thinking: false
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  qwen_enable_code_interpreter:
+    stream: true
+    enable_thinking: true
+    enable_code_interpreter: false
+  qwen_tools:
+    stream: false
+    enable_thinking: false
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+  qwen_tool_choice_auto:
+    extends: qwen_tools
+    tool_choice: auto
+  qwen_tool_calls:
+    extends: qwen_tool_choice_auto
+    multi_turn: true
+  qwen_parallel_tool_calls:
+    stream: false
+    enable_thinking: false
+    parallel_tool_calls: true
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+  qwen_tool_stream:
+    stream: true
+    enable_thinking: false
+    tool_stream: true
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+  # Alibaba Cloud Model Studio OpenAI-compatible profiles. Reference sources
+  # select only the profiles documented for each concrete model series.
+  aliyun_stream:
+    stream: true
+    max_completion_tokens: 128
+  aliyun_stream_usage:
+    extends: aliyun_stream
+    stream_options:
+      include_usage: true
+  aliyun_max_completion_tokens:
+    stream: false
+    max_completion_tokens: 128
+  aliyun_enable_thinking:
+    stream: false
+    enable_thinking: true
+    max_completion_tokens: 256
+  aliyun_disable_thinking:
+    stream: false
+    enable_thinking: false
+    max_completion_tokens: 128
+  aliyun_reasoning_high:
+    stream: false
+    reasoning_effort: high
+    max_completion_tokens: 256
+  aliyun_reasoning_max:
+    stream: false
+    reasoning_effort: max
+    max_completion_tokens: 256
+  aliyun_preserve_thinking:
+    stream: false
+    enable_thinking: true
+    preserve_thinking: true
+    max_completion_tokens: 256
+  aliyun_temperature:
+    stream: false
+    temperature: 0.7
+    max_completion_tokens: 128
+  aliyun_top_p:
+    stream: false
+    top_p: 0.8
+    max_completion_tokens: 128
+  aliyun_top_k:
+    stream: false
+    top_k: 20
+    max_completion_tokens: 128
+  aliyun_repetition_penalty:
+    stream: false
+    repetition_penalty: 1.05
+    max_completion_tokens: 128
+  aliyun_presence_penalty:
+    stream: false
+    presence_penalty: 0.2
+    max_completion_tokens: 128
+  aliyun_stop:
+    stream: false
+    stop: ["END"]
+    max_completion_tokens: 128
+  aliyun_json_object:
+    stream: false
+    enable_thinking: false
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    max_completion_tokens: 256
+  aliyun_tools:
+    stream: false
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+    max_completion_tokens: 512
+  aliyun_tool_choice_auto:
+    extends: aliyun_tools
+    tool_choice: auto
+  aliyun_tool_stream:
+    extends: aliyun_tool_choice_auto
+    stream: true
+    tool_stream: true
+  gemini_n:
+    stream: false
+    n: 2
+  gemini_service_tier:
+    stream: false
+    service_tier: default
+  gemini_thinking_config:
+    stream: false
+    extra_body:
+      google:
+        thinking_config:
+          thinking_level: low
+          include_thoughts: true
+  gemini_reasoning_minimal:
+    stream: false
+    reasoning_effort: minimal
+  gemini_reasoning_low:
+    stream: false
+    reasoning_effort: low
+  gemini_reasoning_medium:
+    stream: false
+    reasoning_effort: medium
+  gemini_reasoning_high:
+    stream: false
+    reasoning_effort: high
+  gemini_max_tokens:
+    stream: false
+    max_tokens: 128
+  gemini_cached_content:
+    stream: false
+    max_tokens: 64
+    extra_body:
+      google:
+        cached_content: cachedContents/loadtest-compatibility-probe
+  gemini_chat_candidate_count:
+    stream: false
+    generationConfig:
+      candidateCount: 2
+  gemini_chat_max_output_tokens:
+    stream: false
+    generationConfig:
+      maxOutputTokens: 128
+  gemini_chat_stop_sequences:
+    stream: false
+    generationConfig:
+      stopSequences: ["END"]
+      maxOutputTokens: 128
+  gemini_chat_temperature:
+    stream: false
+    generationConfig:
+      temperature: 0.7
+      maxOutputTokens: 128
+  gemini_chat_top_p:
+    stream: false
+    generationConfig:
+      topP: 0.9
+      maxOutputTokens: 128
+  gemini_chat_top_k:
+    stream: false
+    generationConfig:
+      topK: 20
+      maxOutputTokens: 128
+  gemini_chat_seed:
+    stream: false
+    generationConfig:
+      seed: 123456789
+      maxOutputTokens: 128
+  gemini_chat_presence_penalty:
+    stream: false
+    generationConfig:
+      presencePenalty: 0.2
+      maxOutputTokens: 128
+  gemini_chat_frequency_penalty:
+    stream: false
+    generationConfig:
+      frequencyPenalty: 0.2
+      maxOutputTokens: 128
+  gemini_chat_response_mime_type:
+    stream: false
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    generationConfig:
+      responseMimeType: application/json
+      maxOutputTokens: 128
+  gemini_chat_safety_settings:
+    stream: false
+    generationConfig:
+      maxOutputTokens: 128
+    safetySettings:
+      - category: HARM_CATEGORY_HARASSMENT
+        threshold: BLOCK_ONLY_HIGH
+  gemini_tools:
+    stream: false
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+  gemini_tool_choice_auto:
+    extends: gemini_tools
+    tool_choice: auto
+  gemini_native_tools:
+    transport: gemini_generate_content
+    multi_turn: true
+    native_tools:
+      - functionDeclarations:
+          - name: get_weather
+            description: Get current weather for a city.
+            parameters:
+              type: OBJECT
+              properties:
+                city:
+                  type: STRING
+              required: [city]
+  gemini_native_tool_config:
+    transport: gemini_generate_content
+    multi_turn: true
+    native_tools:
+      - functionDeclarations:
+          - name: get_weather
+            description: Get current weather for a city.
+            parameters:
+              type: OBJECT
+              properties:
+                city:
+                  type: STRING
+              required: [city]
+    native_tool_config:
+      functionCallingConfig:
+        mode: AUTO
+  gemini_native_system_instruction:
+    transport: gemini_generate_content
+    native_system_instruction: "You are a concise API compatibility test assistant."
+  gemini_native_cached_content:
+    transport: gemini_generate_content
+    native_cached_content: cachedContents/loadtest-compatibility-probe
+  gemini_native_service_tier:
+    transport: gemini_generate_content
+    native_service_tier: standard
+  gemini_native_store:
+    transport: gemini_generate_content
+    native_store: false
+  gemini_native_candidate_count:
+    transport: gemini_generate_content
+    native_generation_config:
+      candidateCount: 2
+  gemini_native_max_output_tokens:
+    transport: gemini_generate_content
+    native_generation_config:
+      maxOutputTokens: 128
+  gemini_native_stop_sequences:
+    transport: gemini_generate_content
+    native_generation_config:
+      stopSequences: ["END"]
+      maxOutputTokens: 128
+  gemini_native_temperature:
+    transport: gemini_generate_content
+    native_generation_config:
+      temperature: 0.7
+      maxOutputTokens: 128
+  gemini_native_top_p:
+    transport: gemini_generate_content
+    native_generation_config:
+      topP: 0.9
+      maxOutputTokens: 128
+  gemini_native_top_k:
+    transport: gemini_generate_content
+    native_generation_config:
+      topK: 20
+      maxOutputTokens: 128
+  gemini_native_seed:
+    transport: gemini_generate_content
+    native_generation_config:
+      seed: 123456789
+      maxOutputTokens: 128
+  gemini_native_presence_penalty:
+    transport: gemini_generate_content
+    native_generation_config:
+      presencePenalty: 0.2
+      maxOutputTokens: 128
+  gemini_native_frequency_penalty:
+    transport: gemini_generate_content
+    native_generation_config:
+      frequencyPenalty: 0.2
+      maxOutputTokens: 128
+  gemini_native_response_mime_type:
+    transport: gemini_generate_content
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    native_generation_config:
+      responseMimeType: application/json
+      maxOutputTokens: 128
+  gemini_native_response_schema:
+    transport: gemini_generate_content
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    native_generation_config:
+      responseMimeType: application/json
+      responseSchema:
+        type: OBJECT
+        properties:
+          summary:
+            type: STRING
+          items:
+            type: ARRAY
+            items:
+              type: STRING
+        required: [summary, items]
+      maxOutputTokens: 128
+  gemini_native_response_json_schema:
+    transport: gemini_generate_content
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    native_generation_config:
+      responseMimeType: application/json
+      responseJsonSchema:
+        type: object
+        properties:
+          summary:
+            type: string
+          items:
+            type: array
+            items:
+              type: string
+        required: [summary, items]
+        additionalProperties: false
+      maxOutputTokens: 128
+  gemini_native_response_modalities:
+    transport: gemini_generate_content
+    native_generation_config:
+      responseModalities: [TEXT]
+      maxOutputTokens: 128
+  gemini_native_logprobs:
+    transport: gemini_generate_content
+    native_generation_config:
+      responseLogprobs: true
+      logprobs: 5
+      maxOutputTokens: 128
+  gemini_native_civic_answers:
+    transport: gemini_generate_content
+    native_generation_config:
+      enableEnhancedCivicAnswers: false
+      maxOutputTokens: 128
+  gemini_native_thinking_config:
+    transport: gemini_generate_content
+    native_generation_config:
+      thinkingConfig:
+        thinkingLevel: LOW
+        includeThoughts: true
+      maxOutputTokens: 128
+  gemini_native_thinking_minimal:
+    transport: gemini_generate_content
+    native_generation_config:
+      thinkingConfig:
+        thinkingLevel: MINIMAL
+        includeThoughts: true
+      maxOutputTokens: 256
+  gemini_native_thinking_low:
+    extends: gemini_native_thinking_config
+  gemini_native_thinking_medium:
+    transport: gemini_generate_content
+    native_generation_config:
+      thinkingConfig:
+        thinkingLevel: MEDIUM
+        includeThoughts: true
+      maxOutputTokens: 512
+  gemini_native_thinking_high:
+    transport: gemini_generate_content
+    native_generation_config:
+      thinkingConfig:
+        thinkingLevel: HIGH
+        includeThoughts: true
+      maxOutputTokens: 512
+  gemini_native_media_resolution:
+    transport: gemini_generate_content
+    native_generation_config:
+      mediaResolution: MEDIA_RESOLUTION_LOW
+      maxOutputTokens: 128
+  gemini_native_response_format:
+    transport: gemini_generate_content
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    native_generation_config:
+      responseFormat:
+        text:
+          mimeType: APPLICATION_JSON
+      maxOutputTokens: 128
+  gemini_native_safety_settings:
+    transport: gemini_generate_content
+    native_generation_config:
+      maxOutputTokens: 128
+    native_safety_settings:
+      - category: HARM_CATEGORY_HARASSMENT
+        threshold: BLOCK_ONLY_HIGH
+  # NSFW probe (Gemini native generateContent only — do not use OpenAI chat).
+  # Pass = request accepted and model returns non-empty adult text (not SAFETY block).
+  gemini_native_safety_block_none_nsfw:
+    transport: gemini_generate_content
+    prompt_fixture: fixtures/gemini_nsfw_prompt.txt
+    native_generation_config:
+      maxOutputTokens: 512
+      temperature: 0.9
+    native_safety_settings:
+      - category: HARM_CATEGORY_HARASSMENT
+        threshold: BLOCK_NONE
+      - category: HARM_CATEGORY_HATE_SPEECH
+        threshold: BLOCK_NONE
+      - category: HARM_CATEGORY_SEXUALLY_EXPLICIT
+        threshold: BLOCK_NONE
+      - category: HARM_CATEGORY_DANGEROUS_CONTENT
+        threshold: BLOCK_NONE
+  # Vertex source fingerprints (see gemini_vertex_generate_content reference).
+  gemini_vertex_traffic_type:
+    transport: gemini_generate_content
+    native_generation_config:
+      maxOutputTokens: 64
+      temperature: 0
+  gemini_vertex_labels:
+    transport: gemini_generate_content
+    native_labels:
+      loadtest_probe: vertex-source-detect
+    native_generation_config:
+      maxOutputTokens: 64
+      temperature: 0
+  gemini_vertex_service_tier_body:
+    transport: gemini_generate_content
+    native_service_tier: standard
+    native_generation_config:
+      maxOutputTokens: 64
+      temperature: 0
+  gemini_vertex_request_type_header:
+    transport: gemini_generate_content
+    request_headers:
+      X-Vertex-AI-LLM-Request-Type: shared
+    native_generation_config:
+      maxOutputTokens: 64
+      temperature: 0
+  gemini_vertex_shared_request_type_header:
+    transport: gemini_generate_content
+    request_headers:
+      X-Vertex-AI-LLM-Request-Type: shared
+      X-Vertex-AI-LLM-Shared-Request-Type: flex
+    native_generation_config:
+      maxOutputTokens: 64
+      temperature: 0
+  json_output:
+    stream: false
+    thinking:
+      type: disabled
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  deepseek_json_output_256:
+    stream: false
+    thinking:
+      type: disabled
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    max_tokens: 256
+  # Kimi K3 official OpenAI-compatible contract. Every positive probe fixes
+  # sampling to temperature=1.0/top_p=0.95 and explicitly selects an effort so
+  # different vendors receive the same K3 request rather than generic OpenAI
+  # sampling defaults.
+  kimi_k3_defaults:
+    stream: false
+    temperature: 1.0
+    top_p: 0.95
+    max_completion_tokens: 512
+    reasoning_effort: max
+  kimi_k3_stream:
+    extends: kimi_k3_defaults
+    stream: true
+  kimi_k3_stream_usage:
+    extends: kimi_k3_stream
+    stream_options:
+      include_usage: true
+  kimi_k3_reasoning_low:
+    extends: kimi_k3_defaults
+    reasoning_effort: low
+  kimi_k3_reasoning_high:
+    extends: kimi_k3_defaults
+    reasoning_effort: high
+  kimi_k3_reasoning_max:
+    extends: kimi_k3_defaults
+    reasoning_effort: max
+  kimi_k3_preserved_thinking:
+    extends: kimi_k3_defaults
+    messages:
+      - role: user
+        content: "Tell me three random numbers."
+      - role: assistant
+        reasoning_content: "I'll start by listing five numbers: 473, 921, 235, 215, 222, and I'll tell you the first three."
+        content: "473, 921, 235"
+      - role: user
+        content: "What are the other two numbers you have in mind? Reply with only those two numbers."
+  kimi_k3_prompt_cache_key:
+    extends: kimi_k3_defaults
+    prompt_cache_key: "loadtest-kimi-k3-session-v1"
+  kimi_k3_dynamic_tools:
+    extends: kimi_k3_defaults
+    tool_choice: required
+    messages:
+      - role: system
+        content: ""
+        tools:
+          - type: function
+            function:
+              name: get_weather
+              description: "Get the weather of a city."
+              parameters:
+                type: object
+                properties:
+                  city:
+                    type: string
+                required: [city]
+      - role: user
+        content: "What is the weather in Beijing? Use the available tool."
+  # Official K3 verifier negative controls: these values must be rejected.
+  kimi_k3_reject_temperature:
+    extends: kimi_k3_defaults
+    temperature: 1.1
+  kimi_k3_reject_top_p:
+    extends: kimi_k3_defaults
+    top_p: 0.8
+  kimi_k3_reject_presence_penalty:
+    extends: kimi_k3_defaults
+    presence_penalty: 0.5
+  kimi_k3_reject_frequency_penalty:
+    extends: kimi_k3_defaults
+    frequency_penalty: 0.5
+    send_deprecated: true
+  kimi_k3_reject_n:
+    extends: kimi_k3_defaults
+    n: 2
+  # OpenAI GPT-5.x Chat Completions (openai_gpt5_chat reference).
+  # Avoid stop / non-default temperature; prefer max_completion_tokens + reasoning_effort.
+  gpt5_chat_stream:
+    stream: true
+    max_completion_tokens: 128
+    reasoning_effort: none
+  gpt5_chat_stream_usage:
+    extends: gpt5_chat_stream
+    stream_options:
+      include_usage: true
+  gpt5_chat_max_completion_tokens:
+    stream: false
+    max_completion_tokens: 128
+    reasoning_effort: none
+  gpt5_chat_reasoning_none:
+    stream: false
+    max_completion_tokens: 128
+    reasoning_effort: none
+  gpt5_chat_reasoning_low:
+    stream: false
+    max_completion_tokens: 128
+    reasoning_effort: low
+  gpt5_chat_reasoning_medium:
+    stream: false
+    max_completion_tokens: 256
+    reasoning_effort: medium
+  gpt5_chat_reasoning_high:
+    stream: false
+    max_completion_tokens: 512
+    reasoning_effort: high
+  gpt5_chat_reasoning_xhigh:
+    stream: false
+    max_completion_tokens: 768
+    reasoning_effort: xhigh
+  gpt5_chat_reasoning_max:
+    stream: false
+    max_completion_tokens: 1024
+    reasoning_effort: max
+  gpt5_chat_json:
+    stream: false
+    max_completion_tokens: 256
+    reasoning_effort: none
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  gpt5_chat_tools:
+    stream: false
+    max_completion_tokens: 256
+    # GPT-5.6 defaults to medium; Chat Completions function tools require the
+    # effective effort to be none. Gateways rejecting this official shape are
+    # reported as provider incompatibilities rather than silently accommodated.
+    reasoning_effort: none
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: required
+    multi_turn: true
+  gpt5_chat_reject_temperature:
+    stream: false
+    max_completion_tokens: 64
+    reasoning_effort: low
+    preserve_rejected_params: true
+    temperature: 0.7
+  gpt5_chat_reject_stop:
+    stream: false
+    max_completion_tokens: 64
+    reasoning_effort: low
+    preserve_rejected_params: true
+    stop: ["END"]
+  # xAI Grok Chat Completions (grok_chat_completions reference).
+  # Reasoning models reject stop / presence_penalty / frequency_penalty.
+  # Prefer max_completion_tokens + reasoning_effort low|medium|high.
+  grok_stream:
+    stream: true
+    max_completion_tokens: 128
+    reasoning_effort: low
+  grok_stream_usage:
+    extends: grok_stream
+    stream_options:
+      include_usage: true
+  grok_max_completion_tokens:
+    stream: false
+    max_completion_tokens: 128
+    reasoning_effort: low
+  grok_reasoning_effort_low:
+    stream: false
+    max_completion_tokens: 256
+    reasoning_effort: low
+  grok_reasoning_effort_medium:
+    stream: false
+    max_completion_tokens: 256
+    reasoning_effort: medium
+  grok_reasoning_effort_high:
+    stream: false
+    max_completion_tokens: 512
+    reasoning_effort: high
+  grok_json:
+    stream: false
+    max_completion_tokens: 256
+    reasoning_effort: low
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  grok_tools:
+    stream: false
+    max_completion_tokens: 256
+    reasoning_effort: low
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: required
+    multi_turn: true
+  # Negative probes: reasoning models are expected to reject these.
+  grok_reasoning_effort_none:
+    stream: false
+    max_completion_tokens: 64
+    reasoning_effort: none
+  grok_reject_stop:
+    stream: false
+    max_completion_tokens: 64
+    reasoning_effort: low
+    preserve_rejected_params: true
+    stop: ["END"]
+  grok_reject_presence_penalty:
+    stream: false
+    max_completion_tokens: 64
+    reasoning_effort: low
+    preserve_rejected_params: true
+    presence_penalty: 0.5
+  # xAI Grok Responses API (grok_responses reference; preferred over chat).
+  # grok-4.5 rejects reasoning.effort=none; keep positive probes on low|medium|high.
+  grok_responses_basic:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: low
+  grok_responses_instructions:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 64
+    instructions: "You are a concise assistant for API compatibility testing. Reply briefly."
+    reasoning:
+      effort: low
+  grok_responses_stream:
+    transport: openai_responses
+    stream: true
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: low
+  grok_responses_stream_usage:
+    extends: grok_responses_stream
+  grok_responses_reasoning_low:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: low
+  grok_responses_reasoning_medium:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: medium
+  grok_responses_reasoning_high:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 512
+    reasoning:
+      effort: high
+  grok_responses_json:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: low
+    text:
+      format:
+        type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  grok_responses_store_false:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 64
+    reasoning:
+      effort: low
+  grok_responses_tools:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: low
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: required
+    multi_turn: true
+  # Negative probe for Responses: effort=none is rejected on grok-4.5 / reasoning models.
+  # stop is accepted/ignored on Responses; use grok_reject_stop on Chat Completions instead.
+  grok_responses_reasoning_effort_none:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 64
+    reasoning:
+      effort: none
+  # OpenAI Responses API (openai_responses reference).
+  openai_responses_basic:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: low
+  openai_responses_instructions:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 64
+    instructions: "You are a concise assistant for API compatibility testing. Reply briefly."
+    reasoning:
+      effort: none
+  openai_responses_stream:
+    transport: openai_responses
+    stream: true
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: none
+  openai_responses_stream_usage:
+    extends: openai_responses_stream
+  openai_responses_reasoning:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: medium
+  openai_responses_reasoning_none:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: none
+  openai_responses_reasoning_low:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: low
+  openai_responses_reasoning_high:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 512
+    reasoning:
+      effort: high
+  openai_responses_reasoning_xhigh:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 768
+    reasoning:
+      effort: xhigh
+  openai_responses_reasoning_max:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 1024
+    reasoning:
+      effort: max
+  openai_responses_reasoning_context_all_turns:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: medium
+      context: all_turns
+  openai_responses_reasoning_context_current_turn:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: medium
+      context: current_turn
+  openai_responses_pro_medium:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 512
+    reasoning:
+      mode: pro
+      effort: medium
+  openai_responses_explicit_cache:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 128
+    prompt_cache_key: "param-test-gpt56-sol"
+    prompt_cache_options:
+      mode: explicit
+      ttl: "30m"
+    reasoning:
+      effort: none
+  openai_responses_verbosity:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: none
+    text:
+      verbosity: low
+  openai_responses_json:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: none
+    text:
+      format:
+        type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  openai_responses_store_false:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 64
+    reasoning:
+      effort: none
+  openai_responses_tools:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 256
+    reasoning:
+      effort: low
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: required
+    multi_turn: true
+  stop_sequences:
+    stream: false
+    thinking:
+      type: disabled
+    stop: ["\n\n", "END"]
+  logprobs:
+    stream: false
+    thinking:
+      type: disabled
+    logprobs: true
+    top_logprobs: 5
+  tool_calls:
+    stream: false
+    thinking:
+      type: disabled
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+  tool_choice_required:
+    extends: tool_calls
+    tool_choice: required
+  tool_calls_thinking:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: high
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+    pass_reasoning_content: true
+  deepseek_tool_strict:
+    stream: false
+    thinking:
+      type: disabled
+    tools_fixture: fixtures/tools_weather_strict.json
+    tool_choice: required
+    multi_turn: true
+  claude_native_max_tokens:
+    transport: claude_messages
+    stream: false
+    max_tokens: 64
+  claude_native_stream:
+    transport: claude_messages
+    stream: true
+    max_tokens: 128
+  claude_native_system:
+    transport: claude_messages
+    stream: false
+    system: "You are a concise Claude Messages API compatibility test assistant."
+    max_tokens: 128
+  claude_native_temperature:
+    transport: claude_messages
+    stream: false
+    temperature: 1
+    max_tokens: 64
+  claude_native_top_p:
+    transport: claude_messages
+    stream: false
+    top_p: 1
+    max_tokens: 64
+  claude_native_stop_sequences:
+    transport: claude_messages
+    stream: false
+    stop_sequences: ["END"]
+    max_tokens: 128
+  claude_native_tools:
+    transport: claude_messages
+    stream: false
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+    max_tokens: 128
+  claude_native_tool_choice_auto:
+    extends: claude_native_tools
+    tool_choice: auto
+  claude_native_thinking_adaptive:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    max_tokens: 128
+  claude_native_thinking_disabled:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: disabled
+    max_tokens: 64
+  claude_native_thinking_budget:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: enabled
+      budget_tokens: 1024
+    max_tokens: 1025
+  claude_native_effort_low:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: low
+    max_tokens: 256
+  claude_native_effort_medium:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: medium
+    max_tokens: 512
+  claude_native_effort_high:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: high
+    max_tokens: 512
+  claude_native_effort_xhigh:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: xhigh
+    max_tokens: 1024
+  claude_native_effort_max:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: max
+    max_tokens: 1024
+  claude_fable_thinking_effort_low:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: low
+    max_tokens: 256
+  claude_fable_thinking_effort_medium:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: medium
+    max_tokens: 256
+  claude_fable_thinking_effort_high:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: high
+    max_tokens: 512
+  claude_native_metadata:
+    transport: claude_messages
+    stream: false
+    metadata:
+      user_id: loadtest_claude_param_user
+    max_tokens: 64
+  claude_max_tokens:
+    stream: false
+    max_tokens: 64
+  claude_sampling:
+    stream: false
+    temperature: 1
+    top_p: 1
+    max_tokens: 64
+  claude_tools:
+    stream: false
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+  claude_tool_choice_auto:
+    extends: claude_tools
+    tool_choice: auto
+  claude_parallel_tool_calls:
+    stream: false
+    parallel_tool_calls: true
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+  claude_thinking_adaptive:
+    stream: false
+    thinking:
+      type: adaptive
+    max_tokens: 128
+  claude_thinking_disabled:
+    stream: false
+    # Keep thinking.disabled in the profile so the probe is explicit; Claude
+    # normalize drops top-level disabled thinking for load safety, so send via
+    # extra_body for this compatibility probe.
+    omit_params: [thinking]
+    extra_body:
+      thinking:
+        type: disabled
+    max_tokens: 64
+  claude_thinking_budget:
+    stream: false
+    thinking:
+      type: enabled
+      budget_tokens: 1024
+    max_tokens: 1025
+
+cache_profiles:
+  cache_long_context:
+    stream: false
+    thinking:
+      type: disabled
+    fixture: fixtures/long_context.txt
+    user_id: loadtest_cache_user
+    max_tokens: 128
+  cache_long_context_repeat:
+    extends: cache_long_context
+
+# Qwen-native load/cache profiles (selected automatically when model family is qwen).
+# Uses enable_thinking instead of DeepSeek/GLM thinking dict; omits user_id.
+qwen_throughput_profiles:
+  adaptive_context:
+    stream: false
+    enable_thinking: false
+    prompt_key: short
+    max_tokens: 128
+  baseline_short:
+    stream: false
+    enable_thinking: false
+    prompt_key: short
+    max_tokens: 128
+  baseline_medium:
+    stream: false
+    enable_thinking: false
+    prompt_key: medium
+    max_tokens: 128
+  long_context:
+    stream: false
+    enable_thinking: false
+    fixture: fixtures/long_context.txt
+    max_tokens: 128
+  context_128k_chars:
+    stream: false
+    enable_thinking: false
+    fixture: fixtures/half_million_context.txt
+    fixture_chars: 131072
+    max_tokens: 128
+  context_512k_chars:
+    stream: false
+    enable_thinking: false
+    fixture: fixtures/half_million_context.txt
+    fixture_chars: 524288
+    max_tokens: 128
+  half_million_context:
+    stream: false
+    enable_thinking: false
+    fixture: fixtures/half_million_context.txt
+    max_tokens: 128
+  streaming_latency_api:
+    stream: true
+    stream_options:
+      include_usage: true
+    enable_thinking: false
+    prompt_key: streaming_latency_api
+    temperature: 0
+    max_tokens: 160
+  streaming_latency_load:
+    stream: true
+    stream_options:
+      include_usage: true
+    enable_thinking: false
+    prompt_key: streaming_latency_load
+    temperature: 0
+    max_tokens: 160
+  streaming_latency_cache:
+    stream: true
+    stream_options:
+      include_usage: true
+    enable_thinking: false
+    prompt_key: streaming_latency_cache
+    temperature: 0
+    max_tokens: 160
+
+qwen_cache_profiles:
+  cache_long_context:
+    stream: false
+    enable_thinking: false
+    fixture: fixtures/long_context.txt
+    max_tokens: 128
+  cache_long_context_repeat:
+    extends: cache_long_context
+
+profile_weights:
+  throughput:
+    baseline_short: 74
+    baseline_medium: 20
+    long_context: 5
+    half_million_context: 1
+  throughput_rpm:
+    baseline_short: 85
+    baseline_medium: 15
+  throughput_balanced:
+    baseline_short: 55
+    baseline_medium: 20
+    long_context: 20
+    context_128k_chars: 5
+  throughput_tpm:
+    baseline_short: 15
+    baseline_medium: 10
+    long_context: 25
+    context_128k_chars: 30
+    context_512k_chars: 15
+    half_million_context: 5
+  throughput_streaming:
+    streaming_latency_api: 1
+    streaming_latency_load: 1
+    streaming_latency_cache: 1
+  mixed_compat:
+    basic_stream: 15
+    stream_with_usage: 10
+    thinking_enabled: 8
+    thinking_disabled: 5
+    sampling_non_thinking: 5
+    json_output: 5
+    stop_sequences: 3
+    logprobs: 3
+    tool_calls: 8
+    tool_calls_thinking: 8
+    glm_thinking_disabled: 5
+    glm_reasoning_max: 5
+    glm_tools: 5
+    glm_tool_calls_thinking: 5
+    qwen_thinking_disabled: 5
+    qwen_thinking_enabled: 5
+    qwen_thinking_budget: 5
+    qwen_tools: 5
+    aliyun_stream: 5
+    aliyun_disable_thinking: 5
+    aliyun_temperature: 3
+    aliyun_json_object: 3
+    aliyun_tools: 5
+    gemini_tools: 5
+    gemini_reasoning_medium: 5
+    gemini_reasoning_high: 5
+    gemini_native_system_instruction: 5
+    gemini_native_tools: 5
+    gemini_native_thinking_medium: 5
+    gemini_native_thinking_high: 5
+    claude_native_stream: 5
+    claude_native_system: 5
+    claude_native_tools: 5
+    claude_native_temperature: 5
+    claude_native_effort_medium: 5
+    gpt5_chat_stream: 5
+    gpt5_chat_reasoning_low: 5
+    gpt5_chat_reasoning_medium: 5
+    gpt5_chat_json: 3
+    gpt5_chat_tools: 5
+    kimi_k3_stream: 5
+    kimi_k3_stream_usage: 5
+    kimi_k3_reasoning_low: 5
+    kimi_k3_reasoning_high: 5
+    kimi_k3_reasoning_max: 5
+    kimi_k3_prompt_cache_key: 3
+    kimi_k3_dynamic_tools: 5
+    openai_responses_basic: 5
+    openai_responses_stream: 5
+    openai_responses_reasoning: 5
+    openai_responses_reasoning_low: 5
+    openai_responses_json: 3
+    openai_responses_tools: 5
+    grok_stream: 5
+    grok_reasoning_effort_low: 5
+    grok_json: 3
+    grok_tools: 5
+    grok_responses_basic: 5
+    grok_responses_stream: 5
+    grok_responses_reasoning_low: 5
+    grok_responses_json: 3
+    grok_responses_tools: 5
+    list_models: 5
