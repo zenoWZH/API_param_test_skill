@@ -1,6 +1,6 @@
 ---
 name: llm-api-test
-description: LLM 供应商准入与测试控制台。对任意供应商+模型执行参数合规、缓存、API 溯源（上游来源）、图片参数与并发压测，并可按内置供应商准入工作流从头或中途推进测试流程。带 Web 控制台前端。
+description: LLM 供应商准入与测试。对任意供应商+模型执行参数合规、缓存、API 溯源（上游来源）、图片参数与并发压测，全部通过 CLI 脚本完成并可总结报告；内置供应商准入工作流，可从头或中途推进。Web 控制台（含登录与公网隧道）为可选人工界面。
 author: wangzhouhao
 version: 1.0.0
 triggers:
@@ -21,8 +21,22 @@ metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["bash","curl"]},"confi
 
 # LLM API Test（供应商准入与测试）
 
-多供应商 LLM 测试工具包：Web 控制台 + CLI 测试 + 供应商准入工作流。
+多供应商 LLM 测试工具包：CLI 测试脚本 + 供应商准入工作流 + 可选 Web 控制台。
+**前端完全可选**：所有测试（参数/缓存/溯源/图片/并发）、供应商准入工作流、结果总结、任务停止都能仅靠本文件的 CLI 脚本完成，无需打开浏览器；前端只是给用户的人工操作界面。
 所有测试都会**真实调用付费 API**：执行前必须向用户确认 provider、model 与测试类型。
+
+能力一览（全部 CLI 可达）：
+
+| 需求 | 命令入口 |
+|---|---|
+| 初始化/配置检查 | `scripts/setup.sh`、`run_test.py --list-providers` |
+| 发起各类测试 | `scripts/run_test.py`（7 种类型） |
+| 查看任务状态 | `scripts/jobs.py` |
+| 停止任务 | `scripts/jobs.py --stop <job_id>` |
+| 读取并总结结果 | `scripts/result.py` |
+| 供应商准入流程 | `scripts/workflow.py`（状态机，可从头/中途接手） |
+| 新模型登记 | `scripts/register_model.py` |
+| 前端/密码/公网（可选） | `scripts/console.sh` |
 
 路径约定：`{baseDir}` = skill 根目录。Python 环境由 uv 管理（`{baseDir}/.venv`，若不存在先跑 setup）；**所有 Python 命令一律通过 uv 执行**：`uv run --python {baseDir}/.venv/bin/python <script> ...`。若 `uv` 不在 PATH，用 `~/.local/bin/uv` 替代。
 数据目录默认 `~/.config/llm-api-test/`（下称 `$DATA`），存放 `.env`、`providers.local.yaml`、注册表覆盖层、溯源语料库、报告与工作流状态。
@@ -37,7 +51,9 @@ bash {baseDir}/scripts/setup.sh   # uv 建 venv、装依赖、初始化数据目
 
 初始化后引导用户编辑 `$DATA/.env`（API key）与 `$DATA/providers.local.yaml`（供应商定义，模板见 `{baseDir}/app/providers.local.example.yaml`）。
 
-## Web 控制台（前端）
+## Web 控制台（前端，可选）
+
+> 仅供用户在浏览器人工操作；openclaw 执行任务**不需要**启动它。CLI 发起的任务也会出现在控制台（运行中与历史），所以前端可作为用户的观察窗口按需开启。
 
 ```bash
 bash {baseDir}/scripts/console.sh start     # 后台启动，默认 0.0.0.0:8090
@@ -74,6 +90,16 @@ cloudflared 首次自动下载到 `~/.local/bin/`；均走 TCP 443（http2），
 用户可在浏览器里选择供应商/模型发起测试、查看实时进度与历史报告。
 CLI 发起的任务也会出现在控制台（运行中与历史）。
 
+## 供应商/模型发现
+
+接到"测试某供应商某模型"的请求时，先确认 provider/model 已配置：
+
+```bash
+$PY {baseDir}/scripts/run_test.py --list-providers   # 所有 provider 及其模型清单（JSON）
+```
+
+未配置 → 走"配置与密钥"一节引导用户；未注册 profile → 用 `register_model.py` 登记。
+
 ## 模式一：供应商准入工作流（默认推荐）
 
 流程：①拿 Key → ②是否测过 → ③参数合规测试 →（④不过→⑤API 溯源→⑥判定）→ ⑦人工价格核对 → ⑨并发测试(staircase) → ⑫注册能力 profile。
@@ -100,7 +126,7 @@ $PY {baseDir}/scripts/workflow.py list
 
 节点类型处理方式：
 - `human_gate`：把 `prompt` 转述给用户，得到结论后 `advance --outcome ...`（valid_outcomes 见 status 输出）。
-- `auto_test`：执行 status/next 输出中的 `command`（`--background` 发起），用 `jobs.py` 轮询，结束后 `result.py` 总结，再 `advance --auto --job-id <id>`。
+- `auto_test`：两种方式——a) `next --execute` 直接由 workflow 发起并自动登记 job_id；b) 手动执行 status/next 输出中的 `command`（`--background` 发起），用 `jobs.py` 轮询，结束后 `result.py` 总结，再 `advance --auto --job-id <id>`。长任务（staircase/soak 默认数十分~1 小时）先用 `set-args` 缩短时长做探针，或与用户确认后跑完整时长。
 - `decision`：优先 `advance --auto`；失败时手动读 result 后指定 `--outcome`。
 - `onboard`（⑫注册）：**必须人工批准**——
 
@@ -125,6 +151,7 @@ $PY {baseDir}/scripts/run_test.py --type image_param_test --provider <P> --model
 
 ```bash
 $PY {baseDir}/scripts/jobs.py [--running] [--id <job_id>]   # 任务列表/状态（含运行中）
+$PY {baseDir}/scripts/jobs.py --stop <job_id>               # 停止运行中的任务（SIGTERM 进程组）
 $PY {baseDir}/scripts/result.py --id <job_id> [--full]      # 精简结果 JSON → 用中文向用户总结
 ```
 
@@ -155,10 +182,13 @@ family 必须是注册表中已有的（如 deepseek/kimi/gpt/claude...）；全
 
 ## 停止任务
 
-控制台任务用前端 stop 按钮；CLI 任务：`kill <pid>`（pid 见 `jobs.py --id` 输出或 `$DATA/reports/jobs/<job_id>/run.json`）。
+- CLI 发起的任务：`$PY {baseDir}/scripts/jobs.py --stop <job_id>`（SIGTERM 到任务进程组，状态记为 stopped）。
+- 前端发起的任务：用户在控制台点 stop 按钮；或让 openclaw 调 console API（`POST /api/jobs/<id>/stop`，需先登录）。
 
 ## 故障排查
 
 - `console.sh logs` 看控制台日志；任务日志在 `$DATA/reports/jobs/<job_id>/job.log`。
-- 报 “Missing registered text model/API/route profile” → 模型未注册 profile，见上文。
-- Python 必须 ≥3.11；依赖问题重跑 `setup.sh`。
+- 报 “Missing registered text model/API/route profile” → 模型未注册 profile，用 `register_model.py`。
+- 报 “Missing API key” → `$DATA/.env` 缺对应 `api_key_env` 变量，引导用户补 key。
+- trace compare 报 “corpus is empty” → 先按"溯源语料库"一节建库。
+- Python 环境由 uv 受管（3.12），环境问题一律重跑 `setup.sh`。

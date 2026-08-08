@@ -328,11 +328,46 @@ def _run_trace(args: argparse.Namespace) -> int:
     return returncode
 
 
+def _list_providers() -> int:
+    config = load_config()
+    from lib.config import get_provider_config
+
+    active = ""
+    try:
+        active = get_active_provider_name(config)
+    except Exception:
+        pass
+    output = []
+    for name in sorted((config.get("providers") or {})):
+        try:
+            cfg = get_provider_config(config, name)
+        except Exception:
+            continue
+        models_cfg = cfg.get("models") or {}
+        output.append(
+            {
+                "provider": name,
+                "label": cfg.get("label"),
+                "active": name == active,
+                "default_model": models_cfg.get("default"),
+                "models": models_cfg.get("candidates") or [],
+                "families": models_cfg.get("families") or {},
+            }
+        )
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Launch an LLM test job directly (registered so the web console can see it)."
     )
-    parser.add_argument("--type", required=True, choices=sorted(JOB_TYPES))
+    parser.add_argument("--type", choices=sorted(JOB_TYPES))
+    parser.add_argument(
+        "--list-providers",
+        action="store_true",
+        help="list configured providers and their models, then exit",
+    )
     parser.add_argument("--provider", default=None)
     parser.add_argument("--model", default=None)
     parser.add_argument("--route-profile", default=None)
@@ -348,7 +383,9 @@ def main() -> int:
     parser.add_argument("--target-rpm", type=float, default=None)
     parser.add_argument("--target-tpm", type=float, default=None)
     parser.add_argument("--timeout-sec", type=int, default=None)
-    parser.add_argument("--expect", default=None, help="trace_test: expected upstream id")
+    parser.add_argument(
+        "--expect", default=None, help="trace_test: expected upstream id"
+    )
     parser.add_argument(
         "--extra-json",
         default=None,
@@ -356,6 +393,14 @@ def main() -> int:
     )
     parser.add_argument("--background", action="store_true")
     args = parser.parse_args()
+    if args.list_providers:
+        try:
+            return _list_providers()
+        except Exception as exc:
+            print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+            return 2
+    if not args.type:
+        parser.error("--type is required (or use --list-providers)")
     if args.type == "trace_test":
         return _run_trace(args)
     return _run_via_console_manager(args)
