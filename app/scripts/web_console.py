@@ -100,6 +100,7 @@ REPORTS_ROOT = default_reports_root()
 JOBS_ROOT = REPORTS_ROOT / "jobs"
 CONSOLE_AUTH_PATH = skill_data_dir() / "console_auth.json"
 CONSOLE_SECRET_PATH = skill_data_dir() / "console_secret_key"
+CONSOLE_PASSWORD_PATH = skill_data_dir() / "console_password"
 DEFAULT_QUICK_USERS = 10
 DEFAULT_QUICK_SPAWN_RATE = 2
 DEFAULT_QUICK_DURATION = "2m"
@@ -156,6 +157,8 @@ def _write_auth_file(user: str, password: str) -> None:
     CONSOLE_AUTH_PATH.parent.mkdir(parents=True, exist_ok=True)
     CONSOLE_AUTH_PATH.write_text(json.dumps(payload), encoding="utf-8")
     CONSOLE_AUTH_PATH.chmod(0o600)
+    CONSOLE_PASSWORD_PATH.write_text(password, encoding="utf-8")
+    CONSOLE_PASSWORD_PATH.chmod(0o600)
 
 
 def _ensure_auth_configured() -> tuple[str, str] | None:

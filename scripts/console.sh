@@ -58,6 +58,31 @@ tunnel_url() {
   grep -o "https://[a-z0-9-]*\.trycloudflare\.com" "$TUNNEL_LOG" 2>/dev/null | head -1
 }
 
+set_console_password() {
+  local newpw="$1"
+  "$PY" - "$DATA_DIR" "$newpw" <<'EOF'
+import hashlib, json, secrets, sys
+from pathlib import Path
+data_dir, password = Path(sys.argv[1]), sys.argv[2]
+salt = secrets.token_hex(16)
+payload = {
+    "user": "admin",
+    "salt": salt,
+    "password_pbkdf2": hashlib.pbkdf2_hmac(
+        "sha256", password.encode(), bytes.fromhex(salt), 100_000
+    ).hex(),
+}
+data_dir.mkdir(parents=True, exist_ok=True)
+auth = data_dir / "console_auth.json"
+auth.write_text(json.dumps(payload), encoding="utf-8")
+auth.chmod(0o600)
+pw_file = data_dir / "console_password"
+pw_file.write_text(password, encoding="utf-8")
+pw_file.chmod(0o600)
+print("password updated (takes effect immediately for new logins)")
+EOF
+}
+
 alive() {
   [[ -f "$PID_FILE" ]] || return 1
   pid_is_console "$(cat "$PID_FILE")"
@@ -114,16 +139,35 @@ case "${1:-status}" in
     tail -50 "$LOG_FILE"
     ;;
   tunnel)
+    TUNNEL_TOKEN="${CLOUDFLARE_TUNNEL_TOKEN:-}"
+    if [[ "${2:-}" == "--token" ]]; then
+      TUNNEL_TOKEN="${3:?usage: $SELF tunnel [--token <CLOUDFLARE_TUNNEL_TOKEN>]}"
+    fi
     if ! alive; then
       echo "error: console is not running; start it first" >&2
       exit 1
     fi
     if tunnel_alive; then
       echo "tunnel already running (pid $(cat "$TUNNEL_PID_FILE"))"
-      tunnel_url || tail -5 "$TUNNEL_LOG"
+      tunnel_url || echo "(named tunnel: hostname is your configured Cloudflare DNS record)"
       exit 0
     fi
     ensure_cloudflared || exit 1
+    if [[ -n "$TUNNEL_TOKEN" ]]; then
+      nohup "$CLOUDFLARED" tunnel --protocol http2 --no-autoupdate run \
+      --token "$TUNNEL_TOKEN" >"$TUNNEL_LOG" 2>&1 &
+      echo $! > "$TUNNEL_PID_FILE"
+      sleep 3
+      if tunnel_alive; then
+        echo "named tunnel started (pid $(cat "$TUNNEL_PID_FILE"))"
+        echo "public url: your Cloudflare DNS hostname for this tunnel (see dashboard)"
+      else
+        echo "named tunnel failed; see $TUNNEL_LOG" >&2
+        tail -10 "$TUNNEL_LOG" >&2
+        exit 1
+      fi
+      exit 0
+    fi
     nohup "$CLOUDFLARED" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate \
       --protocol http2 >"$TUNNEL_LOG" 2>&1 &
     echo $! > "$TUNNEL_PID_FILE"
@@ -132,7 +176,7 @@ case "${1:-status}" in
       url="$(tunnel_url)"
       if [[ -n "$url" ]]; then
         echo "public url: $url"
-        echo "(login required; credentials in $DATA_DIR/console_auth.json or console.log)"
+        echo "(login required; show password via: $SELF passwd)"
         exit 0
       fi
       tunnel_alive || break
@@ -153,8 +197,45 @@ case "${1:-status}" in
   tunnel-url)
     tunnel_url || { echo "no tunnel url; run: $SELF tunnel" >&2; exit 1; }
     ;;
+  passwd)
+    case "${2:-}" in
+      "")
+        if [[ -n "${WEB_CONSOLE_PASSWORD:-}" ]]; then
+          echo "password is set via WEB_CONSOLE_PASSWORD env (change it there)"
+        elif [[ -f "$DATA_DIR/console_password" ]]; then
+          echo "user:     admin"
+          echo "password: $(cat "$DATA_DIR/console_password")"
+        else
+          echo "no stored password found (custom auth file in use?)"
+          echo "reset one: $SELF passwd --reset    or    $SELF passwd --set <newpassword>"
+          exit 1
+        fi
+        ;;
+      --set)
+        [[ -n "${3:-}" ]] || { echo "usage: $SELF passwd --set <newpassword>" >&2; exit 2; }
+        set_console_password "$3"
+        echo "user:     admin"
+        echo "password: $3"
+        ;;
+      --reset)
+        newpw="$("$PY" -c 'import secrets; print(secrets.token_urlsafe(12))')"
+        set_console_password "$newpw"
+        echo "user:     admin"
+        echo "password: $newpw"
+        ;;
+      *)
+        echo "usage: $SELF passwd [--set <newpassword>|--reset]" >&2
+        exit 2
+        ;;
+    esac
+    ;;
+  auth-off)
+    echo "note: authentication is optional; to disable it, start the console with"
+    echo "  LLM_API_TEST_DISABLE_AUTH=1 bash $SELF start"
+    echo "(only do this on trusted networks; it affects the next start)"
+    ;;
   *)
-    echo "usage: $0 {start|stop|status|url|logs|tunnel|tunnel-stop|tunnel-url}" >&2
+    echo "usage: $0 {start|stop|status|url|logs|passwd|tunnel [--token T]|tunnel-stop|tunnel-url|auth-off}" >&2
     exit 2
     ;;
 esac

@@ -46,17 +46,30 @@ bash {baseDir}/scripts/console.sh stop
 bash {baseDir}/scripts/console.sh logs
 ```
 
-**登录认证**：控制台强制用户名密码登录。首次启动自动生成 `admin` + 随机密码（打印在启动输出与 `console.log`，存放于 `$DATA/console_auth.json`，600 权限）。可用环境变量 `WEB_CONSOLE_USER` / `WEB_CONSOLE_PASSWORD` 覆盖。
-
-**公网访问**（Cloudflare 免费隧道，无需账号）：
+**登录认证（可选，默认开启）**：首次启动自动生成 `admin` + 随机密码。openclaw 可用以下命令把密码告诉用户或修改：
 
 ```bash
-bash {baseDir}/scripts/console.sh tunnel        # 建立隧道并打印 https://*.trycloudflare.com 公网地址
-bash {baseDir}/scripts/console.sh tunnel-url    # 再次查看公网地址
-bash {baseDir}/scripts/console.sh tunnel-stop
+bash {baseDir}/scripts/console.sh passwd            # 查看当前用户名/密码（转述给用户）
+bash {baseDir}/scripts/console.sh passwd --set <新密码>   # 用户要求改密码时（立即生效，无需重启）
+bash {baseDir}/scripts/console.sh passwd --reset    # 重置为新的随机密码
 ```
 
-cloudflared 首次自动下载到 `~/.local/bin/`；走 TCP 443（http2），封锁 UDP 的网络也能用。公网地址每次重建都会变化；把地址和登录密码一起给用户。
+用户明确不要密码时：`LLM_API_TEST_DISABLE_AUTH=1 bash {baseDir}/scripts/console.sh start`（仅可信网络，重启生效）。
+
+**公网访问（可选）**——两种方式，引导见 `{baseDir}/references/console-access.md`：
+
+```bash
+# 方式一：Cloudflare 免费快速隧道（无需账号；地址随机、每次重建会变、无 SLA）
+bash {baseDir}/scripts/console.sh tunnel        # 打印 https://*.trycloudflare.com
+bash {baseDir}/scripts/console.sh tunnel-url    # 再次查看
+bash {baseDir}/scripts/console.sh tunnel-stop
+
+# 方式二：Cloudflare 账户命名隧道（固定域名、需要用户在 dashboard 创建隧道拿 token）
+bash {baseDir}/scripts/console.sh tunnel --token <CLOUDFLARE_TUNNEL_TOKEN>
+# 或先 export CLOUDFLARE_TUNNEL_TOKEN=... 再 bash {baseDir}/scripts/console.sh tunnel
+```
+
+cloudflared 首次自动下载到 `~/.local/bin/`；均走 TCP 443（http2），封锁 UDP 的网络也能用。公网地址+登录密码要一起给用户。
 
 用户可在浏览器里选择供应商/模型发起测试、查看实时进度与历史报告。
 CLI 发起的任务也会出现在控制台（运行中与历史）。
