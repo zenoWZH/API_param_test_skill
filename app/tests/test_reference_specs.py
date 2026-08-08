@@ -19,7 +19,84 @@ from lib.reference_specs import (
 
 
 class ReferenceSpecTest(unittest.TestCase):
-    def test_route_wrapper_inherits_contract_without_inheriting_route_identity(self) -> None:
+    @staticmethod
+    def _inject_provider(
+        config: dict,
+        name: str,
+        models: dict,
+    ) -> None:
+        """Add a minimal self-contained provider fixture (no network access)."""
+        config.setdefault("providers", {})[name] = {
+            "name": name,
+            "label": name,
+            "base_url": "http://127.0.0.1:9/v1",
+            "backend": "openai_compatible",
+            "default_transport": "chat_completions",
+            "api_interfaces": {
+                "chat_completions": {"path": "/chat/completions", "auth": "bearer"}
+            },
+            "api_key_env": "DUMMY_REFERENCE_SPEC_TEST_KEY",
+            "models": models,
+        }
+
+    @classmethod
+    def _inject_aliyun_maas(cls, config: dict) -> None:
+        cls._inject_provider(
+            config,
+            "aliyun_maas",
+            {
+                "default": "glm-5.2",
+                "candidates": ["glm-5.2", "deepseek-v4-pro"],
+                "families": {"glm-5.2": "glm", "deepseek-v4-pro": "deepseek"},
+                "routes": {
+                    "glm-5.2": {
+                        "aliyun_maas": {"api_forms": {"openai_chat_completions": {}}}
+                    },
+                    "deepseek-v4-pro": {
+                        "aliyun_maas": {"api_forms": {"openai_chat_completions": {}}}
+                    },
+                },
+                "default_routes": {
+                    "glm-5.2": "aliyun_maas",
+                    "deepseek-v4-pro": "aliyun_maas",
+                },
+                "default_api_forms": {
+                    "glm-5.2": {"aliyun_maas": "openai_chat_completions"},
+                    "deepseek-v4-pro": {"aliyun_maas": "openai_chat_completions"},
+                },
+            },
+        )
+
+    @classmethod
+    def _inject_moonshot_official_k3(cls, config: dict) -> None:
+        cls._inject_provider(
+            config,
+            "moonshot_official_k3",
+            {
+                "default": "kimi-k3",
+                "candidates": ["kimi-k3"],
+                "families": {"kimi-k3": "kimi"},
+                "routes": {
+                    "kimi-k3": {
+                        "vendor_direct": {
+                            "api_forms": {
+                                "openai_chat_completions": {
+                                    "reference_source": "kimi_k3_openai_compat"
+                                }
+                            }
+                        }
+                    }
+                },
+                "default_routes": {"kimi-k3": "vendor_direct"},
+                "default_api_forms": {
+                    "kimi-k3": {"vendor_direct": "openai_chat_completions"}
+                },
+            },
+        )
+
+    def test_route_wrapper_inherits_contract_without_inheriting_route_identity(
+        self,
+    ) -> None:
         direct = get_reference_source("kimi_k3_openai_compat")
         dynamic = get_reference_source("kimi_k3_dynamic_aggregator")
         self.assertEqual(dynamic["params"], direct["params"])
@@ -27,9 +104,7 @@ class ReferenceSpecTest(unittest.TestCase):
         self.assertEqual(dynamic["model_family"], "kimi")
         self.assertEqual(dynamic["api_form"], "openai_chat_completions")
         self.assertEqual(dynamic["route_profile"], "dynamic_aggregator")
-        self.assertEqual(
-            dynamic["contract_reference_source"], "kimi_k3_openai_compat"
-        )
+        self.assertEqual(dynamic["contract_reference_source"], "kimi_k3_openai_compat")
         self.assertEqual(dynamic["certification_scope"], "adapter_only")
         self.assertTrue(dynamic["route_stability_required"])
 
@@ -66,9 +141,7 @@ class ReferenceSpecTest(unittest.TestCase):
                         default_source = form_cfg.get("default_reference_source")
                         if default_source:
                             sources.append(default_source)
-                        comparison_source = form_cfg.get(
-                            "comparison_reference_source"
-                        )
+                        comparison_source = form_cfg.get("comparison_reference_source")
                         if comparison_source:
                             sources.append(comparison_source)
                         for model_cfg in (
@@ -78,9 +151,7 @@ class ReferenceSpecTest(unittest.TestCase):
                             if model_cfg.get("default_reference_source"):
                                 sources.append(model_cfg["default_reference_source"])
                             if model_cfg.get("comparison_reference_source"):
-                                sources.append(
-                                    model_cfg["comparison_reference_source"]
-                                )
+                                sources.append(model_cfg["comparison_reference_source"])
                         for source_id in set(sources):
                             with self.subTest(
                                 family=family,
@@ -95,16 +166,15 @@ class ReferenceSpecTest(unittest.TestCase):
 
     def test_provider_model_can_override_family_default_reference_source(self) -> None:
         config = copy.deepcopy(load_config())
+        self._inject_aliyun_maas(config)
         provider = config["providers"]["aliyun_maas"]
-        form_cfg = provider["models"]["routes"]["glm-5.2"]["aliyun_maas"][
-            "api_forms"
-        ]["openai_chat_completions"]
+        form_cfg = provider["models"]["routes"]["glm-5.2"]["aliyun_maas"]["api_forms"][
+            "openai_chat_completions"
+        ]
         form_cfg["reference_source"] = "aliyun_glm5_openai_compat"
 
         self.assertEqual(
-            default_reference_source_for_model(
-                config, "glm", "glm-5.2", "aliyun_maas"
-            ),
+            default_reference_source_for_model(config, "glm", "glm-5.2", "aliyun_maas"),
             "aliyun_glm5_openai_compat",
         )
         self.assertEqual(
@@ -116,9 +186,7 @@ class ReferenceSpecTest(unittest.TestCase):
 
         form_cfg["reference_source"] = "not-a-reference-source"
         with self.assertRaisesRegex(KeyError, "not found"):
-            default_reference_source_for_model(
-                config, "glm", "glm-5.2", "aliyun_maas"
-            )
+            default_reference_source_for_model(config, "glm", "glm-5.2", "aliyun_maas")
 
     def test_aliyun_series_sources_resolve_only_documented_profiles(self) -> None:
         config = load_config()
@@ -175,11 +243,11 @@ class ReferenceSpecTest(unittest.TestCase):
                         reference_source=source,
                     )
                     self.assertEqual(request.metadata["model_family"], family)
-                    self.assertEqual(request.metadata["api_form"], "openai_chat_completions")
-                    self.assertEqual(request.metadata["route_profile"], "aliyun_maas")
                     self.assertEqual(
-                        request.metadata["transport"], "chat_completions"
+                        request.metadata["api_form"], "openai_chat_completions"
                     )
+                    self.assertEqual(request.metadata["route_profile"], "aliyun_maas")
+                    self.assertEqual(request.metadata["transport"], "chat_completions")
                     self.assertIn("messages", request.body)
 
         kimi_code_profiles = reference_test_profiles(
@@ -205,16 +273,13 @@ class ReferenceSpecTest(unittest.TestCase):
         self.assertEqual(kimi_rows["n"]["official"], "unsupported")
         self.assertEqual(kimi_rows["response_format"]["official"], "unsupported")
         self.assertEqual(deepseek_rows["top_k"]["official"], "unsupported")
-        self.assertEqual(
-            deepseek_rows["response_format"]["official"], "unsupported"
-        )
+        self.assertEqual(deepseek_rows["response_format"]["official"], "unsupported")
 
     def test_gpt_chat_source_is_independent_from_glm_extensions(self) -> None:
         self.assertEqual(default_reference_source_for_family("gpt"), "openai_chat_base")
         self.assertEqual(family_for_reference("openai_chat_base"), "gpt")
         rows = {
-            row["parameter"]: row
-            for row in reference_param_rows("openai_chat_base")
+            row["parameter"]: row for row in reference_param_rows("openai_chat_base")
         }
 
         self.assertIn("tools", rows)
@@ -233,8 +298,7 @@ class ReferenceSpecTest(unittest.TestCase):
 
     def test_glm_5_2_source_covers_reasoning_levels_and_preserved_tools(self) -> None:
         rows = {
-            row["parameter"]: row
-            for row in reference_param_rows("glm_openai_compat")
+            row["parameter"]: row for row in reference_param_rows("glm_openai_compat")
         }
         profiles = reference_test_profiles("glm_openai_compat")
 
@@ -294,6 +358,7 @@ class ReferenceSpecTest(unittest.TestCase):
 
     def test_kimi_k3_uses_dedicated_official_reference_source(self) -> None:
         config = load_config()
+        self._inject_moonshot_official_k3(config)
         self.assertEqual(
             default_reference_source_for_model(
                 config,
@@ -407,7 +472,9 @@ class ReferenceSpecTest(unittest.TestCase):
             ["deepseek_frequency_penalty"],
         )
         self.assertEqual(rows["messages[].prefix"]["coverage_mode"], "not_tested")
-        self.assertEqual(rows["tools"]["test_profiles"], ["tool_calls", "tool_calls_thinking"])
+        self.assertEqual(
+            rows["tools"]["test_profiles"], ["tool_calls", "tool_calls_thinking"]
+        )
         self.assertEqual(rows["tool_choice"]["test_profiles"], ["tool_choice_required"])
         self.assertEqual(
             rows["response.reasoning_content"]["test_profiles"],
@@ -421,9 +488,7 @@ class ReferenceSpecTest(unittest.TestCase):
         )
 
     def test_deepseek_v4_flash_0731_uses_independent_xinyun_profile(self) -> None:
-        source = get_reference_source(
-            "deepseek_xinyunai_v4_flash_0731_openai_compat"
-        )
+        source = get_reference_source("deepseek_xinyunai_v4_flash_0731_openai_compat")
         self.assertEqual(source["model_family"], "deepseek")
         self.assertEqual(source["route_profile"], "dynamic_aggregator")
         self.assertEqual(source["api_form"], "openai_chat_completions")
@@ -619,9 +684,7 @@ class ReferenceSpecTest(unittest.TestCase):
                     model_family_override="gemini",
                 )
                 self.assertEqual(
-                    request.body["generationConfig"]["thinkingConfig"][
-                        "thinkingLevel"
-                    ],
+                    request.body["generationConfig"]["thinkingConfig"]["thinkingLevel"],
                     level,
                 )
                 self.assertTrue(
@@ -816,7 +879,9 @@ class ReferenceSpecTest(unittest.TestCase):
             "qwen_openai_compat",
         )
         self.assertEqual(family_for_reference("qwen_openai_compat"), "qwen")
-        rows = {row["parameter"]: row for row in reference_param_rows("qwen_openai_compat")}
+        rows = {
+            row["parameter"]: row for row in reference_param_rows("qwen_openai_compat")
+        }
         profiles = reference_test_profiles("qwen_openai_compat")
         config = load_config()
 
@@ -826,7 +891,9 @@ class ReferenceSpecTest(unittest.TestCase):
         self.assertEqual(rows["n"]["test_profiles"], ["qwen_n"])
         self.assertEqual(rows["logprobs"]["test_profiles"], ["qwen_logprobs"])
         self.assertEqual(rows["top_logprobs"]["test_profiles"], ["qwen_logprobs"])
-        self.assertEqual(rows["response_format"]["test_profiles"], ["qwen_response_format"])
+        self.assertEqual(
+            rows["response_format"]["test_profiles"], ["qwen_response_format"]
+        )
         self.assertEqual(
             rows["response.reasoning_content"]["test_profiles"],
             [
@@ -836,7 +903,9 @@ class ReferenceSpecTest(unittest.TestCase):
                 "qwen_preserve_thinking",
             ],
         )
-        self.assertEqual(rows["vl_high_resolution_images"]["coverage_mode"], "not_tested")
+        self.assertEqual(
+            rows["vl_high_resolution_images"]["coverage_mode"], "not_tested"
+        )
         self.assertEqual(
             rows["header.X-DashScope-DataInspection"]["coverage_mode"],
             "not_tested",
@@ -1041,7 +1110,9 @@ class ReferenceSpecTest(unittest.TestCase):
         profiles = reference_test_profiles("openai_gpt5_chat")
         self.assertIn("gpt5_chat_tools", profiles)
         self.assertNotIn("stop_sequences", profiles)
-        rows = {row["parameter"]: row for row in reference_param_rows("openai_gpt5_chat")}
+        rows = {
+            row["parameter"]: row for row in reference_param_rows("openai_gpt5_chat")
+        }
         self.assertIn("max_completion_tokens", rows)
         self.assertIn("reasoning_effort", rows)
         self.assertNotIn("stop", rows)
@@ -1068,13 +1139,14 @@ class ReferenceSpecTest(unittest.TestCase):
         )
         self.assertEqual(reasoning.body["reasoning_effort"], "low")
 
-    def test_openai_gpt56_sources_cover_current_chat_and_responses_contracts(self) -> None:
+    def test_openai_gpt56_sources_cover_current_chat_and_responses_contracts(
+        self,
+    ) -> None:
         chat_profiles = reference_test_profiles("openai_gpt56_chat")
         self.assertIn("gpt5_chat_reasoning_max", chat_profiles)
         self.assertIn("gpt5_chat_reject_temperature", chat_profiles)
         chat_rows = {
-            row["parameter"]: row
-            for row in reference_param_rows("openai_gpt56_chat")
+            row["parameter"]: row for row in reference_param_rows("openai_gpt56_chat")
         }
         self.assertEqual(chat_rows["temperature"]["official"], "unsupported")
         self.assertEqual(chat_rows["stop"]["official"], "unsupported")
@@ -1161,7 +1233,10 @@ class ReferenceSpecTest(unittest.TestCase):
                 "grok_reject_presence_penalty",
             ],
         )
-        rows = {row["parameter"]: row for row in reference_param_rows("grok_chat_completions")}
+        rows = {
+            row["parameter"]: row
+            for row in reference_param_rows("grok_chat_completions")
+        }
         self.assertIn("max_completion_tokens", rows)
         self.assertIn("reasoning_effort", rows)
         self.assertEqual(rows["stop"]["test_profiles"], ["grok_reject_stop"])
@@ -1194,7 +1269,9 @@ class ReferenceSpecTest(unittest.TestCase):
                 self.assertIn("max_completion_tokens", request.body)
                 self.assertNotIn("max_tokens", request.body)
                 self.assertNotIn("stop", request.body)
-                self.assertIn(request.body.get("reasoning_effort"), {"low", "medium", "high"})
+                self.assertIn(
+                    request.body.get("reasoning_effort"), {"low", "medium", "high"}
+                )
 
         none_effort = build_request(
             config,
@@ -1283,7 +1360,9 @@ class ReferenceSpecTest(unittest.TestCase):
         self.assertEqual(family_for_reference("openai_responses"), "gpt")
         profiles = reference_test_profiles("openai_responses")
         self.assertIn("openai_responses_tools", profiles)
-        rows = {row["parameter"]: row for row in reference_param_rows("openai_responses")}
+        rows = {
+            row["parameter"]: row for row in reference_param_rows("openai_responses")
+        }
         self.assertIn("input", rows)
         self.assertIn("text.format", rows)
 

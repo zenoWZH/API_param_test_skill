@@ -20,7 +20,7 @@
 - [模型家族 Profile 手册](docs/model_profiles/README.md)：当前所有文字与图片模型家族的逐 profile 说明，由 schema 自动生成并检查。
 - [图片参数与分辨率测试专项手册](docs/image_param_test.md)：完整 CLI、图片用例、报告 schema、判定阈值和安全边界。
 - [参数测试覆盖审计](docs/param_test_audit.md)：各模型家族 Reference Source 与参数覆盖缺口。
-- [实现与验收计划](PLAN.md)：当前架构、执行流程、指标口径和验收记录。
+- [参数测试架构](docs/param_test_architecture.md)：当前架构、执行流程、指标口径和验收记录。
 
 ## 安装
 
