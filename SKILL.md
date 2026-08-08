@@ -40,11 +40,23 @@ bash {baseDir}/scripts/setup.sh   # uv 建 venv、装依赖、初始化数据目
 ## Web 控制台（前端）
 
 ```bash
-bash {baseDir}/scripts/console.sh start     # 后台启动，默认 0.0.0.0:8090（无鉴权）
+bash {baseDir}/scripts/console.sh start     # 后台启动，默认 0.0.0.0:8090
 bash {baseDir}/scripts/console.sh status    # 状态 + URL
 bash {baseDir}/scripts/console.sh stop
 bash {baseDir}/scripts/console.sh logs
 ```
+
+**登录认证**：控制台强制用户名密码登录。首次启动自动生成 `admin` + 随机密码（打印在启动输出与 `console.log`，存放于 `$DATA/console_auth.json`，600 权限）。可用环境变量 `WEB_CONSOLE_USER` / `WEB_CONSOLE_PASSWORD` 覆盖。
+
+**公网访问**（Cloudflare 免费隧道，无需账号）：
+
+```bash
+bash {baseDir}/scripts/console.sh tunnel        # 建立隧道并打印 https://*.trycloudflare.com 公网地址
+bash {baseDir}/scripts/console.sh tunnel-url    # 再次查看公网地址
+bash {baseDir}/scripts/console.sh tunnel-stop
+```
+
+cloudflared 首次自动下载到 `~/.local/bin/`；走 TCP 443（http2），封锁 UDP 的网络也能用。公网地址每次重建都会变化；把地址和登录密码一起给用户。
 
 用户可在浏览器里选择供应商/模型发起测试、查看实时进度与历史报告。
 CLI 发起的任务也会出现在控制台（运行中与历史）。

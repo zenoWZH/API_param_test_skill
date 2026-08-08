@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import json
 import copy
+import hashlib
+import hmac
 import os
 import re
+import secrets
 import signal
 import subprocess
 import sys
@@ -21,13 +24,23 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import (
+    Flask,
+    jsonify,
+    redirect,
+    render_template,
+    render_template_string,
+    request,
+    send_from_directory,
+    session,
+)
 
 from lib.adaptive_load import resolve_context_window
 from lib.config import (
     api_form_for_transport,
     default_reports_root,
     ensure_dir,
+    skill_data_dir,
     get_active_provider_name,
     get_image_model_config,
     get_image_provider_config,
@@ -85,6 +98,8 @@ from lib.reference_specs import (
 
 REPORTS_ROOT = default_reports_root()
 JOBS_ROOT = REPORTS_ROOT / "jobs"
+CONSOLE_AUTH_PATH = skill_data_dir() / "console_auth.json"
+CONSOLE_SECRET_PATH = skill_data_dir() / "console_secret_key"
 DEFAULT_QUICK_USERS = 10
 DEFAULT_QUICK_SPAWN_RATE = 2
 DEFAULT_QUICK_DURATION = "2m"
@@ -98,6 +113,145 @@ DEFAULT_TARGET_TPM = 0.0
 LOAD_RESULT_SCHEMA_VERSION = 8
 
 app = Flask(__name__)
+
+
+def _load_auth_credentials() -> tuple[str, str, str] | None:
+    if os.getenv("LLM_API_TEST_DISABLE_AUTH") == "1":
+        return None
+    user = os.getenv("WEB_CONSOLE_USER")
+    password = os.getenv("WEB_CONSOLE_PASSWORD")
+    if user and password:
+        return user, "plain", password
+    if not CONSOLE_AUTH_PATH.exists():
+        return None
+    try:
+        data = json.loads(CONSOLE_AUTH_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    if not all(data.get(key) for key in ("user", "salt", "password_pbkdf2")):
+        return None
+    return str(data["user"]), str(data["salt"]), str(data["password_pbkdf2"])
+
+
+def _hash_password(password: str, salt: str) -> str:
+    return hashlib.pbkdf2_hmac(
+        "sha256", password.encode("utf-8"), bytes.fromhex(salt), 100_000
+    ).hex()
+
+
+def _verify_password(password: str, creds: tuple[str, str, str]) -> bool:
+    _user, salt, stored = creds
+    if salt == "plain":
+        return hmac.compare_digest(password, stored)
+    return hmac.compare_digest(_hash_password(password, salt), stored)
+
+
+def _write_auth_file(user: str, password: str) -> None:
+    salt = secrets.token_hex(16)
+    payload = {
+        "user": user,
+        "salt": salt,
+        "password_pbkdf2": _hash_password(password, salt),
+    }
+    CONSOLE_AUTH_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONSOLE_AUTH_PATH.write_text(json.dumps(payload), encoding="utf-8")
+    CONSOLE_AUTH_PATH.chmod(0o600)
+
+
+def _ensure_auth_configured() -> tuple[str, str] | None:
+    if _load_auth_credentials() is not None:
+        return None
+    user = "admin"
+    password = secrets.token_urlsafe(12)
+    _write_auth_file(user, password)
+    return user, password
+
+
+def _ensure_secret_key() -> None:
+    if CONSOLE_SECRET_PATH.exists():
+        app.secret_key = CONSOLE_SECRET_PATH.read_text(encoding="utf-8").strip()
+        return
+    CONSOLE_SECRET_PATH.parent.mkdir(parents=True, exist_ok=True)
+    secret = secrets.token_hex(32)
+    CONSOLE_SECRET_PATH.write_text(secret, encoding="utf-8")
+    CONSOLE_SECRET_PATH.chmod(0o600)
+    app.secret_key = secret
+
+
+_LOGIN_FAILURES: dict[str, list[float]] = {}
+_LOGIN_FAILURES_LOCK = threading.Lock()
+LOGIN_MAX_FAILURES = 10
+LOGIN_WINDOW_SEC = 300
+
+LOGIN_PAGE = """<!doctype html>
+<html lang="zh"><head><meta charset="utf-8"><title>LLM API Test Console - 登录</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+form{background:#1e293b;padding:2rem;border-radius:12px;width:300px;display:flex;flex-direction:column;gap:.8rem}
+input{padding:.6rem;border-radius:6px;border:1px solid #334155;background:#0f172a;color:#e2e8f0}
+button{padding:.6rem;border:0;border-radius:6px;background:#3b82f6;color:#fff;cursor:pointer}
+.err{color:#f87171;font-size:.85rem}
+</style></head><body>
+<form method="post" action="/login">
+<h3>LLM API Test Console</h3>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<input name="username" placeholder="用户名" autocomplete="username" required>
+<input name="password" type="password" placeholder="密码" autocomplete="current-password" required>
+<button type="submit">登录</button>
+</form></body></html>"""
+
+
+@app.before_request
+def _require_login() -> Any:
+    creds = _load_auth_credentials()
+    if creds is None:
+        return None
+    path = request.path
+    if path in {"/login", "/favicon.ico"} or path.startswith("/static/"):
+        return None
+    if session.get("auth_user"):
+        return None
+    if path.startswith("/api/") or path.startswith("/reports/"):
+        return jsonify({"error": "authentication required"}), 401
+    return redirect("/login")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login() -> Any:
+    creds = _load_auth_credentials()
+    if creds is None:
+        return redirect("/")
+    if request.method == "POST":
+        client = request.remote_addr or "unknown"
+        now = time.time()
+        with _LOGIN_FAILURES_LOCK:
+            failures = [
+                t for t in _LOGIN_FAILURES.get(client, []) if now - t < LOGIN_WINDOW_SEC
+            ]
+            if len(failures) >= LOGIN_MAX_FAILURES:
+                return render_template_string(
+                    LOGIN_PAGE, error="尝试次数过多，请稍后再试"
+                ), 429
+        username = str(request.form.get("username") or "")
+        password = str(request.form.get("password") or "")
+        if hmac.compare_digest(username, creds[0]) and _verify_password(
+            password, creds
+        ):
+            with _LOGIN_FAILURES_LOCK:
+                _LOGIN_FAILURES.pop(client, None)
+            session["auth_user"] = username
+            return redirect("/")
+        with _LOGIN_FAILURES_LOCK:
+            failures.append(now)
+            _LOGIN_FAILURES[client] = failures
+        return render_template_string(LOGIN_PAGE, error="用户名或密码错误"), 401
+    return render_template_string(LOGIN_PAGE, error=None)
+
+
+@app.get("/logout")
+def logout() -> Any:
+    session.clear()
+    return redirect("/login")
 
 
 @dataclass
@@ -204,11 +358,20 @@ class JobManager:
                 marker = str(run.get("pid_marker") or "")
                 if returncode is None and self._pid_alive(pid, marker):
                     job_spec = _read_json(report_dir / "job_spec.json") or {}
-                    provider = str(run.get("provider") or job_spec.get("provider") or "")
+                    provider = str(
+                        run.get("provider") or job_spec.get("provider") or ""
+                    )
                     try:
-                        provider_label = str(
-                            get_provider_config(self._get_discovery_config(), provider).get("label") or provider
-                        ) if provider else ""
+                        provider_label = (
+                            str(
+                                get_provider_config(
+                                    self._get_discovery_config(), provider
+                                ).get("label")
+                                or provider
+                            )
+                            if provider
+                            else ""
+                        )
                     except Exception:
                         provider_label = provider
                     job = Job(
@@ -218,20 +381,30 @@ class JobManager:
                         provider_label=provider_label,
                         model=str(run.get("model") or job_spec.get("model") or ""),
                         model_family=str(
-                            run.get("model_family") or job_spec.get("model_family") or ""
+                            run.get("model_family")
+                            or job_spec.get("model_family")
+                            or ""
                         ),
-                        workload=str(run.get("workload") or job_spec.get("workload") or ""),
+                        workload=str(
+                            run.get("workload") or job_spec.get("workload") or ""
+                        ),
                         users=None,
                         spawn_rate=None,
                         duration=None,
                         report_dir=report_dir,
                         command=[str(item) for item in run.get("command") or []],
-                        api_form=str(run.get("api_form") or job_spec.get("api_form") or ""),
+                        api_form=str(
+                            run.get("api_form") or job_spec.get("api_form") or ""
+                        ),
                         route_profile=str(
-                            run.get("route_profile") or job_spec.get("route_profile") or ""
+                            run.get("route_profile")
+                            or job_spec.get("route_profile")
+                            or ""
                         ),
                         job_spec=job_spec if isinstance(job_spec, dict) else {},
-                        created_at=float(run.get("created_at") or report_dir.stat().st_mtime),
+                        created_at=float(
+                            run.get("created_at") or report_dir.stat().st_mtime
+                        ),
                         started_at=float(run.get("started_at") or time.time()),
                         status="running",
                         pid=pid,
@@ -253,15 +426,24 @@ class JobManager:
         job_type = str(run.get("type") or job_spec.get("type") or "")
         if job_type == "image_param_test":
             self._restore_image_job(
-                load_config(), report_dir, job_spec if isinstance(job_spec, dict) else {}
+                load_config(),
+                report_dir,
+                job_spec if isinstance(job_spec, dict) else {},
             )
             return
         returncode = int(run.get("returncode") or 0)
         provider = str(run.get("provider") or job_spec.get("provider") or "")
         try:
-            provider_label = str(
-                get_provider_config(self._get_discovery_config(), provider).get("label") or provider
-            ) if provider else ""
+            provider_label = (
+                str(
+                    get_provider_config(self._get_discovery_config(), provider).get(
+                        "label"
+                    )
+                    or provider
+                )
+                if provider
+                else ""
+            )
         except Exception:
             provider_label = provider
         finished_at = float(run.get("finished_at") or report_dir.stat().st_mtime)
@@ -271,7 +453,9 @@ class JobManager:
             provider=provider,
             provider_label=provider_label,
             model=str(run.get("model") or job_spec.get("model") or ""),
-            model_family=str(run.get("model_family") or job_spec.get("model_family") or ""),
+            model_family=str(
+                run.get("model_family") or job_spec.get("model_family") or ""
+            ),
             workload=str(run.get("workload") or job_spec.get("workload") or ""),
             users=None,
             spawn_rate=None,
@@ -279,12 +463,16 @@ class JobManager:
             report_dir=report_dir,
             command=[str(item) for item in run.get("command") or []],
             api_form=str(run.get("api_form") or job_spec.get("api_form") or ""),
-            route_profile=str(run.get("route_profile") or job_spec.get("route_profile") or ""),
+            route_profile=str(
+                run.get("route_profile") or job_spec.get("route_profile") or ""
+            ),
             job_spec=job_spec if isinstance(job_spec, dict) else {},
             created_at=float(run.get("created_at") or report_dir.stat().st_mtime),
             started_at=float(run.get("started_at") or finished_at),
             finished_at=finished_at,
-            status="stopped" if run.get("stop_requested") else ("completed" if returncode == 0 else "failed"),
+            status="stopped"
+            if run.get("stop_requested")
+            else ("completed" if returncode == 0 else "failed"),
             returncode=returncode,
             pid=int(run.get("pid") or 0) or None,
             external=True,
@@ -316,7 +504,8 @@ class JobManager:
                 returncode = -1
             job.returncode = int(returncode)
             job.finished_at = float(
-                (run.get("finished_at") if isinstance(run, dict) else None) or time.time()
+                (run.get("finished_at") if isinstance(run, dict) else None)
+                or time.time()
             )
             job.status = (
                 "stopped"
@@ -349,7 +538,9 @@ class JobManager:
             route_profile=route_profile,
             api_form=str(payload.get("api_form") or "") or None,
         )
-        workload_default = "cache_suite" if job_type == "cache_suite" else DEFAULT_WORKLOAD
+        workload_default = (
+            "cache_suite" if job_type == "cache_suite" else DEFAULT_WORKLOAD
+        )
         workload = str(payload.get("workload") or workload_default)
         validate_workload(config, job_type, workload)
         request_mode = resolve_request_mode(payload, job_type)
@@ -421,7 +612,11 @@ class JobManager:
             )
         reference = get_reference_source(reference_source)
         param_test_runs = min(
-            max(_optional_int(payload.get("param_test_runs")) or DEFAULT_PARAM_TEST_RUNS, 1),
+            max(
+                _optional_int(payload.get("param_test_runs"))
+                or DEFAULT_PARAM_TEST_RUNS,
+                1,
+            ),
             MAX_PARAM_TEST_RUNS,
         )
         tool_validation_mode = str(payload.get("tool_validation_mode") or "auto")
@@ -446,7 +641,9 @@ class JobManager:
         )
         cache_measured_requests = int(
             (cache_plan or {}).get("estimated_request_count")
-            or _resolve_cache_measured_requests(config, payload.get("cache_measured_requests"))
+            or _resolve_cache_measured_requests(
+                config, payload.get("cache_measured_requests")
+            )
         )
         timeout_sec = _resolve_timeout_sec(config, payload.get("timeout_sec"))
         target_rpm = (
@@ -468,7 +665,9 @@ class JobManager:
 
         if not provider_has_api_key(config, provider):
             env_name = provider_cfg.get("api_key_env") or "api_key"
-            raise ValueError(f"Missing API key for provider {provider!r}. Configure {env_name}.")
+            raise ValueError(
+                f"Missing API key for provider {provider!r}. Configure {env_name}."
+            )
         if (
             target_tokens_per_request > 0
             and job_type in {"quick_load", "staircase"}
@@ -505,13 +704,21 @@ class JobManager:
             spawn_rate = spawn_rate if spawn_rate is not None else None
 
         with self._lock:
-            running = [job for job in self._jobs.values() if self._refresh_locked(job).status in {"queued", "running", "stopping"}]
+            running = [
+                job
+                for job in self._jobs.values()
+                if self._refresh_locked(job).status in {"queued", "running", "stopping"}
+            ]
             if running:
-                raise ValueError(f"Job {running[0].id} is still {running[0].status}; stop or wait before starting another job.")
+                raise ValueError(
+                    f"Job {running[0].id} is still {running[0].status}; stop or wait before starting another job."
+                )
 
             job_id = _new_job_id(job_type, provider, model)
             report_dir = ensure_dir(JOBS_ROOT / job_id)
-            command = _command_for_job(job_type, report_dir, users, spawn_rate, duration)
+            command = _command_for_job(
+                job_type, report_dir, users, spawn_rate, duration
+            )
             job_spec = make_job_spec(
                 job_type=job_type,
                 provider=provider,
@@ -616,8 +823,7 @@ class JobManager:
             running = [
                 job
                 for job in self._jobs.values()
-                if self._refresh_locked(job).status
-                in {"queued", "running", "stopping"}
+                if self._refresh_locked(job).status in {"queued", "running", "stopping"}
             ]
             if running:
                 raise ValueError(
@@ -647,9 +853,7 @@ class JobManager:
                 target_rpm=0.0,
                 target_tpm=0.0,
                 image_plan=image_plan,
-                model_capability_profile=image_plan.get(
-                    "model_capability_profile"
-                ),
+                model_capability_profile=image_plan.get("model_capability_profile"),
             )
             write_json(report_dir / "job_spec.json", job_spec)
             job = Job(
@@ -691,7 +895,10 @@ class JobManager:
         self._discover_external_jobs()
         with self._lock:
             jobs = [self._refresh_locked(job) for job in self._jobs.values()]
-        return [self.public(job, include_detail=False) for job in sorted(jobs, key=lambda item: item.created_at, reverse=True)]
+        return [
+            self.public(job, include_detail=False)
+            for job in sorted(jobs, key=lambda item: item.created_at, reverse=True)
+        ]
 
     def current_refs(self) -> dict[str, dict[str, Any] | None]:
         self._discover_external_jobs()
@@ -758,8 +965,7 @@ class JobManager:
                 and job.tool_validation_mode == tool_validation_mode
                 and (
                     not current_profiles
-                    or
-                    not _job_param_profiles(job)
+                    or not _job_param_profiles(job)
                     or _job_param_profiles(job) == current_profiles
                 )
             ]
@@ -869,7 +1075,9 @@ class JobManager:
             verdict = _read_json(job.report_dir / "verdict.json")
             param_results = _read_json(job.report_dir / "param_results.json")
             param_failed_cases = _read_json(job.report_dir / "param_failed_cases.json")
-            param_failed_cases_log = _read_text(job.report_dir / "param_failed_cases.log")
+            param_failed_cases_log = _read_text(
+                job.report_dir / "param_failed_cases.log"
+            )
             cache_progress = _read_json(job.report_dir / "cache_progress.json")
             cache_result = _read_json(job.report_dir / "cache_results.json") or {}
             payload.update(
@@ -884,9 +1092,14 @@ class JobManager:
                     "cache_progress": cache_progress,
                     "cache_result_schema_version": cache_result.get("schema_version"),
                     "cache_result_scenario": cache_result.get("scenario"),
-                    "cache_actual_request_count": cache_result.get("actual_request_count"),
-                    "cache_session_outcomes": cache_result.get("session_outcomes") or [],
-                    "progress": _job_progress(job, summary, verdict, param_results, cache_progress),
+                    "cache_actual_request_count": cache_result.get(
+                        "actual_request_count"
+                    ),
+                    "cache_session_outcomes": cache_result.get("session_outcomes")
+                    or [],
+                    "progress": _job_progress(
+                        job, summary, verdict, param_results, cache_progress
+                    ),
                     "log_tail": _tail(job.log_path),
                 }
             )
@@ -916,177 +1129,186 @@ class JobManager:
         if not JOBS_ROOT.exists():
             return
         config = load_config()
-        for report_dir in sorted((path for path in JOBS_ROOT.iterdir() if path.is_dir()), key=lambda path: path.stat().st_mtime):
+        for report_dir in sorted(
+            (path for path in JOBS_ROOT.iterdir() if path.is_dir()),
+            key=lambda path: path.stat().st_mtime,
+        ):
             try:
                 self._load_finished_job(config, report_dir)
             except Exception:
                 continue
 
     def _load_finished_job(self, config: dict[str, Any], report_dir: Path) -> None:
-            if (report_dir / "run.json").exists():
-                return
-            job_type = _job_type_from_report_dir(report_dir)
-            if not job_type:
-                return
-            job_spec = _read_json(report_dir / "job_spec.json") or {}
-            if job_type == "image_param_test":
-                self._restore_image_job(config, report_dir, job_spec)
-                return
-            verdict = _read_json(report_dir / "verdict.json") or {}
-            load_result = _read_json(report_dir / "load_result.json") or {}
-            first_record = (
-                _first_request_record(report_dir)
-                if not verdict and not load_result
-                else None
+        if (report_dir / "run.json").exists():
+            return
+        job_type = _job_type_from_report_dir(report_dir)
+        if not job_type:
+            return
+        job_spec = _read_json(report_dir / "job_spec.json") or {}
+        if job_type == "image_param_test":
+            self._restore_image_job(config, report_dir, job_spec)
+            return
+        verdict = _read_json(report_dir / "verdict.json") or {}
+        load_result = _read_json(report_dir / "load_result.json") or {}
+        first_record = (
+            _first_request_record(report_dir)
+            if not verdict and not load_result
+            else None
+        )
+        record_extra = first_record.extra if first_record else {}
+        provider = str(
+            verdict.get("provider")
+            or load_result.get("provider")
+            or record_extra.get("provider")
+            or get_active_provider_name(config)
+        )
+        try:
+            provider_cfg = get_provider_config(config, provider)
+        except KeyError:
+            provider_cfg = {"label": provider}
+        model = str(
+            verdict.get("model")
+            or load_result.get("model")
+            or record_extra.get("requested_model")
+            or get_selected_model(
+                config,
+                provider if provider in (config.get("providers") or {}) else None,
             )
-            record_extra = first_record.extra if first_record else {}
-            provider = str(
-                verdict.get("provider")
-                or load_result.get("provider")
-                or record_extra.get("provider")
-                or get_active_provider_name(config)
+        )
+        family = str(
+            verdict.get("model_family")
+            or load_result.get("model_family")
+            or record_extra.get("model_family")
+            or get_model_family(
+                config,
+                model,
+                provider if provider in (config.get("providers") or {}) else None,
             )
-            try:
-                provider_cfg = get_provider_config(config, provider)
-            except KeyError:
-                provider_cfg = {"label": provider}
-            model = str(
-                verdict.get("model")
-                or load_result.get("model")
-                or record_extra.get("requested_model")
-                or get_selected_model(
-                    config,
-                    provider if provider in (config.get("providers") or {}) else None,
-                )
+        )
+        route_profile = str(
+            verdict.get("route_profile")
+            or load_result.get("route_profile")
+            or job_spec.get("route_profile")
+            or record_extra.get("route_profile")
+            or (
+                get_model_route_profile(config, model, provider)
+                if provider in (config.get("providers") or {})
+                else ""
             )
-            family = str(
-                verdict.get("model_family")
-                or load_result.get("model_family")
-                or record_extra.get("model_family")
-                or get_model_family(
+        )
+        api_form = str(
+            verdict.get("api_form")
+            or load_result.get("api_form")
+            or job_spec.get("api_form")
+            or record_extra.get("api_form")
+            or (
+                get_model_api_form(
                     config,
                     model,
-                    provider if provider in (config.get("providers") or {}) else None,
+                    provider,
+                    route_profile=route_profile,
                 )
+                if provider in (config.get("providers") or {}) and route_profile
+                else ""
             )
-            route_profile = str(
-                verdict.get("route_profile")
-                or load_result.get("route_profile")
-                or job_spec.get("route_profile")
-                or record_extra.get("route_profile")
-                or (
-                    get_model_route_profile(config, model, provider)
-                    if provider in (config.get("providers") or {})
-                    else ""
-                )
-            )
-            api_form = str(
-                verdict.get("api_form")
-                or load_result.get("api_form")
-                or job_spec.get("api_form")
-                or record_extra.get("api_form")
-                or (
-                    get_model_api_form(
-                        config,
-                        model,
-                        provider,
-                        route_profile=route_profile,
-                    )
-                    if provider in (config.get("providers") or {}) and route_profile
-                    else ""
-                )
-            )
-            reference_source = str(
-                verdict.get("reference_source")
-                or (
-                    default_reference_source_for_model(
-                        config,
-                        family,
-                        model,
-                        provider,
-                        api_form=api_form or None,
-                        route_profile=route_profile or None,
-                    )
-                    if provider in (config.get("providers") or {})
-                    else default_reference_source_for_family(family)
-                )
-            )
-            try:
-                reference = get_reference_source(reference_source)
-            except KeyError:
-                reference = {"label": reference_source}
-            if verdict:
-                returncode = 0 if verdict.get("pass", True) else 1
-            elif load_result:
-                returncode = int(load_result.get("returncode") or 0)
-            else:
-                log_tail = _tail(report_dir / "job.log", max_chars=20000)
-                returncode = (
-                    1
-                    if "Traceback (most recent call last):" in log_tail
-                    or "Shutting down (exit code 1)" in log_tail
-                    else 0
-                )
-            if not verdict and not any(report_dir.iterdir()):
-                return
-            job = Job(
-                id=report_dir.name,
-                type=job_type,
-                provider=provider,
-                provider_label=str(
-                    verdict.get("provider_label")
-                    or load_result.get("provider_label")
-                    or record_extra.get("provider_label")
-                    or provider_cfg.get("label")
-                    or provider
-                ),
-                model=model,
-                model_family=family,
-                workload=str(
-                    verdict.get("workload")
-                    or load_result.get("workload")
-                    or record_extra.get("workload")
-                    or DEFAULT_WORKLOAD
-                ),
-                users=_optional_int(record_extra.get("configured_users")),
-                spawn_rate=None,
-                duration=None,
-                report_dir=report_dir,
-                command=[],
-                reference_source=reference_source,
-                reference_label=str(verdict.get("reference_label") or reference.get("label") or reference_source),
-                api_form=api_form,
-                route_profile=route_profile,
-                model_profile_id=str(
-                    job_spec.get("model_profile_id")
-                    or (job_spec.get("model_capability_profile") or {}).get(
-                        "model_api_profile_id"
-                    )
-                    or ""
-                ),
-                param_test_runs=int(verdict.get("param_test_runs") or DEFAULT_PARAM_TEST_RUNS),
-                tool_validation_mode=str(verdict.get("tool_validation_mode") or "auto"),
-                cache_measured_requests=_historical_cache_measured_requests(
-                    report_dir,
+        )
+        reference_source = str(
+            verdict.get("reference_source")
+            or (
+                default_reference_source_for_model(
                     config,
-                    verdict=verdict,
-                    job_spec=job_spec,
-                ),
-                request_mode=str(job_spec.get("request_mode") or "fixed"),
-                staircase_plan=job_spec.get("staircase_plan"),
-                cache_plan=job_spec.get("cache_plan"),
-                soak_plan=job_spec.get("soak_plan"),
-                job_spec=job_spec,
-                created_at=report_dir.stat().st_mtime,
-                started_at=None,
-                finished_at=report_dir.stat().st_mtime,
-                status=str(
-                    load_result.get("status")
-                    or ("completed" if returncode == 0 else "failed")
-                ),
-                returncode=returncode,
+                    family,
+                    model,
+                    provider,
+                    api_form=api_form or None,
+                    route_profile=route_profile or None,
+                )
+                if provider in (config.get("providers") or {})
+                else default_reference_source_for_family(family)
             )
-            self._jobs[job.id] = job
+        )
+        try:
+            reference = get_reference_source(reference_source)
+        except KeyError:
+            reference = {"label": reference_source}
+        if verdict:
+            returncode = 0 if verdict.get("pass", True) else 1
+        elif load_result:
+            returncode = int(load_result.get("returncode") or 0)
+        else:
+            log_tail = _tail(report_dir / "job.log", max_chars=20000)
+            returncode = (
+                1
+                if "Traceback (most recent call last):" in log_tail
+                or "Shutting down (exit code 1)" in log_tail
+                else 0
+            )
+        if not verdict and not any(report_dir.iterdir()):
+            return
+        job = Job(
+            id=report_dir.name,
+            type=job_type,
+            provider=provider,
+            provider_label=str(
+                verdict.get("provider_label")
+                or load_result.get("provider_label")
+                or record_extra.get("provider_label")
+                or provider_cfg.get("label")
+                or provider
+            ),
+            model=model,
+            model_family=family,
+            workload=str(
+                verdict.get("workload")
+                or load_result.get("workload")
+                or record_extra.get("workload")
+                or DEFAULT_WORKLOAD
+            ),
+            users=_optional_int(record_extra.get("configured_users")),
+            spawn_rate=None,
+            duration=None,
+            report_dir=report_dir,
+            command=[],
+            reference_source=reference_source,
+            reference_label=str(
+                verdict.get("reference_label")
+                or reference.get("label")
+                or reference_source
+            ),
+            api_form=api_form,
+            route_profile=route_profile,
+            model_profile_id=str(
+                job_spec.get("model_profile_id")
+                or (job_spec.get("model_capability_profile") or {}).get(
+                    "model_api_profile_id"
+                )
+                or ""
+            ),
+            param_test_runs=int(
+                verdict.get("param_test_runs") or DEFAULT_PARAM_TEST_RUNS
+            ),
+            tool_validation_mode=str(verdict.get("tool_validation_mode") or "auto"),
+            cache_measured_requests=_historical_cache_measured_requests(
+                report_dir,
+                config,
+                verdict=verdict,
+                job_spec=job_spec,
+            ),
+            request_mode=str(job_spec.get("request_mode") or "fixed"),
+            staircase_plan=job_spec.get("staircase_plan"),
+            cache_plan=job_spec.get("cache_plan"),
+            soak_plan=job_spec.get("soak_plan"),
+            job_spec=job_spec,
+            created_at=report_dir.stat().st_mtime,
+            started_at=None,
+            finished_at=report_dir.stat().st_mtime,
+            status=str(
+                load_result.get("status")
+                or ("completed" if returncode == 0 else "failed")
+            ),
+            returncode=returncode,
+        )
+        self._jobs[job.id] = job
 
     def _restore_image_job(
         self,
@@ -1098,7 +1320,9 @@ class JobManager:
         plan = plan_raw if isinstance(plan_raw, dict) else {}
         summary = _read_json(report_dir / "summary.json")
         configured = list_image_providers(config)
-        default_provider = configured[0]["name"] if configured else get_active_provider_name(config)
+        default_provider = (
+            configured[0]["name"] if configured else get_active_provider_name(config)
+        )
         provider = str(job_spec.get("provider") or default_provider)
         try:
             provider_cfg = get_provider_config(config, provider)
@@ -1125,13 +1349,18 @@ class JobManager:
                 "estimated_case_count": len(case_names),
                 "timeout_sec": get_timeout_sec(config),
             }
-        model = str(job_spec.get("model") or image_plan.get("model") or plan.get("model") or "")
+        model = str(
+            job_spec.get("model") or image_plan.get("model") or plan.get("model") or ""
+        )
         family = str(image_plan.get("family") or plan.get("family") or "image")
         if not model and configured:
             model = str(configured[0].get("default_model") or "")
         if family == "image":
             try:
-                family = str(get_image_model_config(config, provider, model).get("family") or family)
+                family = str(
+                    get_image_model_config(config, provider, model).get("family")
+                    or family
+                )
             except (KeyError, ValueError):
                 pass
         if isinstance(summary, dict):
@@ -1257,7 +1486,11 @@ class JobManager:
         if returncode is not None and job.status in {"queued", "running", "stopping"}:
             job.returncode = returncode
             job.finished_at = job.finished_at or time.time()
-            job.status = "stopped" if job.stop_requested else ("completed" if returncode == 0 else "failed")
+            job.status = (
+                "stopped"
+                if job.stop_requested
+                else ("completed" if returncode == 0 else "failed")
+            )
         return job
 
 
@@ -1279,9 +1512,7 @@ def api_config() -> Any:
     model = get_selected_model(config, provider)
     family = get_model_family(config, model, provider)
     route_profile = get_model_route_profile(config, model, provider)
-    api_form = get_model_api_form(
-        config, model, provider, route_profile=route_profile
-    )
+    api_form = get_model_api_form(config, model, provider, route_profile=route_profile)
     default_reference_source = default_reference_source_for_model(
         config,
         family,
@@ -1304,9 +1535,7 @@ def api_config() -> Any:
             "providers": list_public_providers(config),
             "image_providers": list_image_providers(config),
             "image_model_capabilities": capability_registry["image"],
-            "capability_summary": _capability_registry_summary(
-                capability_registry
-            ),
+            "capability_summary": _capability_registry_summary(capability_registry),
             "image_defaults": {
                 "suite": "smoke",
                 "quality": "low",
@@ -1411,8 +1640,12 @@ def _capability_registry_payload(config: dict[str, Any]) -> dict[str, Any]:
                             "route_stability_required": capability.get(
                                 "route_stability_required"
                             ),
-                            "parameter_test_enabled": capability.get("parameter_test_enabled"),
-                            "pressure_test_enabled": capability.get("pressure_test_enabled"),
+                            "parameter_test_enabled": capability.get(
+                                "parameter_test_enabled"
+                            ),
+                            "pressure_test_enabled": capability.get(
+                                "pressure_test_enabled"
+                            ),
                             "disabled_reason": capability.get("disabled_reason"),
                         }
                     route_rows[route] = {
@@ -1459,7 +1692,7 @@ def _capability_registry_payload(config: dict[str, Any]) -> dict[str, Any]:
                     )
                     default_form = str(route_model_cfg.get("api_form") or "")
                     api_form_rows: dict[str, Any] = {}
-                    for form_id in (route_cfg.get("api_forms") or {}):
+                    for form_id in route_cfg.get("api_forms") or {}:
                         exact_model_cfg = get_image_model_config(
                             config,
                             str(provider),
@@ -1522,12 +1755,8 @@ def _capability_registry_summary(registry: dict[str, Any]) -> dict[str, Any]:
             for models in (registry.get(modality) or {}).values()
             for profile in models.values()
         ]
-        registered = sum(
-            1 for row in rows if row.get("profile_status") == "registered"
-        )
-        invalid = sum(
-            1 for row in rows if row.get("profile_status") == "invalid"
-        )
+        registered = sum(1 for row in rows if row.get("profile_status") == "registered")
+        invalid = sum(1 for row in rows if row.get("profile_status") == "invalid")
         inherited = len(rows) - registered - invalid
         summary[modality] = {
             "configured_models": len(rows),
@@ -1572,7 +1801,10 @@ def api_param_specs() -> Any:
                     f"Reference source {reference_source!r} does not belong to "
                     f"API form {api_form!r}."
                 )
-            if route_profile and str(reference.get("route_profile") or "") != route_profile:
+            if (
+                route_profile
+                and str(reference.get("route_profile") or "") != route_profile
+            ):
                 raise ValueError(
                     f"Reference source {reference_source!r} does not belong to "
                     f"route profile {route_profile!r}."
@@ -1581,12 +1813,8 @@ def api_param_specs() -> Any:
             return jsonify({"error": str(exc)}), 400
         return jsonify(reference_spec_payload(reference_source))
 
-    provider = str(
-        request.args.get("provider") or get_active_provider_name(config)
-    )
-    model = str(
-        request.args.get("model") or get_selected_model(config, provider)
-    )
+    provider = str(request.args.get("provider") or get_active_provider_name(config))
+    model = str(request.args.get("model") or get_selected_model(config, provider))
     actual_family = get_model_family(config, model, provider)
     if family_arg and str(family_arg) != actual_family:
         return jsonify(
@@ -1619,9 +1847,7 @@ def api_param_specs() -> Any:
         api_form=api_form,
         route_profile=route_profile,
     )
-    reference_source = str(
-        request.args.get("reference_source") or default_source
-    )
+    reference_source = str(request.args.get("reference_source") or default_source)
     allowed_reference_sources = reference_sources_for_model(
         config,
         family,
@@ -1733,7 +1959,11 @@ def api_latest_image_result() -> Any:
         legacy_transport_form = (
             api_form_for_transport(transport, modality="image") if transport else ""
         )
-        if requested_form and legacy_transport_form and requested_form != legacy_transport_form:
+        if (
+            requested_form
+            and legacy_transport_form
+            and requested_form != legacy_transport_form
+        ):
             raise ValueError(
                 f"api_form {requested_form!r} conflicts with legacy transport "
                 f"{transport!r} ({legacy_transport_form!r})."
@@ -1926,7 +2156,9 @@ def _image_command_for_job(
     return command
 
 
-def _job_summary(job: Job, records: list[RequestRecord] | None = None) -> dict[str, Any] | None:
+def _job_summary(
+    job: Job, records: list[RequestRecord] | None = None
+) -> dict[str, Any] | None:
     records = records if records is not None else _load_result_records(job.report_dir)
     if not records:
         return None
@@ -1937,7 +2169,9 @@ def _job_summary(job: Job, records: list[RequestRecord] | None = None) -> dict[s
             records,
             business_prefix="cache:",
             business_group="cache_profiles",
-            cache_min_prompt_tokens=int(metrics_cfg.get("cache_min_prompt_tokens", 4000)),
+            cache_min_prompt_tokens=int(
+                metrics_cfg.get("cache_min_prompt_tokens", 4000)
+            ),
         )
     return summarize_records(
         records,
@@ -1948,7 +2182,11 @@ def _job_summary(job: Job, records: list[RequestRecord] | None = None) -> dict[s
 
 
 def _business_group_for_workload(workload: str) -> str:
-    return "compatibility_profiles" if workload == "mixed_compat" else "throughput_profiles"
+    return (
+        "compatibility_profiles"
+        if workload == "mixed_compat"
+        else "throughput_profiles"
+    )
 
 
 def _job_time_series(job: Job, records: list[RequestRecord]) -> list[dict[str, Any]]:
@@ -1958,7 +2196,9 @@ def _job_time_series(job: Job, records: list[RequestRecord]) -> list[dict[str, A
     metrics_cfg = config.get("metrics") or {}
     series_now = None
     if job.status not in {"queued", "running", "stopping"}:
-        series_now = job.finished_at or max((item.timestamp for item in records), default=time.time())
+        series_now = job.finished_at or max(
+            (item.timestamp for item in records), default=time.time()
+        )
     return build_time_series(
         records,
         business_prefix=str(metrics_cfg.get("business_request_prefix", "chat:")),
@@ -2017,7 +2257,10 @@ def _list_load_results() -> list[dict[str, Any]]:
     if JOBS_ROOT.exists():
         for records_path in sorted(JOBS_ROOT.rglob("request_records.jsonl")):
             report_dir = records_path.parent.resolve()
-            if any(report_dir == active or active in report_dir.parents for active in active_dirs):
+            if any(
+                report_dir == active or active in report_dir.parents
+                for active in active_dirs
+            ):
                 continue
             if any(report_dir == root or root in report_dir.parents for root in seen):
                 continue
@@ -2027,7 +2270,11 @@ def _list_load_results() -> list[dict[str, Any]]:
                 seen.add(report_dir)
 
     deduped = {item["id"]: item for item in results}
-    return sorted(deduped.values(), key=lambda item: float(item.get("created_at") or 0), reverse=True)
+    return sorted(
+        deduped.values(),
+        key=lambda item: float(item.get("created_at") or 0),
+        reverse=True,
+    )
 
 
 def _load_result_by_id(result_id: str) -> dict[str, Any] | None:
@@ -2106,7 +2353,9 @@ def _ensure_load_result_for_dir(
     )
     config = load_config()
     metrics_cfg = config.get("metrics") or {}
-    business_group = _business_group_for_workload(str(metadata.get("workload") or "throughput"))
+    business_group = _business_group_for_workload(
+        str(metadata.get("workload") or "throughput")
+    )
     summary = summarize_records(
         records,
         business_prefix=str(metrics_cfg.get("business_request_prefix", "chat:")),
@@ -2124,9 +2373,12 @@ def _ensure_load_result_for_dir(
             records,
             business_prefix=str(metrics_cfg.get("business_request_prefix", "chat:")),
             business_group=business_group,
-            cache_min_prompt_tokens=int(metrics_cfg.get("cache_min_prompt_tokens", 4000)),
+            cache_min_prompt_tokens=int(
+                metrics_cfg.get("cache_min_prompt_tokens", 4000)
+            ),
             bucket_sec=int(metrics_cfg.get("live_chart_interval_sec", 10)),
-            now=metadata.get("finished_at") or max((item.timestamp for item in records), default=time.time()),
+            now=metadata.get("finished_at")
+            or max((item.timestamp for item in records), default=time.time()),
         ),
         "history": _load_history_rows(report_dir),
         "report_files": _report_files(report_dir),
@@ -2162,8 +2414,12 @@ def _infer_load_result_metadata(
     first = measured[0]
     extra = first.extra or {}
     timestamps = [item.timestamp for item in measured if item.timestamp]
-    created_at = overrides.get("created_at") or (min(timestamps) if timestamps else report_dir.stat().st_mtime)
-    finished_at = overrides.get("finished_at") or (max(timestamps) if timestamps else report_dir.stat().st_mtime)
+    created_at = overrides.get("created_at") or (
+        min(timestamps) if timestamps else report_dir.stat().st_mtime
+    )
+    finished_at = overrides.get("finished_at") or (
+        max(timestamps) if timestamps else report_dir.stat().st_mtime
+    )
     provider = overrides.get("provider") or extra.get("provider") or "unknown"
     model = overrides.get("model") or extra.get("requested_model") or "unknown"
     result_type = overrides.get("result_type") or _result_type_from_dir(report_dir)
@@ -2172,15 +2428,23 @@ def _infer_load_result_metadata(
         "title": title,
         "type": result_type,
         "provider": provider,
-        "provider_label": overrides.get("provider_label") or extra.get("provider_label") or provider,
+        "provider_label": overrides.get("provider_label")
+        or extra.get("provider_label")
+        or provider,
         "model": model,
-        "model_family": overrides.get("model_family") or extra.get("model_family") or "",
+        "model_family": overrides.get("model_family")
+        or extra.get("model_family")
+        or "",
         "workload": overrides.get("workload") or extra.get("workload") or "throughput",
         "users": overrides.get("users"),
         "spawn_rate": overrides.get("spawn_rate"),
         "duration": overrides.get("duration"),
-        "target_rpm": overrides.get("target_rpm") if overrides.get("target_rpm") is not None else extra.get("target_rpm"),
-        "target_tpm": overrides.get("target_tpm") if overrides.get("target_tpm") is not None else extra.get("target_tpm"),
+        "target_rpm": overrides.get("target_rpm")
+        if overrides.get("target_rpm") is not None
+        else extra.get("target_rpm"),
+        "target_tpm": overrides.get("target_tpm")
+        if overrides.get("target_tpm") is not None
+        else extra.get("target_tpm"),
         "target_tokens_per_request": (
             overrides.get("target_tokens_per_request")
             if overrides.get("target_tokens_per_request") is not None
@@ -2217,7 +2481,10 @@ def _result_type_from_dir(report_dir: Path) -> str:
 
 def _profile_stats(records: list[RequestRecord]) -> list[dict[str, Any]]:
     duration_sec = _records_duration(records)
-    rows = [_profile_stat_row(name, items, duration_sec) for name, items in _records_by_name(records).items()]
+    rows = [
+        _profile_stat_row(name, items, duration_sec)
+        for name, items in _records_by_name(records).items()
+    ]
     total = _profile_stat_row("Aggregated", records, duration_sec)
     return rows + [total]
 
@@ -2229,11 +2496,19 @@ def _records_by_name(records: list[RequestRecord]) -> dict[str, list[RequestReco
     return dict(sorted(groups.items()))
 
 
-def _profile_stat_row(name: str, records: list[RequestRecord], duration_sec: float) -> dict[str, Any]:
-    latencies = [float(item.latency_ms or 0) for item in records if item.latency_ms is not None]
+def _profile_stat_row(
+    name: str, records: list[RequestRecord], duration_sec: float
+) -> dict[str, Any]:
+    latencies = [
+        float(item.latency_ms or 0) for item in records if item.latency_ms is not None
+    ]
     failures = [item for item in records if not item.success]
-    status_counter = Counter(item.status_code for item in records if item.status_code is not None)
-    failure_counter = Counter(item.failure_classification or item.error_type or "unknown" for item in failures)
+    status_counter = Counter(
+        item.status_code for item in records if item.status_code is not None
+    )
+    failure_counter = Counter(
+        item.failure_classification or item.error_type or "unknown" for item in failures
+    )
     count = len(records)
     failure_count = len(failures)
     minutes = max(duration_sec / 60.0, 1 / 60.0)
@@ -2296,7 +2571,9 @@ def _load_result_summary(result: dict[str, Any]) -> dict[str, Any]:
 def _format_time(timestamp: float | None) -> str:
     if not timestamp:
         return "unknown"
-    return datetime.fromtimestamp(float(timestamp), timezone.utc).strftime("%Y-%m-%d %H:%M:%SZ")
+    return datetime.fromtimestamp(float(timestamp), timezone.utc).strftime(
+        "%Y-%m-%d %H:%M:%SZ"
+    )
 
 
 def _public_image_results(job: Job, raw_results: Any) -> list[dict[str, Any]]:
@@ -2346,7 +2623,8 @@ def _image_job_progress(
     case_names = [
         str(item.get("name") if isinstance(item, dict) else item)
         for item in (raw_cases or (job.image_plan or {}).get("cases") or [])
-        if (isinstance(item, str) and item) or (isinstance(item, dict) and item.get("name"))
+        if (isinstance(item, str) and item)
+        or (isinstance(item, dict) and item.get("name"))
     ]
     summary_case_count = (
         int(summary.get("case_count") or 0) if isinstance(summary, dict) else 0
@@ -2367,7 +2645,8 @@ def _image_job_progress(
         percent = 100
     current_case = (
         case_names[completed]
-        if job.status in {"queued", "running", "stopping"} and completed < len(case_names)
+        if job.status in {"queued", "running", "stopping"}
+        and completed < len(case_names)
         else None
     )
     last_latency = results[-1].get("latency_ms") if results else None
@@ -2398,7 +2677,11 @@ def _job_progress(
     cache_progress: dict[str, Any] | None,
 ) -> dict[str, Any]:
     if job.status in {"completed", "failed", "stopped"}:
-        progress = {"percent": 100, "label": job.status, "detail": _progress_detail(job, summary, verdict, param_results)}
+        progress = {
+            "percent": 100,
+            "label": job.status,
+            "detail": _progress_detail(job, summary, verdict, param_results),
+        }
         if job.type == "param_test":
             progress.update(_param_progress_counts(job, param_results))
         return progress
@@ -2422,16 +2705,31 @@ def _job_progress(
                 "label": str(cache_progress.get("label") or "cache suite"),
                 "detail": str(cache_progress.get("phase") or "cache suite"),
             }
-        total_steps = int((job.cache_plan or {}).get("estimated_request_count") or _cache_total_steps(job.cache_measured_requests))
+        total_steps = int(
+            (job.cache_plan or {}).get("estimated_request_count")
+            or _cache_total_steps(job.cache_measured_requests)
+        )
         record_count = _record_count(job.report_dir)
-        percent = int(min(record_count, total_steps) * 100 / total_steps) if total_steps else 0
-        return {"percent": percent, "label": f"{min(record_count, total_steps)}/{total_steps} steps", "detail": "Cache suite"}
+        percent = (
+            int(min(record_count, total_steps) * 100 / total_steps)
+            if total_steps
+            else 0
+        )
+        return {
+            "percent": percent,
+            "label": f"{min(record_count, total_steps)}/{total_steps} steps",
+            "detail": "Cache suite",
+        }
 
     duration_sec = _job_duration_seconds(job)
     if duration_sec and job.started_at:
         elapsed = max(time.time() - job.started_at, 0)
         percent = int(min(elapsed / duration_sec, 0.99) * 100)
-        return {"percent": percent, "label": f"{int(elapsed)}/{int(duration_sec)} sec", "detail": "压测进行中"}
+        return {
+            "percent": percent,
+            "label": f"{int(elapsed)}/{int(duration_sec)} sec",
+            "detail": "压测进行中",
+        }
 
     return {"percent": 0, "label": job.status, "detail": "等待进度数据"}
 
@@ -2445,8 +2743,12 @@ def _progress_detail(
     if job.type == "param_test" and isinstance(param_results, list):
         passed = sum(1 for item in param_results if item.get("status") == "pass")
         failed = sum(1 for item in param_results if item.get("status") == "fail")
-        incompatible = sum(1 for item in param_results if item.get("status") == "incompatible")
-        unexpected = sum(1 for item in param_results if item.get("status") == "unexpected_acceptance")
+        incompatible = sum(
+            1 for item in param_results if item.get("status") == "incompatible"
+        )
+        unexpected = sum(
+            1 for item in param_results if item.get("status") == "unexpected_acceptance"
+        )
         expected_rejection = sum(
             1 for item in param_results if item.get("status") == "expected_rejection"
         )
@@ -2463,7 +2765,9 @@ def _progress_detail(
 
 def _param_progress_counts(job: Job, param_results: Any) -> dict[str, int]:
     results = param_results if isinstance(param_results, list) else []
-    total = _reference_profile_count(job.reference_source) * max(int(job.param_test_runs or 1), 1)
+    total = _reference_profile_count(job.reference_source) * max(
+        int(job.param_test_runs or 1), 1
+    )
     return {
         "supported_completed": len(results),
         "supported_total": total,
@@ -2515,9 +2819,7 @@ def _historical_cache_measured_requests(
             return estimated
         summary = (verdict or {}).get("summary") or {}
         recorded = int(
-            summary.get("business_record_count")
-            or summary.get("record_count")
-            or 0
+            summary.get("business_record_count") or summary.get("record_count") or 0
         )
         if recorded > 0:
             return recorded
@@ -2546,10 +2848,20 @@ def _job_duration_seconds(job: Job) -> float | None:
             config = load_config()
             staircase_cfg = job.staircase_plan or config.get("staircase") or {}
             warmup_cfg = staircase_cfg.get("warmup") or config.get("warmup") or {}
-            step_duration = parse_duration_seconds(str(staircase_cfg.get("step_duration", "5m")))
+            step_duration = parse_duration_seconds(
+                str(staircase_cfg.get("step_duration", "5m"))
+            )
             step_count = len(staircase_cfg.get("steps", []))
-            warmup_duration = parse_duration_seconds(str(warmup_cfg.get("duration", "1m"))) if warmup_cfg.get("enabled") else 0
-            return step_count * step_duration + (step_count * warmup_duration if warmup_cfg.get("per_step") else warmup_duration)
+            warmup_duration = (
+                parse_duration_seconds(str(warmup_cfg.get("duration", "1m")))
+                if warmup_cfg.get("enabled")
+                else 0
+            )
+            return step_count * step_duration + (
+                step_count * warmup_duration
+                if warmup_cfg.get("per_step")
+                else warmup_duration
+            )
         if job.type == "soak" and job.soak_plan:
             return parse_duration_seconds(str(job.soak_plan.get("duration") or "1h"))
     except Exception:
@@ -2584,10 +2896,20 @@ def _job_type_from_report_dir(report_dir: Path) -> str | None:
 def _report_files(report_dir: Path) -> list[dict[str, str]]:
     files: list[dict[str, str]] = []
     for path in sorted(report_dir.rglob("*")):
-        if not path.is_file() or path.suffix not in {".html", ".json", ".jsonl", ".log"}:
+        if not path.is_file() or path.suffix not in {
+            ".html",
+            ".json",
+            ".jsonl",
+            ".log",
+        }:
             continue
         rel = path.relative_to(REPORTS_ROOT)
-        files.append({"name": str(path.relative_to(report_dir)), "url": f"/reports/{rel.as_posix()}"})
+        files.append(
+            {
+                "name": str(path.relative_to(report_dir)),
+                "url": f"/reports/{rel.as_posix()}",
+            }
+        )
         if len(files) >= 20:
             break
     return files
@@ -2627,7 +2949,9 @@ def _tail(path: Path, max_chars: int = 6000) -> str:
 def _validate_model(provider_cfg: dict[str, Any], model: str) -> None:
     candidates = (provider_cfg.get("models") or {}).get("candidates") or []
     if candidates and model not in candidates:
-        raise ValueError(f"Model {model!r} is not configured for provider {provider_cfg.get('name')!r}.")
+        raise ValueError(
+            f"Model {model!r} is not configured for provider {provider_cfg.get('name')!r}."
+        )
 
 
 def _preflight_job(
@@ -2655,9 +2979,9 @@ def _preflight_job(
     preflight_config["providers"][provider]["models"]["default"] = model
     preflight_models = preflight_config["providers"][provider]["models"]
     preflight_models.setdefault("default_routes", {})[model] = route_profile
-    preflight_models.setdefault("default_api_forms", {}).setdefault(
-        model, {}
-    )[route_profile] = api_form
+    preflight_models.setdefault("default_api_forms", {}).setdefault(model, {})[
+        route_profile
+    ] = api_form
     for group, profile, _weight in weighted_workload_profiles(
         preflight_config,
         workload,
@@ -2709,9 +3033,7 @@ def _resolve_image_timeout_sec(config: dict[str, Any], value: Any) -> int:
 
 def _resolve_cache_measured_requests(config: dict[str, Any], value: Any) -> int:
     cache_cfg = config.get("cache_test") or {}
-    default = int(
-        cache_cfg.get("measured_requests", cache_cfg.get("repeat_count", 50))
-    )
+    default = int(cache_cfg.get("measured_requests", cache_cfg.get("repeat_count", 50)))
     requested = default if value in (None, "") else int(value)
     if requested < 1 or requested > MAX_CACHE_MEASURED_REQUESTS:
         raise ValueError(
@@ -2733,7 +3055,9 @@ def _resolve_target_rpm(config: dict[str, Any], value: Any) -> float:
 def _default_target_rpm(config: dict[str, Any]) -> float:
     thresholds = config.get("thresholds", {}).get("staircase", {})
     try:
-        return max(float(thresholds.get("target_business_rpm_min", DEFAULT_TARGET_RPM)), 0.0)
+        return max(
+            float(thresholds.get("target_business_rpm_min", DEFAULT_TARGET_RPM)), 0.0
+        )
     except (TypeError, ValueError):
         return DEFAULT_TARGET_RPM
 
@@ -2750,7 +3074,9 @@ def _resolve_target_tpm(config: dict[str, Any], value: Any) -> float:
 def _default_target_tpm(config: dict[str, Any]) -> float:
     thresholds = config.get("thresholds", {}).get("staircase", {})
     try:
-        return max(float(thresholds.get("target_total_tpm_min", DEFAULT_TARGET_TPM)), 0.0)
+        return max(
+            float(thresholds.get("target_total_tpm_min", DEFAULT_TARGET_TPM)), 0.0
+        )
     except (TypeError, ValueError):
         return DEFAULT_TARGET_TPM
 
@@ -3314,6 +3640,16 @@ INDEX_HTML = r"""
 def main() -> None:
     port = int(os.getenv("WEB_CONSOLE_PORT", "8090"))
     host = os.getenv("WEB_CONSOLE_HOST", "0.0.0.0")
+    _ensure_secret_key()
+    generated = _ensure_auth_configured()
+    if generated:
+        user, password = generated
+        print("=" * 60)
+        print(f"Web console credentials generated (stored in {CONSOLE_AUTH_PATH}):")
+        print(f"  user:     {user}")
+        print(f"  password: {password}")
+        print("  override anytime via WEB_CONSOLE_USER / WEB_CONSOLE_PASSWORD")
+        print("=" * 60, flush=True)
     app.run(host=host, port=port, debug=False)
 
 

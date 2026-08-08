@@ -22,6 +22,42 @@ pid_is_console() {
   grep -q "web_console.py" "/proc/$pid/cmdline" 2>/dev/null
 }
 
+TUNNEL_PID_FILE="$DATA_DIR/tunnel.pid"
+TUNNEL_LOG="$DATA_DIR/tunnel.log"
+CLOUDFLARED=""
+
+ensure_cloudflared() {
+  for candidate in cloudflared "$HOME/.local/bin/cloudflared"; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      CLOUDFLARED="$candidate"
+      return 0
+    fi
+  done
+  local arch
+  case "$(uname -m)" in
+    x86_64) arch=amd64 ;;
+    aarch64|arm64) arch=arm64 ;;
+    *) echo "error: unsupported arch $(uname -m) for cloudflared" >&2; return 1 ;;
+  esac
+  mkdir -p "$HOME/.local/bin"
+  echo "downloading cloudflared (linux-$arch)..."
+  curl -LsSf -o "$HOME/.local/bin/cloudflared" \
+    "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-$arch"
+  chmod +x "$HOME/.local/bin/cloudflared"
+  CLOUDFLARED="$HOME/.local/bin/cloudflared"
+}
+
+tunnel_alive() {
+  [[ -f "$TUNNEL_PID_FILE" ]] || return 1
+  local pid
+  pid="$(cat "$TUNNEL_PID_FILE")"
+  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+tunnel_url() {
+  grep -o "https://[a-z0-9-]*\.trycloudflare\.com" "$TUNNEL_LOG" 2>/dev/null | head -1
+}
+
 alive() {
   [[ -f "$PID_FILE" ]] || return 1
   pid_is_console "$(cat "$PID_FILE")"
@@ -46,6 +82,7 @@ case "${1:-status}" in
     if alive; then
       echo "console started (pid $(cat "$PID_FILE"))"
       "$SELF" url
+      grep -A3 "Web console credentials generated" "$LOG_FILE" 2>/dev/null | tail -3 || true
     else
       echo "console failed to start; see $LOG_FILE" >&2
       tail -20 "$LOG_FILE" >&2
@@ -76,8 +113,48 @@ case "${1:-status}" in
   logs)
     tail -50 "$LOG_FILE"
     ;;
+  tunnel)
+    if ! alive; then
+      echo "error: console is not running; start it first" >&2
+      exit 1
+    fi
+    if tunnel_alive; then
+      echo "tunnel already running (pid $(cat "$TUNNEL_PID_FILE"))"
+      tunnel_url || tail -5 "$TUNNEL_LOG"
+      exit 0
+    fi
+    ensure_cloudflared || exit 1
+    nohup "$CLOUDFLARED" tunnel --url "http://127.0.0.1:${PORT}" --no-autoupdate \
+      --protocol http2 >"$TUNNEL_LOG" 2>&1 &
+    echo $! > "$TUNNEL_PID_FILE"
+    for _ in $(seq 1 20); do
+      sleep 1
+      url="$(tunnel_url)"
+      if [[ -n "$url" ]]; then
+        echo "public url: $url"
+        echo "(login required; credentials in $DATA_DIR/console_auth.json or console.log)"
+        exit 0
+      fi
+      tunnel_alive || break
+    done
+    echo "tunnel failed to establish; see $TUNNEL_LOG" >&2
+    tail -10 "$TUNNEL_LOG" >&2
+    exit 1
+    ;;
+  tunnel-stop)
+    if tunnel_alive; then
+      kill "$(cat "$TUNNEL_PID_FILE")"
+      echo "tunnel stopped"
+    else
+      echo "tunnel not running"
+    fi
+    rm -f "$TUNNEL_PID_FILE" 2>/dev/null || true
+    ;;
+  tunnel-url)
+    tunnel_url || { echo "no tunnel url; run: $SELF tunnel" >&2; exit 1; }
+    ;;
   *)
-    echo "usage: $0 {start|stop|status|url|logs}" >&2
+    echo "usage: $0 {start|stop|status|url|logs|tunnel|tunnel-stop|tunnel-url}" >&2
     exit 2
     ;;
 esac
