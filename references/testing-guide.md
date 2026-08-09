@@ -1,6 +1,6 @@
 # 测试类型与结果判读（速查）
 
-详版文档在 `{baseDir}/app/docs/`（testing_guide.md、parameter_testing.md、cache_testing.md、load_testing.md、image_param_test.md）。本文件是给 agent 的速查。
+详版文档在 `${CLAUDE_SKILL_DIR}/app/docs/`（testing_guide.md、parameter_testing.md、cache_testing.md、load_testing.md、image_param_test.md）。本文件是给 agent 的速查。
 
 ## 类型选择
 
