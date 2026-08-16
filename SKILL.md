@@ -2,7 +2,7 @@
 name: llm-api-test
 description: LLM 供应商准入与测试。对任意供应商+模型执行参数合规、缓存、API 溯源（上游来源）、图片参数与并发压测，全部通过 CLI 脚本完成并可总结报告；内置供应商准入工作流，可从头或中途推进。Web 控制台（含登录与公网隧道）为可选人工界面。
 author: wangzhouhao
-version: 1.0.0
+version: 1.1.0
 triggers:
   - "参数测试"
   - "缓存测试"
@@ -38,8 +38,20 @@ metadata: {"clawdbot":{"emoji":"🧪","requires":{"bins":["bash","curl"]},"confi
 | 新模型登记 | `scripts/register_model.py` |
 | 前端/密码/公网（可选） | `scripts/console.sh` |
 
-路径约定：`{baseDir}` = skill 根目录。Python 环境由 uv 管理（`{baseDir}/.venv`，若不存在先跑 setup）；**所有 Python 命令一律通过 uv 执行**：`uv run --python {baseDir}/.venv/bin/python <script> ...`。若 `uv` 不在 PATH，用 `~/.local/bin/uv` 替代。
+路径约定：`{baseDir}` = skill 根目录。Python 环境由 uv 管理（`{baseDir}/.venv`，若不存在先跑 setup）；**所有 Python 命令一律通过 uv 执行**：`uv run --python {baseDir}/.venv/bin/python <script> ...`。若 `uv` 不在 PATH，用 `~/.local/bin/uv` 替代。下文 `$PY` 均指 `uv run --python {baseDir}/.venv/bin/python`。
 数据目录默认 `~/.config/llm-api-test/`（下称 `$DATA`），存放 `.env`、`providers.local.yaml`、注册表覆盖层、溯源语料库、报告与工作流状态。
+
+## 目录
+
+- [安装/初始化](#安装初始化)
+- [Web 控制台（前端，可选）](#web-控制台前端可选)
+- [供应商/模型发现](#供应商模型发现)
+- [模式一：供应商准入工作流（默认推荐）](#模式一供应商准入工作流默认推荐)
+- [模式二：单点测试（不进入工作流）](#模式二单点测试不进入工作流)
+- [API 溯源语料库（一次性准备）](#api-溯源语料库一次性准备)
+- [配置与密钥](#配置与密钥)
+- [停止任务](#停止任务)
+- [故障排查](#故障排查)
 
 ## 安装/初始化
 
