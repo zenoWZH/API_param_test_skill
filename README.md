@@ -1,15 +1,15 @@
-# llm-api-test（openclaw skill）
+# llm-api-test（AI 编程助手 skill）
 
 多供应商 LLM 测试工具包：参数合规 / 缓存 / API 溯源 / 图片参数 / 并发压测 + 供应商准入工作流 + Web 控制台。
 
-日常使用方式：把需求用中文说给 openclaw（如"帮我接入供应商 X 的模型 M"），由 agent 调用本 skill 的 CLI 脚本完成测试并总结结果；Web 控制台是可选的人工观察/操作界面，不开也能用。
+日常使用方式：把需求用中文说给你的编程助手（如"帮我接入供应商 X 的模型 M"），由 agent 调用本 skill 的 CLI 脚本完成测试并总结结果；Web 控制台是可选的人工观察/操作界面，不开也能用。适用于 openclaw / Claude Code / Kilo Code / Codex 及任何可执行 shell 命令的编程 agent。
 
 ## 目录结构
 
 本仓库根目录即 skill 本体（完全自包含，不依赖外部仓库）：
 
 ```text
-SKILL.md      agent 操作手册（命令细节、流程定义，openclaw 按它工作）
+SKILL.md      agent 操作手册（命令细节、流程定义，agent 按它工作）
 _meta.json    skill 元数据
 scripts/      入口脚本：
                 setup.sh        初始化（装 uv、建 .venv、初始化数据目录）
@@ -42,7 +42,13 @@ console.pid/.log、tunnel.pid/.log   控制台与隧道进程状态
 
 ## 快速上手（安装）
 
-本仓库根目录就是 skill 本体，**完全自包含，不依赖任何外部仓库**。在本机执行（openclaw agent 可直接运行）：
+本仓库根目录就是 skill 本体，**完全自包含，不依赖任何外部仓库**。前置要求：仅需 `bash` + `curl`（用于自动安装 uv）；Python 3.12 解释器与虚拟环境全部由 uv 受管安装，无需任何系统 Python 包。
+
+按你使用的编程助手选择下面一块照抄即可：
+
+#### openclaw
+
+在本机执行（openclaw agent 可直接运行）：
 
 ```bash
 # 1. 直接把仓库克隆为 skill（目标路径按实际调整）
@@ -54,10 +60,6 @@ bash ~/.openclaw/workspace/skills/llm-api-test/scripts/setup.sh
 # 4. 启动 Web 控制台
 bash ~/.openclaw/workspace/skills/llm-api-test/scripts/console.sh start
 ```
-
-前置要求：仅需 `bash` + `curl`（用于自动安装 uv）；Python 3.12 解释器与虚拟环境全部由 uv 受管安装，无需任何系统 Python 包。
-
-## 可直接粘贴给 openclaw 的安装提示词
 
 复制下面整段发给 openclaw 即可：
 
@@ -71,11 +73,92 @@ bash ~/.openclaw/workspace/skills/llm-api-test/scripts/console.sh start
 6. 红线：写密钥配置（.env / providers.local.yaml）和注册模型 profile（onboard-apply）前，必须把内容展示给我并征得明确同意；所有测试会真实调用付费 API，执行前与我确认 provider、model、测试类型
 ```
 
-## 日常使用（对 openclaw 说什么）
+#### Claude Code
+
+在本机执行（Claude Code 可直接运行）：
+
+```bash
+# 1. 直接把仓库克隆为 skill
+git clone git@github.com:zenoWZH/API_param_test_skill.git ~/.claude/skills/llm-api-test
+# 2. 初始化（自动安装 uv；Python 3.12 由 uv 受管下载并创建 .venv、安装依赖）
+bash ~/.claude/skills/llm-api-test/scripts/setup.sh
+# 3. 配置密钥与供应商：编辑数据目录下的 .env 和 providers.local.yaml
+#    （setup 已从 app/providers.local.example.yaml 生成模板，按注释填入即可）
+# 4. 启动 Web 控制台
+bash ~/.claude/skills/llm-api-test/scripts/console.sh start
+```
+
+复制下面整段发给 Claude Code 即可：
+
+```text
+请安装并使用 llm-api-test skill，步骤如下：
+1. 执行 git clone git@github.com:zenoWZH/API_param_test_skill.git ~/.claude/skills/llm-api-test
+2. 运行 bash ~/.claude/skills/llm-api-test/scripts/setup.sh（Python 环境由 uv 打包：setup 会自动安装 uv，用 uv 下载受管 Python 3.12、创建 .venv 并安装依赖；如失败把报错发给我）
+3. 提醒我编辑数据目录 ~/.config/llm-api-test/ 下的 .env（填 API key）和 providers.local.yaml（填供应商，模板已由 setup 生成）
+4. 配置完成后运行 bash ~/.claude/skills/llm-api-test/scripts/console.sh start，用 bash ~/.claude/skills/llm-api-test/scripts/console.sh passwd 查到登录密码，把访问 URL 和密码一起告诉我；如需公网访问，运行 bash ~/.claude/skills/llm-api-test/scripts/console.sh tunnel（免费随机域名）并把公网地址告诉我；如果我有 Cloudflare 账户要固定域名，引导我按 references/console-access.md 创建命名隧道拿 token，再用 tunnel --token 启动
+5. 之后按该 skill 的 SKILL.md 工作：我说“测试某供应商某模型”时走供应商准入工作流（workflow.py）；我说单点测试时用 run_test.py；所有 Python 命令都用 uv run --python ~/.claude/skills/llm-api-test/.venv/bin/python 执行（uv 不在 PATH 时用 ~/.local/bin/uv）；测试结果用 result.py 读取并向我中文总结
+6. 红线：写密钥配置（.env / providers.local.yaml）和注册模型 profile（onboard-apply）前，必须把内容展示给我并征得明确同意；所有测试会真实调用付费 API，执行前与我确认 provider、model、测试类型
+```
+
+#### Kilo Code
+
+在本机执行（Kilo Code 可直接运行）：
+
+```bash
+# 1. 直接把仓库克隆为 skill（全局生效；项目级用法可克隆到 <项目>/.kilo/skills/llm-api-test）
+git clone git@github.com:zenoWZH/API_param_test_skill.git ~/.config/kilo/skills/llm-api-test
+# 2. 初始化（自动安装 uv；Python 3.12 由 uv 受管下载并创建 .venv、安装依赖）
+bash ~/.config/kilo/skills/llm-api-test/scripts/setup.sh
+# 3. 配置密钥与供应商：编辑数据目录下的 .env 和 providers.local.yaml
+#    （setup 已从 app/providers.local.example.yaml 生成模板，按注释填入即可）
+# 4. 启动 Web 控制台
+bash ~/.config/kilo/skills/llm-api-test/scripts/console.sh start
+```
+
+复制下面整段发给 Kilo Code 即可：
+
+```text
+请安装并使用 llm-api-test skill，步骤如下：
+1. 执行 git clone git@github.com:zenoWZH/API_param_test_skill.git ~/.config/kilo/skills/llm-api-test
+2. 运行 bash ~/.config/kilo/skills/llm-api-test/scripts/setup.sh（Python 环境由 uv 打包：setup 会自动安装 uv，用 uv 下载受管 Python 3.12、创建 .venv 并安装依赖；如失败把报错发给我）
+3. 提醒我编辑数据目录 ~/.config/llm-api-test/ 下的 .env（填 API key）和 providers.local.yaml（填供应商，模板已由 setup 生成）
+4. 配置完成后运行 bash ~/.config/kilo/skills/llm-api-test/scripts/console.sh start，用 bash ~/.config/kilo/skills/llm-api-test/scripts/console.sh passwd 查到登录密码，把访问 URL 和密码一起告诉我；如需公网访问，运行 bash ~/.config/kilo/skills/llm-api-test/scripts/console.sh tunnel（免费随机域名）并把公网地址告诉我；如果我有 Cloudflare 账户要固定域名，引导我按 references/console-access.md 创建命名隧道拿 token，再用 tunnel --token 启动
+5. 之后按该 skill 的 SKILL.md 工作：我说“测试某供应商某模型”时走供应商准入工作流（workflow.py）；我说单点测试时用 run_test.py；所有 Python 命令都用 uv run --python ~/.config/kilo/skills/llm-api-test/.venv/bin/python 执行（uv 不在 PATH 时用 ~/.local/bin/uv）；测试结果用 result.py 读取并向我中文总结
+6. 红线：写密钥配置（.env / providers.local.yaml）和注册模型 profile（onboard-apply）前，必须把内容展示给我并征得明确同意；所有测试会真实调用付费 API，执行前与我确认 provider、model、测试类型
+```
+
+#### Codex
+
+Codex 没有 skill 自动加载机制，克隆到任意目录即可（示例用 `~/skills/`），由提示词指路 SKILL.md。在本机执行：
+
+```bash
+# 1. 克隆仓库（路径任意）
+git clone git@github.com:zenoWZH/API_param_test_skill.git ~/skills/llm-api-test
+# 2. 初始化（自动安装 uv；Python 3.12 由 uv 受管下载并创建 .venv、安装依赖）
+bash ~/skills/llm-api-test/scripts/setup.sh
+# 3. 配置密钥与供应商：编辑数据目录下的 .env 和 providers.local.yaml
+#    （setup 已从 app/providers.local.example.yaml 生成模板，按注释填入即可）
+# 4. 启动 Web 控制台
+bash ~/skills/llm-api-test/scripts/console.sh start
+```
+
+复制下面整段发给 Codex 即可：
+
+```text
+请安装并使用 llm-api-test skill，步骤如下：
+1. 执行 git clone git@github.com:zenoWZH/API_param_test_skill.git ~/skills/llm-api-test
+2. 运行 bash ~/skills/llm-api-test/scripts/setup.sh（Python 环境由 uv 打包：setup 会自动安装 uv，用 uv 下载受管 Python 3.12、创建 .venv 并安装依赖；如失败把报错发给我）
+3. 提醒我编辑数据目录 ~/.config/llm-api-test/ 下的 .env（填 API key）和 providers.local.yaml（填供应商，模板已由 setup 生成）
+4. 配置完成后运行 bash ~/skills/llm-api-test/scripts/console.sh start，用 bash ~/skills/llm-api-test/scripts/console.sh passwd 查到登录密码，把访问 URL 和密码一起告诉我；如需公网访问，运行 bash ~/skills/llm-api-test/scripts/console.sh tunnel（免费随机域名）并把公网地址告诉我；如果我有 Cloudflare 账户要固定域名，引导我按 references/console-access.md 创建命名隧道拿 token，再用 tunnel --token 启动
+5. 之后把 ~/skills/llm-api-test/SKILL.md 作为操作手册遵循（你不会自动加载它，必要时先读一遍；也可让我在自己的 AGENTS.md 里加入指向该文件的说明）：我说“测试某供应商某模型”时走供应商准入工作流（workflow.py）；我说单点测试时用 run_test.py；所有 Python 命令都用 uv run --python ~/skills/llm-api-test/.venv/bin/python 执行（uv 不在 PATH 时用 ~/.local/bin/uv）；测试结果用 result.py 读取并向我中文总结
+6. 红线：写密钥配置（.env / providers.local.yaml）和注册模型 profile（onboard-apply）前，必须把内容展示给我并征得明确同意；所有测试会真实调用付费 API，执行前与我确认 provider、model、测试类型
+```
+
+## 日常使用（对编程助手说什么）
 
 装好后不需要自己敲命令，直接用中文提需求即可。常用话术：
 
-| 你说 | openclaw 做什么 |
+| 你说 | 助手做什么 |
 |---|---|
 | "帮我接入新供应商 X 的模型 M" | 走供应商准入工作流：`workflow.py start` → 逐节点推进（参数测试→价格核对→并发→注册 profile），人工节点会向你转述并等结论 |
 | "接着上次测 X 的 M" / "上次测到哪了" | `workflow.py status` 看当前节点，`next` 给出该做的事，中途接手继续推进 |
@@ -108,7 +191,7 @@ bash ~/.openclaw/workspace/skills/llm-api-test/scripts/console.sh start
 
 - 每次测试一个目录：`~/.config/llm-api-test/reports/jobs/<job_id>/`，含 `verdict.json`（判定结论）、`summary.json` / `load_result.json`（指标明细）、`job.log`（日志）等。
 - `verdict.json` 一句话：该次测试的通过/不通过结论及失败点，agent 总结时以它为准。
-- 不需要自己翻文件：直接对 openclaw 说"把 <job_id> 的结果总结一下"即可。
+- 不需要自己翻文件：直接对助手说"把 <job_id> 的结果总结一下"即可。
 
 ## 常见问题（FAQ）
 
@@ -130,7 +213,7 @@ bash ~/.openclaw/workspace/skills/llm-api-test/scripts/console.sh start
 
 | 文档 | 内容 |
 |---|---|
-| `SKILL.md` | agent 操作手册：全部命令、工作流节点处理、故障排查（openclaw 按它工作，用户一般不需要读） |
+| `SKILL.md` | agent 操作手册：全部命令、工作流节点处理、故障排查（agent 按它工作，用户一般不需要读） |
 | `references/console-access.md` | 控制台登录、改密、Cloudflare 隧道（免费快速/命名）分步引导 |
 | `references/supplier-onboarding-workflow.md` | 供应商准入工作流完整说明（含权威 mermaid 流程图） |
 | `references/testing-guide.md` | 各测试类型的判读指南（看什么指标、怎么算过） |

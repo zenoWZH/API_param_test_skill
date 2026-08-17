@@ -6,7 +6,7 @@ Web 控制台默认监听 `0.0.0.0:8090` 并启用登录认证。本文档说明
 ## 1. 登录密码
 
 - 首次 `console.sh start` 自动生成 `admin` + 随机密码，存于 `$DATA/console_auth.json`（PBKDF2 哈希）。
-- openclaw 查看并告诉用户：`bash {baseDir}/scripts/console.sh passwd`
+- agent 查看并告诉用户：`bash {baseDir}/scripts/console.sh passwd`
 - 用户改密码：`bash {baseDir}/scripts/console.sh passwd --set <新密码>`（立即生效，已有会话保持有效）
 - 重置随机密码：`bash {baseDir}/scripts/console.sh passwd --reset`
 - 密码也可用环境变量固定：`WEB_CONSOLE_USER` / `WEB_CONSOLE_PASSWORD`（此时 `passwd` 会提示去环境变量处改）。
@@ -31,10 +31,10 @@ bash {baseDir}/scripts/console.sh tunnel
 
 1. 登录 https://one.dash.cloudflare.com/ → 左侧 **Networks → Tunnels → Add a tunnel**。
 2. 选 **Cloudflared**，命名（如 `llm-api-test`），保存。
-3. 创建页会显示安装命令，其中 `--token` 后面那串就是隧道 token，复制发给 openclaw。
+3. 创建页会显示安装命令，其中 `--token` 后面那串就是隧道 token，复制发给 agent。
 4. 在隧道的 **Public Hostname** 页添加：子域名如 `llm-test`、域名选自己的域名、`Service` 类型 `HTTP`、URL 填 `127.0.0.1:8090`（本项也可由隧道侧忽略，以 dashboard 为准）。
 
-**openclaw 侧：**
+**agent 侧：**
 
 ```bash
 bash {baseDir}/scripts/console.sh tunnel --token <用户给的 token>

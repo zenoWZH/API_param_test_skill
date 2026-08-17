@@ -2,7 +2,7 @@
 
 本文件是 `app/workflow.yaml` 的人类可读版。状态机以 **provider + model** 为实例粒度，
 实例状态存于 `$DATA/workflows/<provider>__<model>.json`，因此可以随时中断、随时由
-openclaw 中途接手（`workflow.py status`）。
+agent 中途接手（`workflow.py status`）。
 
 ## 流程图
 

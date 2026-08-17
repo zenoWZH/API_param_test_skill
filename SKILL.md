@@ -2,7 +2,7 @@
 name: llm-api-test
 description: LLM 供应商准入与测试。对任意供应商+模型执行参数合规、缓存、API 溯源（上游来源）、图片参数与并发压测，全部通过 CLI 脚本完成并可总结报告；内置供应商准入工作流，可从头或中途推进。Web 控制台（含登录与公网隧道）为可选人工界面。
 author: wangzhouhao
-version: 1.1.0
+version: 1.1.1
 triggers:
   - "参数测试"
   - "缓存测试"
@@ -65,7 +65,7 @@ bash {baseDir}/scripts/setup.sh   # uv 建 venv、装依赖、初始化数据目
 
 ## Web 控制台（前端，可选）
 
-> 仅供用户在浏览器人工操作；openclaw 执行任务**不需要**启动它。CLI 发起的任务也会出现在控制台（运行中与历史），所以前端可作为用户的观察窗口按需开启。
+> 仅供用户在浏览器人工操作；agent 执行任务**不需要**启动它。CLI 发起的任务也会出现在控制台（运行中与历史），所以前端可作为用户的观察窗口按需开启。
 
 ```bash
 bash {baseDir}/scripts/console.sh start     # 后台启动，默认 0.0.0.0:8090
@@ -74,7 +74,7 @@ bash {baseDir}/scripts/console.sh stop
 bash {baseDir}/scripts/console.sh logs
 ```
 
-**登录认证（可选，默认开启）**：首次启动自动生成 `admin` + 随机密码。openclaw 可用以下命令把密码告诉用户或修改：
+**登录认证（可选，默认开启）**：首次启动自动生成 `admin` + 随机密码。agent 可用以下命令把密码告诉用户或修改：
 
 ```bash
 bash {baseDir}/scripts/console.sh passwd            # 查看当前用户名/密码（转述给用户）
@@ -195,7 +195,7 @@ family 必须是注册表中已有的（如 deepseek/kimi/gpt/claude...）；全
 ## 停止任务
 
 - CLI 发起的任务：`$PY {baseDir}/scripts/jobs.py --stop <job_id>`（SIGTERM 到任务进程组，状态记为 stopped）。
-- 前端发起的任务：用户在控制台点 stop 按钮；或让 openclaw 调 console API（`POST /api/jobs/<id>/stop`，需先登录）。
+- 前端发起的任务：用户在控制台点 stop 按钮；或让 agent 调 console API（`POST /api/jobs/<id>/stop`，需先登录）。
 
 ## 故障排查
 
