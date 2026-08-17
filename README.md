@@ -44,6 +44,8 @@ console.pid/.log、tunnel.pid/.log   控制台与隧道进程状态
 
 本仓库根目录就是 skill 本体，**完全自包含，不依赖任何外部仓库**。前置要求：仅需 `bash` + `curl`（用于自动安装 uv）；Python 3.12 解释器与虚拟环境全部由 uv 受管安装，无需任何系统 Python 包。
 
+> 注意：本仓库为**私有仓库**，`git clone` 前需在本机配置好有访问权限的 GitHub SSH key（个人 key 或 deploy key），否则会报 `Permission denied (publickey)`。
+
 按你使用的编程助手选择下面一块照抄即可：
 
 #### openclaw
