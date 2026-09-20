@@ -1,0 +1,595 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yibu.example/schemas/model-profile-db/test-extensions-v2.json",
+  "title": "Yibu Model Profile Database Test Extensions",
+  "type": "object",
+  "required": ["test_extension_schema_version", "provenance_schema_version", "provenance_records", "test_bindings"],
+  "properties": {
+    "test_extension_schema_version": {"const": 2},
+    "provenance_schema_version": {"const": 1},
+    "provenance_records": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/provenanceRecord"}
+    },
+    "test_bindings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["extension_type", "source_id", "provenance_record_id"],
+        "properties": {
+          "extension_type": {"type": "string", "minLength": 1},
+          "interface_id": {"type": "string"},
+          "contract_id": {"type": "string"},
+          "source_id": {"type": "string", "minLength": 1},
+          "provenance_record_id": {"type": "string", "minLength": 1},
+          "modality": {"type": "string", "minLength": 1},
+          "family_id": {"type": "string", "minLength": 1},
+          "model_slug": {"type": "string", "minLength": 1},
+          "api_form": {"type": "string", "minLength": 1},
+          "suite_family_id": {"type": "string"},
+          "canonical_family_id": {"type": "string"},
+          "compatibility_family_alias": {"type": "boolean"},
+          "reference_contract_ids": {
+            "type": "array",
+            "items": {"type": "string"},
+            "minItems": 1,
+            "uniqueItems": true
+          },
+          "default_reference_contract_id": {"type": "string"},
+          "parameter_test_enabled": {"type": "boolean"},
+          "pressure_test_enabled": {"type": "boolean"},
+          "runner_enabled": {"type": "boolean"},
+          "enabled": {"type": "boolean"},
+          "executable": {"type": "boolean"},
+          "test_binding_status": {"type": "string", "minLength": 1},
+          "execution_state": {"type": "string", "minLength": 1},
+          "disabled_reason": {"type": ["string", "null"], "minLength": 1},
+          "pressure_profiles": {"type": "object"},
+          "pressure_omit_params": {
+            "type": "array",
+            "items": {"type": "string"},
+            "uniqueItems": true
+          },
+          "pressure_parameter_aliases": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          },
+          "pressure_overrides": {"type": "object"},
+          "pressure_transport_overrides": {"type": "object"},
+          "test_scope": {
+            "enum": [
+              "full_suite",
+              "identity_smoke",
+              "parameter_matrix",
+              "route_parameter_matrix",
+              "safe_parameter_matrix"
+            ]
+          },
+          "api_version": {"type": "string", "minLength": 1},
+          "validation_date": {"type": "string", "minLength": 1},
+          "certification_scope": {"type": "string", "minLength": 1},
+          "test_cases": {
+            "type": "array",
+            "items": {"type": "string"},
+            "uniqueItems": true
+          },
+          "parameter_coverage": {
+            "type": "object",
+            "additionalProperties": {"type": "string", "minLength": 1}
+          }
+        },
+        "allOf": [
+          {
+            "if": {"properties": {"extension_type": {"const": "test_workflow"}}},
+            "then": {"$ref": "#/$defs/testWorkflow"}
+          },
+          {
+            "if": {
+              "properties": {
+                "extension_type": {"const": "model_test_policy"}
+              }
+            },
+            "then": {
+              "required": [
+                "suite_family_id",
+                "canonical_family_id",
+                "compatibility_family_alias",
+                "reference_contract_ids",
+                "default_reference_contract_id"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "extension_type": {"const": "parameter"}
+              }
+            },
+            "then": {
+              "required": ["contract_id", "test_cases", "parameter_coverage"],
+              "properties": {
+                "test_cases": {"minItems": 1}
+              }
+            }
+          },
+          {
+            "if": {
+              "required": ["extension_type", "test_binding_status"],
+              "properties": {
+                "extension_type": {
+                  "enum": ["parameter", "model_test_policy"]
+                },
+                "test_binding_status": {"const": "not_certified"}
+              }
+            },
+            "then": {
+              "required": [
+                "runner_enabled",
+                "enabled",
+                "executable",
+                "execution_state",
+                "parameter_test_enabled",
+                "pressure_test_enabled",
+                "disabled_reason"
+              ],
+              "properties": {
+                "runner_enabled": {"const": false},
+                "enabled": {"const": false},
+                "executable": {"const": false},
+                "execution_state": {
+                  "const": "metadata_only_non_certified_parameter_cases"
+                },
+                "parameter_test_enabled": {"const": false},
+                "pressure_test_enabled": {"const": false},
+                "disabled_reason": {"type": "string", "minLength": 1}
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "extension_type": {"const": "safety_metadata"}
+              }
+            },
+            "then": {
+              "required": [
+                "interface_id",
+                "contract_id",
+                "source_id",
+                "modality",
+                "family_id",
+                "model_slug",
+                "api_form",
+                "test_cases",
+                "execution_state",
+                "runner_enabled",
+                "enabled",
+                "executable",
+                "test_binding_status",
+                "parameter_test_enabled",
+                "pressure_test_enabled",
+                "disabled_reason",
+                "certification_scope"
+              ],
+              "properties": {
+                "test_cases": {"minItems": 1},
+                "runner_enabled": {"const": false},
+                "enabled": {"const": false},
+                "executable": {"const": false},
+                "test_binding_status": {"const": "not_certified"},
+                "execution_state": {
+                  "const": "metadata_only_non_migration_runner_gate_required"
+                },
+                "disabled_reason": {"type": "string", "minLength": 1},
+                "parameter_test_enabled": {"const": false},
+                "pressure_test_enabled": {"const": false}
+              }
+            }
+          },
+          {
+            "if": {
+              "required": ["interface_id"],
+              "properties": {
+                "extension_type": {"const": "model_test_policy"},
+                "interface_id": {"pattern": "^(image|video)/"}
+              }
+            },
+            "then": {
+              "properties": {
+                "pressure_test_enabled": {"const": false},
+                "pressure_profiles": {"maxProperties": 0},
+                "pressure_omit_params": {"maxItems": 0},
+                "pressure_parameter_aliases": {"maxProperties": 0},
+                "pressure_overrides": {"maxProperties": 0},
+                "pressure_transport_overrides": {"maxProperties": 0}
+              }
+            }
+          }
+        ],
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "workflowExecutionTarget": {
+      "type": "object",
+      "required": [
+        "provider_id",
+        "request_model_id",
+        "api_form",
+        "transport_adapter_id"
+      ],
+      "properties": {
+        "provider_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(?:[.-][a-z0-9_]+)*$"
+        },
+        "request_model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "api_form": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(?:[.-][a-z0-9_]+)*$"
+        },
+        "transport_adapter_id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9_]*(?:[.-][a-z0-9_]+)*$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "workflowFactory": {
+      "type": "object",
+      "required": [
+        "factory_id",
+        "version",
+        "source_sha256",
+        "case_ids"
+      ],
+      "properties": {
+        "factory_id": {
+          "enum": [
+            "fable_research",
+            "legacy_parameter",
+            "image_parameter",
+            "functional_cache",
+            "gemini_resources",
+            "responses_image",
+            "kimi_minimax_controls",
+            "source_fixed_parameter",
+            "aws_bedrock_mantle_json",
+            "deepseek_beta_prefix",
+            "media_input"
+          ]
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "case_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "workflowDefinition": {
+      "type": "object",
+      "required": [
+        "workflow_schema_version",
+        "id",
+        "target",
+        "cases",
+        "steps",
+        "limits",
+        "policy"
+      ],
+      "properties": {
+        "workflow_schema_version": {
+          "const": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "case_id",
+              "handler",
+              "inputs"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "case_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "handler": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*(?:[.-][a-z0-9_]+)*$"
+              },
+              "inputs": {
+                "type": "object"
+              },
+              "depends_on": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
+              },
+              "requires": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "limits": {
+          "type": "object"
+        },
+        "policy": {
+          "type": "object"
+        }
+      },
+      "additionalProperties": true
+    },
+    "testWorkflow": {
+      "type": "object",
+      "required": [
+        "extension_type",
+        "workflow_schema_version",
+        "workflow_id",
+        "source_id",
+        "profile_id",
+        "interface_id",
+        "contract_id",
+        "provenance_record_id",
+        "enabled",
+        "execution_target",
+        "execution_permission",
+        "workflow"
+      ],
+      "properties": {
+        "extension_type": {
+          "const": "test_workflow"
+        },
+        "workflow_schema_version": {
+          "const": 1
+        },
+        "workflow_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "interface_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "contract_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provenance_record_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "execution_target": {
+          "$ref": "#/$defs/workflowExecutionTarget"
+        },
+        "execution_permission": {
+          "type": "object",
+          "required": [
+            "scope",
+            "mode"
+          ],
+          "properties": {
+            "scope": {
+              "const": "exact_workflow"
+            },
+            "mode": {
+              "enum": [
+                "inherit",
+                "scoped_research"
+              ]
+            },
+            "approval_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false,
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "mode": {
+                    "const": "scoped_research"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "approval_id"
+                ]
+              }
+            }
+          ]
+        },
+        "gateway_mapping": {
+          "type": "object",
+          "required": [
+            "mapping_id",
+            "approved"
+          ],
+          "properties": {
+            "mapping_id": {
+              "enum": [
+                "awsb_fable_messages_v1",
+                "sanqiao_fable_messages_v1"
+              ]
+            },
+            "approved": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "workflow": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/workflowFactory"
+            },
+            {
+              "$ref": "#/$defs/workflowDefinition"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenanceRecord": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "authority",
+        "authority_domains",
+        "official_urls",
+        "retrieved_at",
+        "target",
+        "exact_identity",
+        "api_form",
+        "parameters",
+        "section_summary",
+        "content_version"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "authority": {"enum": ["origin_vendor", "managed_cloud", "managed_platform_marketplace"]},
+        "authority_domains": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "official_urls": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^https://"},
+          "uniqueItems": true
+        },
+        "retrieved_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "target": {
+          "type": "object",
+          "required": ["type", "id", "fields"],
+          "properties": {
+            "type": {"const": "test_binding"},
+            "id": {"type": "string", "minLength": 1},
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1},
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "exact_identity": {"type": "object", "minProperties": 1},
+        "api_form": {"type": "string", "minLength": 1},
+        "parameters": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "section_summary": {"type": "string", "minLength": 1},
+        "content_version": {"$ref": "#/$defs/contentVersion"}
+      },
+      "additionalProperties": false
+    },
+    "contentVersion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {"const": "official_version"},
+            "value": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "sha256"],
+          "properties": {
+            "kind": {"const": "content_sha256"},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "snapshot_date", "page_content_sha256_available"],
+          "properties": {
+            "kind": {"const": "unversioned_retrieval_snapshot"},
+            "snapshot_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+            "page_content_sha256_available": {"const": false}
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

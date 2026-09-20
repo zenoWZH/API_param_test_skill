@@ -75,7 +75,7 @@ class ClientTransportTest(unittest.TestCase):
             },
         )
 
-    def test_configured_token_count_interface_returns_exact_independent_count(self) -> None:
+    def test_configured_token_count_interface_returns_complete_independent_count(self) -> None:
         self.client.session.post = Mock(
             return_value=FakeResponse({"usage": {"input_tokens": 42}})
         )
@@ -85,10 +85,50 @@ class ClientTransportTest(unittest.TestCase):
         )
 
         self.assertEqual(result["tokens"], 42)
-        self.assertEqual(result["evidence_level"], "exact")
+        self.assertEqual(result["evidence_level"], "official_count")
+        self.assertIs(result["covers_full_input"], True)
         call = self.client.session.post.call_args
         self.assertEqual(call.args[0], "https://chat.example/v1/token-count")
         self.assertEqual(call.kwargs["json"], {"request": {"messages": []}})
+
+    def test_count_wrapper_includes_model_and_full_input_without_mutating_it(self) -> None:
+        interface = self.client.api_interfaces["token_count"]
+        interface.update(request_wrapper="generateContentRequest", request_model_field="model")
+        body = {"contents": [{"parts": [{"text": "Hello"}]}], "systemInstruction": {"parts": [{"text": "Reply OK"}]}}
+        self.client.session.post = Mock(return_value=FakeResponse({"usage": {"input_tokens": 12}}))
+        counted = self.client.count_tokens("chat_completions", "model-a", body)
+        sent = self.client.session.post.call_args.kwargs["json"]["generateContentRequest"]
+        self.assertEqual(sent, {**body, "model": "models/model-a"})
+        self.assertNotIn("model", body)
+        self.assertTrue(counted["covers_full_input"])
+
+    def test_count_dispatch_mutation_cannot_be_used_as_complete_input_evidence(self) -> None:
+        for raises in (False, True):
+            with self.subTest(raises=raises):
+                def changed(*args, **kwargs):
+                    kwargs["json"]["request"]["messages"].append({"role": "system", "content": "extra"})
+                    if raises:
+                        raise RuntimeError("counter aborted after changing input")
+                    return FakeResponse({"usage": {"input_tokens": 42}})
+                self.client.session.post = Mock(side_effect=changed)
+                body = {"messages": [{"role": "user", "content": "Hello"}]}
+                counted = self.client.count_tokens("chat_completions", "model-a", body)
+                self.assertEqual(counted["request_integrity"], "fail")
+                self.assertIsNone(counted["tokens"])
+                self.assertEqual(len(body["messages"]), 1)
+
+    def test_configured_token_count_rejects_non_integer_or_negative_values(self) -> None:
+        for invalid in (True, 1.5, "42", -1):
+            with self.subTest(invalid=invalid):
+                self.client.session.post = Mock(
+                    return_value=FakeResponse({"usage": {"input_tokens": invalid}})
+                )
+
+                self.assertIsNone(
+                    self.client.count_tokens(
+                        "chat_completions", "model-a", {"messages": []}
+                    )
+                )
 
     def test_claude_uses_persistent_session_and_anthropic_interface(self) -> None:
         self.client.session.post = Mock(

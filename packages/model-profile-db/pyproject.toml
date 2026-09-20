@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "yibu-model-profile-db"
+version = "0.3.0"
+description = "Versioned official-reference model profile catalog for text, image, and video models"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "PyYAML>=6.0.1",
+  "jsonschema>=4.18,<5",
+]
+
+[project.scripts]
+mpdb = "model_profile_db.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["model_profile_db*"]
+
+[tool.setuptools.package-data]
+model_profile_db = [
+  "data/*.yaml",
+  "data/*.json",
+  "data/*.sqlite3",
+  "schemas/*.json",
+]

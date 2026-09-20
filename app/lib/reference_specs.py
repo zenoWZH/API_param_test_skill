@@ -1,101 +1,124 @@
 from __future__ import annotations
 
 import copy
-import os
 import re
-from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
-try:
-    import yaml
-except ImportError as exc:  # pragma: no cover - exercised only before deps install
-    raise RuntimeError("PyYAML is required. Install with: pip install -r requirements.txt") from exc
-
 from .config import (
-    PROJECT_ROOT,
-    api_form_for_transport,
     deep_merge,
+    get_active_provider_name,
     get_model_api_form,
     get_model_reference_source,
     get_model_route_profile,
-    get_model_transport,
-    infer_model_family,
-    transport_for_api_form,
+    get_selected_model,
+    get_provider_config,
 )
-from .param_outcome import VALID_EXPECTATIONS, normalize_expectation
+from .param_outcome import normalize_expectation
+from .parameter_reference_policy import non_thinking_probe_policy
+
+_BEHAVIOR_METADATA_FIELDS = ("deprecated", "effect_support", "request_acceptance", "http_rejection_expected")
 
 
-REFERENCE_SPECS_PATH = PROJECT_ROOT / "api_reference_specs.yaml"
-CAPABILITY_PROFILES_PATH = PROJECT_ROOT / "model_capability_profiles.yaml"
-_profiles_local_override = os.getenv("LLM_API_TEST_PROFILES_LOCAL")
-LOCAL_CAPABILITY_PROFILES_PATH = (
-    Path(_profiles_local_override).expanduser()
-    if _profiles_local_override
-    else PROJECT_ROOT / "model_capability_profiles.local.yaml"
-)
-CAPABILITY_SCHEMA_VERSION = 4
+def catalog_model_id_for_runtime(
+    config: dict[str, Any],
+    model: str | None,
+    provider: str | None,
+) -> str:
+    """Map a provider request id to the official MPDB model slug when configured."""
+    runtime_id = str(model or "")
+    if not runtime_id or not provider:
+        return runtime_id
+    mapping = (get_provider_config(config, provider).get("models") or {}).get(
+        "reference_model_ids"
+    ) or {}
+    if isinstance(mapping, dict) and mapping.get(runtime_id):
+        return str(mapping[runtime_id])
+    return runtime_id
 
 
-def load_reference_specs(path: str | Path | None = None) -> dict[str, Any]:
-    specs_path = Path(path) if path else REFERENCE_SPECS_PATH
-    if not specs_path.exists():
-        raise RuntimeError(f"Missing API reference specs file: {specs_path}")
-    payload = copy.deepcopy(
-        _read_yaml_cached(str(specs_path.resolve()), specs_path.stat().st_mtime_ns)
+def _app_transport_capability_view(record: dict[str, Any]) -> dict[str, Any]:
+    if record.get("api_form") != "deepseek_beta_chat_prefix":
+        return record
+    result = dict(record)
+    result["catalog_execution_flags"] = copy.deepcopy(record.get("catalog_execution_flags")) or {
+        key: record.get(key) for key in ("enabled", "executable", "parameter_test_enabled", "pressure_test_enabled")
+    }
+    result.update(app_transport_available=False, executable=False,
+                  parameter_test_enabled=False, pressure_test_enabled=False)
+    from .deepseek_beta_reference import (
+        CONTRACT_ID, MODEL_SLUG, ENDPOINT, CASE_IDS, canonical_bytes,
+        build_deepseek_beta_reference_plan,
     )
-    sources = payload.get("reference_sources")
-    if not isinstance(sources, dict) or not sources:
-        raise RuntimeError(f"{specs_path} must define reference_sources.")
-    payload["reference_sources"] = _resolve_reference_source_inheritance(sources)
-    return payload
+    contract_id = record.get("reference_contract_id") or record.get("contract_id") or record.get("id")
+    if (contract_id != CONTRACT_ID or record.get("source_id") != "deepseek" or record.get("disabled_reason")
+            or any(record.get(flag) is False for flag in ("enabled", "executable", "parameter_test_enabled"))):
+        return result
+    try:
+        from .model_profile_catalog import catalog_capability_profile
+        import hashlib
+        snapshot = copy.deepcopy(record.get("model_profile_database"))
+        if not snapshot:
+            snapshot = catalog_capability_profile("text", "deepseek", MODEL_SLUG,
+                api_form="deepseek_beta_chat_prefix", route_profile="vendor_direct",
+                reference_contract_id=CONTRACT_ID)["model_profile_database"]
+        # This projection describes the installed official-source runner. The
+        # dispatcher separately validates the actual configured execution target.
+        snapshot = copy.deepcopy(snapshot)
+        snapshot["execution_target"] = {"provider_id": "deepseek_official", "request_model_id": "deepseek-v4-pro",
+                                        "route_profile": "vendor_direct", "api_form": "deepseek_beta_chat_prefix"}
+        snapshot.pop("snapshot_digest", None)
+        snapshot["snapshot_digest"] = hashlib.sha256(canonical_bytes(snapshot)).hexdigest()
+        build_deepseek_beta_reference_plan(snapshot, endpoint=ENDPOINT)
+        result.update(app_transport_available=True, executable=True, parameter_test_enabled=True,
+                      test_profiles=list(CASE_IDS), fixed_case_suite=True, fixed_request_count=5,
+                      param_test_runs=1, identity_probe_requests=0, generic_profile_runner_available=False)
+    except (KeyError, ValueError, RuntimeError):
+        result["disabled_reason"] = "The installed Pro beta observations or fixed case definitions failed validation."
+    return result
 
 
-def _resolve_reference_source_inheritance(
-    sources: dict[str, Any],
-) -> dict[str, dict[str, Any]]:
-    """Expand concise route wrappers while keeping route metadata exact."""
-    resolved: dict[str, dict[str, Any]] = {}
-    visiting: list[str] = []
+def load_reference_specs() -> dict[str, Any]:
+    """Return the shared MPDB Contract/Test Binding projection."""
+    from .model_profile_catalog import get_model_profile_catalog, reference_specs_projection
 
-    def resolve(source_id: str) -> dict[str, Any]:
-        if source_id in resolved:
-            return resolved[source_id]
-        if source_id in visiting:
-            chain = " -> ".join([*visiting, source_id])
-            raise RuntimeError(f"Reference source inheritance cycle: {chain}.")
-        raw = sources.get(source_id)
-        if not isinstance(raw, dict):
-            raise RuntimeError(f"Reference source {source_id!r} must be an object.")
-        visiting.append(source_id)
-        current = copy.deepcopy(raw)
-        parent_id = str(current.pop("extends", None) or "").strip()
-        if parent_id:
-            if parent_id not in sources:
-                raise RuntimeError(
-                    f"Reference source {source_id!r} extends unknown source "
-                    f"{parent_id!r}."
-                )
-            merged = deep_merge(resolve(parent_id), current)
-            merged["contract_reference_source"] = parent_id
-        else:
-            merged = current
-        visiting.pop()
-        resolved[source_id] = merged
-        return merged
-
-    for source_id in sources:
-        resolve(str(source_id))
-    return resolved
+    projection = reference_specs_projection()
+    sources = dict(projection["reference_sources"])
+    for contract in get_model_profile_catalog().list_contracts():
+        contract_id = contract["contract_id"]
+        metadata = {
+            name: {key: copy.deepcopy(capability[key]) for key in _BEHAVIOR_METADATA_FIELDS if key in capability}
+            for name, capability in (contract.get("parameter_capabilities") or {}).items()
+            if isinstance(capability, dict) and any(key in capability for key in _BEHAVIOR_METADATA_FIELDS)
+        }
+        if not metadata or contract_id not in sources:
+            continue
+        source = dict(sources[contract_id])
+        source["params"] = {name: {**value, **metadata.get(name, {})} for name, value in source["params"].items()}
+        sources[contract_id] = source
+    return {**projection, "reference_sources": {key: _app_transport_capability_view(value) for key, value in sources.items()}}
 
 
 def get_reference_source(source_id: str | None = None) -> dict[str, Any]:
+    if source_id:
+        # Resolve one exact Contract instead of repeatedly copying every
+        # reference and its archived observations for each parameter row.
+        from .model_profile_catalog import get_model_profile_catalog, reference_contract_payload
+        try:
+            source = reference_contract_payload(source_id)
+            contract = get_model_profile_catalog().get_contract(source_id)
+        except KeyError as exc:
+            raise KeyError(f"Reference Contract {source_id!r} not found in the shared MPDB projection") from exc
+        if not source.get("test_profiles") or not source.get("params"):
+            raise KeyError(f"Reference Contract {source_id!r} not found in the shared MPDB projection")
+        source["params"] = {
+            name: {**value, **{key: copy.deepcopy(capability[key])
+                              for key in _BEHAVIOR_METADATA_FIELDS if key in capability}}
+            for name, value in source["params"].items()
+            for capability in [(contract.get("parameter_capabilities") or {}).get(name) or {}]
+        }
+        return _source_payload(source_id, _app_transport_capability_view(source))
     specs = load_reference_specs()
     sources = specs["reference_sources"]
-    if source_id:
-        if source_id not in sources:
-            raise KeyError(f"Reference source {source_id!r} not found in api_reference_specs.yaml")
-        return _source_payload(source_id, sources[source_id])
     first_id = next(iter(sources))
     return _source_payload(first_id, sources[first_id])
 
@@ -109,6 +132,13 @@ def list_reference_sources() -> list[dict[str, Any]]:
         result.append(
             {
                 "id": source_id,
+                "reference_contract_id": str(
+                    raw.get("reference_contract_id") or source_id
+                ),
+                "source_id": str(raw.get("source_id") or ""),
+                "source_ids": [
+                    str(value) for value in raw.get("source_ids") or []
+                ],
                 "label": str(raw.get("label") or source_id),
                 "official_sources": list(raw.get("official_sources") or []),
                 "families": list(raw.get("families") or raw.get("default_for_families") or []),
@@ -126,6 +156,7 @@ def list_reference_sources() -> list[dict[str, Any]]:
                     raw.get("route_stability_required", False)
                 ),
                 "executable": raw.get("executable", True) is not False,
+                **{key: copy.deepcopy(raw[key]) for key in ("app_transport_available", "catalog_execution_flags", "fixed_case_suite", "fixed_request_count", "param_test_runs") if key in raw},
                 "test_profile_count": len(raw.get("test_profiles") or []),
                 "param_count": len(raw.get("params") or {}),
                 "tested_param_count": tested_param_count,
@@ -140,32 +171,12 @@ def default_reference_source_for_family(
     route_profile: str | None = None,
     api_form: str | None = None,
 ) -> str:
-    family_key = str(family).strip()
-    route_key = str(route_profile or "").strip()
-    form_key = str(api_form or "").strip()
-    for source in list_reference_sources():
-        if source.get("executable") is False:
-            continue
-        if family_key not in source.get("default_for_families", []):
-            continue
-        if route_key and source.get("route_profile") != route_key:
-            continue
-        if form_key and source.get("api_form") != form_key:
-            continue
-        return str(source["id"])
-    candidates = [
-        source
-        for source in list_reference_sources()
-        if source.get("executable") is not False
-        and source.get("model_family") == family_key
-        and (not route_key or source.get("route_profile") == route_key)
-        and (not form_key or source.get("api_form") == form_key)
-    ]
-    if candidates:
-        return str(candidates[0]["id"])
-    raise RuntimeError(
-        f"No reference source configured for family={family_key!r}, "
-        f"route_profile={route_key or None!r}, api_form={form_key or None!r}."
+    from .model_profile_catalog import default_reference_contract_for_family
+
+    return default_reference_contract_for_family(
+        str(family).strip(),
+        route_profile=route_profile,
+        api_form=api_form,
     )
 
 
@@ -178,41 +189,36 @@ def default_reference_source_for_model(
     api_form: str | None = None,
     route_profile: str | None = None,
 ) -> str:
+    selected_provider = provider or get_active_provider_name(config)
+    selected_model = str(model or get_selected_model(config, selected_provider))
     selected_route = route_profile or get_model_route_profile(
-        config, model, provider
+        config, selected_model, selected_provider
     )
     selected_form = api_form or get_model_api_form(
-        config, model, provider, route_profile=selected_route
+        config, selected_model, selected_provider, route_profile=selected_route
     )
     override = get_model_reference_source(
         config,
-        model,
-        provider,
+        selected_model,
+        selected_provider,
         route_profile=selected_route,
         api_form=selected_form,
     )
     if override:
-        source = get_reference_source(override)
-        _validate_reference_context(source, family, selected_route, selected_form)
-        return override
-    if model:
-        try:
-            capability = load_model_capability_profile(
-                "text",
-                family,
-                model,
-                api_form=selected_form,
-                route_profile=selected_route,
-            )
-            source = capability.get("default_reference_source")
-            if source:
-                get_reference_source(str(source))
-                return str(source)
-        except (KeyError, ValueError):
-            pass
-    return default_reference_source_for_family(
-        family, selected_route, selected_form
+        get_reference_source(override)
+    from .model_profile_catalog import resolve_runtime_parameter_config
+
+    parameter_config = resolve_runtime_parameter_config(
+        config,
+        selected_provider,
+        selected_model,
+        family,
+        selected_route,
+        selected_form,
+        modality="text",
+        contract_id=override,
     )
+    return str(parameter_config["contract_id"])
 
 
 def reference_sources_for_model(
@@ -230,32 +236,60 @@ def reference_sources_for_model(
     selected_form = api_form or get_model_api_form(
         config, model, provider, route_profile=selected_route
     )
-    default_source = default_reference_source_for_model(
+    selected_provider = provider or get_active_provider_name(config)
+    from .model_profile_catalog import resolve_runtime_parameter_config
+    parameter_config = resolve_runtime_parameter_config(
         config,
-        family,
+        selected_provider,
         model,
-        provider,
-        api_form=selected_form,
-        route_profile=selected_route,
-    )
-    capability = load_model_capability_profile(
-        "text",
         family,
-        model,
-        api_form=selected_form,
-        route_profile=selected_route,
+        selected_route,
+        selected_form,
+        modality="text",
+        contract_id=get_model_reference_source(
+            config, model, selected_provider, route_profile=selected_route, api_form=selected_form
+        ),
     )
-    declared = [str(item) for item in capability.get("allowed_reference_sources") or []]
+    return reference_sources_from_parameter_config(parameter_config, family, selected_form)
+
+
+def reference_sources_from_parameter_config(
+    parameter_config: dict[str, Any], family: str, api_form: str,
+) -> list[str]:
+    """List contracts from one already resolved source-local parameter snapshot."""
+    default_source = str(parameter_config["contract_id"])
+    database = parameter_config["model_profile_database"]
+    if (database.get("suite_family_id") != family or database.get("api_form") != api_form
+            or database.get("reference_contract_id") != default_source):
+        raise ValueError("Reference list conflicts with its resolved parameter snapshot")
+    declared = [
+        str(item)
+        for item in (
+            (parameter_config.get("test_binding") or {}).get(
+                "reference_contract_ids"
+            )
+            or []
+        )
+    ]
     if default_source not in declared:
         raise ValueError(
-            f"Reference source {default_source!r} selected for {family}/{model} "
+            f"Reference source {default_source!r} selected for {family} "
             "is not declared by its family/model capability suite."
         )
     result = [default_source, *declared]
     unique = list(dict.fromkeys(result))
     for source_id in unique:
         source = get_reference_source(source_id)
-        _validate_reference_context(source, family, selected_route, selected_form)
+        if str(source.get("model_family") or "") != family:
+            raise ValueError(
+                f"Reference Contract {source_id!r} belongs to family "
+                f"{source.get('model_family')!r}, not {family!r}."
+            )
+        if str(source.get("api_form") or "") != api_form:
+            raise ValueError(
+                f"Reference Contract {source_id!r} belongs to API form "
+                f"{source.get('api_form')!r}, not {api_form!r}."
+            )
     return unique
 
 
@@ -264,7 +298,6 @@ def comparison_reference_source_for_model(
     family: str,
     model: str,
     *,
-    path: str | Path | None = None,
     api_form: str | None = None,
     route_profile: str | None = None,
 ) -> str:
@@ -273,7 +306,6 @@ def comparison_reference_source_for_model(
         modality,
         family,
         model,
-        path=path,
         api_form=api_form,
         route_profile=route_profile,
     )
@@ -299,6 +331,12 @@ def comparison_reference_source_for_model(
 
 def reference_param_rows(source_id: str) -> list[dict[str, Any]]:
     source = get_reference_source(source_id)
+    return _reference_param_rows_from_source(source)
+
+
+def _reference_param_rows_from_source(
+    source: dict[str, Any],
+) -> list[dict[str, Any]]:
     source_profiles = list(source.get("test_profiles") or [])
     rows: list[dict[str, Any]] = []
     for name, raw in (source.get("params") or {}).items():
@@ -329,9 +367,54 @@ def reference_param_rows(source_id: str) -> list[dict[str, Any]]:
                 "coverage": coverage,
                 "coverage_mode": coverage_mode,
                 "test_profiles": matched_profiles,
+                **{key: copy.deepcopy(cfg[key]) for key in _BEHAVIOR_METADATA_FIELDS if key in cfg},
             }
         )
     return rows
+
+
+def _reference_param_rows_from_snapshot(
+    capability: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Rebuild parameter rows only from the immutable Contract/Test Binding."""
+
+    contract = capability.get("reference_contract")
+    parameter_binding = capability.get("parameter_test_binding")
+    if not isinstance(contract, dict):
+        return []
+    parameter_binding = (
+        parameter_binding if isinstance(parameter_binding, dict) else {}
+    )
+    coverage = parameter_binding.get("parameter_coverage") or {}
+    source = {
+        "test_profiles": list(parameter_binding.get("test_cases") or []),
+        "params": {
+            str(name): {
+                "required": bool(
+                    raw.get("required", False)
+                    if isinstance(raw, dict)
+                    else False
+                ),
+                "supported": (
+                    str(raw.get("state") or "supported") != "unsupported"
+                    if isinstance(raw, dict)
+                    else True
+                ),
+                "coverage": str(
+                    coverage.get(name) or "not tested"
+                    if isinstance(coverage, dict)
+                    else "not tested"
+                ),
+                **{
+                    key: copy.deepcopy(raw[key])
+                    for key in _BEHAVIOR_METADATA_FIELDS
+                    if isinstance(raw, dict) and key in raw
+                },
+            }
+            for name, raw in (contract.get("parameter_capabilities") or {}).items()
+        },
+    }
+    return _reference_param_rows_from_source(source)
 
 
 def reference_spec_payload(source_id: str) -> dict[str, Any]:
@@ -409,6 +492,11 @@ def _source_payload(source_id: str, raw: dict[str, Any]) -> dict[str, Any]:
         raise RuntimeError(f"Reference source {source_id!r} must define test_profiles.")
     return {
         "id": source_id,
+        "reference_contract_id": str(
+            raw.get("reference_contract_id") or source_id
+        ),
+        "source_id": str(raw.get("source_id") or ""),
+        "source_ids": [str(value) for value in raw.get("source_ids") or []],
         "label": str(raw.get("label") or source_id),
         "official_sources": list(raw.get("official_sources") or []),
         "families": list(raw.get("families") or raw.get("default_for_families") or []),
@@ -430,6 +518,7 @@ def _source_payload(source_id: str, raw: dict[str, Any]) -> dict[str, Any]:
         ),
         "evidence": str(raw.get("evidence") or "official_contract"),
         "executable": raw.get("executable", True) is not False,
+        **{key: copy.deepcopy(raw[key]) for key in ("enabled", "profile_eligible", "parameter_test_enabled", "pressure_test_enabled", "app_transport_available", "catalog_execution_flags", "fixed_case_suite", "fixed_request_count", "param_test_runs") if key in raw},
         "params": params,
         "test_profiles": [str(profile) for profile in profiles],
     }
@@ -455,233 +544,147 @@ def _validate_reference_context(
             f"not {api_form!r}."
         )
     if source_route and source_route != route_profile:
-        raise ValueError(
-            f"Reference source {source['id']!r} belongs to route profile "
-            f"{source_route!r}, not {route_profile!r}."
-        )
+        # dynamic_aggregator may run an origin vendor_direct/vendor_compat
+        # matrix as a comparison suite. Capability profiles already restrict
+        # which origin sources are allowed; do not relabel the live route.
+        aggregator_comparison = str(route_profile) == "dynamic_aggregator" and source_route in {
+            "vendor_direct",
+            "vendor_compat",
+        }
+        if not aggregator_comparison:
+            raise ValueError(
+                f"Reference source {source['id']!r} belongs to route profile "
+                f"{source_route!r}, not {route_profile!r}."
+            )
 
 
 def _coverage_mentions_profile(coverage: str, profile: str) -> bool:
     return bool(re.search(rf"(?<![A-Za-z0-9_.-]){re.escape(profile)}(?![A-Za-z0-9_.-])", coverage))
 
 
-def _merge_v3_migration_override(
-    base: dict[str, Any],
-    override: dict[str, Any],
-    *,
-    base_path: str,
-    override_path: str,
-) -> dict[str, Any]:
-    conflicts = _v3_migration_conflicts(base, override)
-    if conflicts:
-        details = "; ".join(
-            f"{base_path}/{field}={base_value!r} conflicts with "
-            f"{override_path}/{field}={override_value!r}"
-            for field, base_value, override_value in conflicts
-        )
-        raise RuntimeError(f"schema v3 migration conflict: {details}.")
-    return deep_merge(base, override)
+def load_model_capability_profiles() -> dict[str, Any]:
+    """Return the shared MPDB Profile/Interface/Test Binding projection."""
+    from .model_profile_catalog import capability_profiles_projection
+
+    return capability_profiles_projection()
 
 
-def _v3_migration_conflicts(
-    base: dict[str, Any],
-    override: dict[str, Any],
-    *,
-    prefix: str = "",
-) -> list[tuple[str, Any, Any]]:
-    """Return every overlapping v3 leaf whose values disagree."""
-    conflicts: list[tuple[str, Any, Any]] = []
-    for key in sorted(set(base).intersection(override), key=str):
-        field = f"{prefix}/{key}" if prefix else str(key)
-        base_value = base[key]
-        override_value = override[key]
-        if isinstance(base_value, dict) and isinstance(override_value, dict):
-            conflicts.extend(
-                _v3_migration_conflicts(
-                    base_value,
-                    override_value,
-                    prefix=field,
-                )
-            )
-        elif base_value != override_value:
-            conflicts.append((field, base_value, override_value))
-    return conflicts
+def _read_only_gc_observation_capability(
+    modality: str, family: str, model: str, *, api_form: str | None,
+    route_profile: str | None, reference_source: str | None,
+    provider_override: dict[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Read exact core observations without manufacturing an execution binding."""
+    source_id, contract_id = "google_ai_studio", "gemini_native_generate_content"
+    form, namespace = "gemini_generate_content", "bounded_schema_reference_by_api_version_20260907"
+    variant_namespace = "bounded_schema_reference_request_variants_20260907"
+    if (modality != "text" or family != "gemini" or reference_source != contract_id
+            or api_form not in (None, form) or route_profile not in (None, source_id)
+            or provider_override not in (None, {})):
+        return None
+    from .model_profile_catalog import get_model_profile_catalog
 
-
-def _migrate_v3_capability_payload(
-    payload: dict[str, Any],
-    *,
-    source_label: str,
-) -> dict[str, Any]:
-    """Transpose schema v3 form-first capabilities to route-first schema v4."""
-    migrated = copy.deepcopy(payload)
-    modalities = migrated.get("modalities") or {}
-    if not isinstance(modalities, dict):
-        raise RuntimeError(f"{source_label} must define modalities as an object.")
-    for modality, modality_cfg in modalities.items():
-        if not isinstance(modality_cfg, dict):
+    catalog = get_model_profile_catalog()
+    contract, source = catalog.get_contract(contract_id), catalog.get_source(source_id)
+    if (contract.get("source_id") != source_id or contract.get("source_ids") != [source_id]
+            or contract.get("family_id") != family or contract.get("api_form") != form
+            or contract.get("routing_mode") != source_id or source.get("source_type") != "official_direct"
+            or source.get("authority") != "origin_vendor"):
+        raise ValueError("Read-only observations require the exact official source/Contract.")
+    selected = []
+    for raw in catalog.list_profiles(modality=modality, source=source_id, family=family):
+        profile = catalog.get_profile(raw["profile_id"])
+        if model not in {profile["model_slug"], *profile.get("request_model_ids", [])}:
             continue
-        families = modality_cfg.get("families") or {}
-        if not isinstance(families, dict):
+        iid = profile["profile_id"] + "#gemini-generate-content-default"
+        if iid not in profile.get("interface_ids", []):
             continue
-        for family, raw_family_cfg in list(families.items()):
-            if not isinstance(raw_family_cfg, dict):
-                continue
-            family_cfg = deep_merge({}, raw_family_cfg)
-            api_forms = family_cfg.pop("api_forms", None)
-            default_form = str(family_cfg.pop("default_api_form", None) or "").strip()
-            if not isinstance(api_forms, dict) or not api_forms:
-                raise RuntimeError(
-                    f"{source_label} schema v3 family {modality}/{family} must define api_forms."
-                )
-            routes: dict[str, dict[str, Any]] = {}
-            for api_form, raw_form_cfg in api_forms.items():
-                if not isinstance(raw_form_cfg, dict):
-                    raise RuntimeError(
-                        f"{source_label} schema v3 path {modality}/{family}/"
-                        f"api_forms/{api_form} must be an object."
-                    )
-                form_cfg = deep_merge({}, raw_form_cfg)
-                form_routes = form_cfg.pop("route_profiles", None) or {}
-                form_default_route = str(
-                    form_cfg.pop("default_route_profile", None) or ""
-                ).strip()
-                model_profiles = form_cfg.pop("model_profiles", None) or {}
-                if not isinstance(form_routes, dict):
-                    raise RuntimeError(
-                        f"{source_label} schema v3 path {modality}/{family}/"
-                        f"api_forms/{api_form}/route_profiles must be an object."
-                    )
-                if not isinstance(model_profiles, dict):
-                    raise RuntimeError(
-                        f"{source_label} schema v3 path {modality}/{family}/"
-                        f"api_forms/{api_form}/model_profiles must be an object."
-                    )
-                route_names = set(str(item) for item in form_routes)
-                if form_default_route:
-                    route_names.add(form_default_route)
-                for model_cfg in model_profiles.values():
-                    if isinstance(model_cfg, dict):
-                        route_names.update(
-                            str(item)
-                            for item in (model_cfg.get("route_profiles") or {})
-                        )
-                if not route_names:
-                    raise RuntimeError(
-                        f"{source_label} schema v3 path {modality}/{family}/"
-                        f"api_forms/{api_form} cannot be migrated without a route profile."
-                    )
-                for route in sorted(route_names):
-                    route_override = form_routes.get(route) or {}
-                    if not isinstance(route_override, dict):
-                        raise RuntimeError(
-                            f"{source_label} schema v3 route override {modality}/"
-                            f"{family}/{api_form}/{route} must be an object."
-                        )
-                    form_path = (
-                        f"{source_label}:{modality}/{family}/api_forms/{api_form}"
-                    )
-                    route_path = f"{form_path}/route_profiles/{route}"
-                    migrated_form = _merge_v3_migration_override(
-                        form_cfg,
-                        route_override,
-                        base_path=form_path,
-                        override_path=route_path,
-                    )
-                    migrated_models: dict[str, Any] = {}
-                    for model, raw_model_cfg in model_profiles.items():
-                        if not isinstance(raw_model_cfg, dict):
-                            raise RuntimeError(
-                                f"{source_label} schema v3 model profile {modality}/"
-                                f"{family}/{api_form}/{model} must be an object."
-                            )
-                        model_cfg = deep_merge({}, raw_model_cfg)
-                        model_routes = model_cfg.pop("route_profiles", None) or {}
-                        model_cfg.pop("default_route_profile", None)
-                        model_override = model_routes.get(route) or {}
-                        if not isinstance(model_override, dict):
-                            raise RuntimeError(
-                                f"{source_label} schema v3 model route override "
-                                f"{modality}/{family}/{api_form}/{model}/{route} "
-                                "must be an object."
-                            )
-                        migrated_models[str(model)] = _merge_v3_migration_override(
-                            model_cfg,
-                            model_override,
-                            base_path=f"{form_path}/model_profiles/{model}",
-                            override_path=(
-                                f"{form_path}/model_profiles/{model}/"
-                                f"route_profiles/{route}"
-                            ),
-                        )
-                    migrated_form["model_profiles"] = migrated_models
-                    route_cfg = routes.setdefault(
-                        route, {"api_forms": {}}
-                    )
-                    target_forms = route_cfg["api_forms"]
-                    if api_form in target_forms and target_forms[api_form] != migrated_form:
-                        raise RuntimeError(
-                            f"{source_label} schema v3 migration conflict at "
-                            f"{modality}/{family}/route_profiles/{route}/"
-                            f"api_forms/{api_form}."
-                        )
-                    target_forms[str(api_form)] = migrated_form
-            for route, route_cfg in routes.items():
-                route_forms = route_cfg["api_forms"]
-                if default_form and default_form in route_forms:
-                    route_cfg["default_api_form"] = default_form
-                elif len(route_forms) == 1:
-                    route_cfg["default_api_form"] = next(iter(route_forms))
-                else:
-                    raise RuntimeError(
-                        f"{source_label} schema v3 family {modality}/{family} route "
-                        f"{route!r} exposes multiple API forms but has no unambiguous default."
-                    )
-            family_cfg["route_profiles"] = routes
-            families[family] = family_cfg
-    migrated["schema_version"] = CAPABILITY_SCHEMA_VERSION
-    return migrated
+        interface = catalog.get_interface(iid)
+        conflicts = interface.get("source_conflicts") or {}
+        observations = conflicts.get(namespace) or {}
+        observed_ids = {entry.get("request_model_id") for entry in observations.values() if isinstance(entry, dict)} if isinstance(observations, dict) else set()
+        variant_projection = model != profile["model_slug"] and model not in observed_ids
+        if variant_projection:
+            variants = conflicts.get(variant_namespace) or {}
+            observations = variants.get(model) if isinstance(variants, dict) else None
+        if not isinstance(observations, dict) or not observations:
+            continue  # An unobserved request ID cannot borrow its parent's samples.
+        if (interface.get("source_id") != source_id or interface.get("api_form") != form
+                or interface.get("routing_mode") != source_id or interface.get("profile_id") != profile["profile_id"]
+                or interface.get("default_contract_id") != contract_id or contract_id not in interface.get("contract_ids", [])):
+            raise ValueError("Read-only observations crossed exact Profile/Interface identity.")
+        for version, entry in observations.items():
+            if (version not in {"v1", "v1beta"} or not isinstance(entry, dict)
+                    or entry.get("source_id") != source_id or entry.get("api_form") != form
+                    or entry.get("ordinary_interface_id") != iid or entry.get("api_version") != version
+                    or entry.get("request_model_id") not in profile.get("request_model_ids", [])
+                    or variant_projection and (entry.get("request_model_id") != model or entry.get("no_parent_request_id_success_inference") is not True)
+                    or entry.get("no_cross_version_success_inference") is not True
+                    or interface.get("api_versions", {}).get(version, {}).get("path_template") != f"/{version}/models/{{model}}:generateContent"):
+                raise ValueError("Read-only observations lost their exact version or identity.")
+        policies = catalog.list_test_bindings(interface_id=iid, extension_type="model_test_policy")
+        if (len(policies) == 1 and policies[0].get("parameter_test_enabled") is True
+                and interface.get("test_binding_status") == "required"
+                and interface.get("enabled") is True and interface.get("executable") is True):
+            return None  # Certified displays continue through the normal strict chain.
+        if len(policies) > 1 or any(p.get("source_id") != source_id for p in policies):
+            raise ValueError("Read-only observations cannot resolve ambiguous or cross-source policies.")
+        selected.append((profile, interface, observations, variant_projection))
+    if len(selected) != 1:
+        return None
+    profile, interface, observations, variant_projection = selected[0]
+    # A selected request variant exposes only its own version observations.
+    # The parent Interface's stored metadata remains unchanged in the catalog.
+    visible_conflicts = ({namespace: copy.deepcopy(observations), variant_namespace: {model: copy.deepcopy(observations)}}
+                         if variant_projection else copy.deepcopy(interface.get("source_conflicts") or {}))
+    capabilities = deep_merge(contract.get("parameter_capabilities") or {}, interface.get("parameter_capabilities") or {})
+    return {
+        "storage_source": "model_profile_database", "legacy_yaml_read": False,
+        "read_only_core_facts": True, "reference_only": True, "modality": modality, "family": family,
+        "suite_family_id": family, "canonical_family_id": family, "model": model,
+        "source_id": source_id, "profile_id": profile["profile_id"], "interface_id": interface["interface_id"],
+        "profile_status": interface.get("test_binding_status"), "test_binding_status": interface.get("test_binding_status"),
+        "test_binding_id": None, "parameter_test_binding_id": None,
+        "enabled": False, "executable": False, "runner_enabled": False, "parameter_test_enabled": False, "pressure_test_enabled": False,
+        "test_policy_parameter_test_enabled": False, "test_policy_pressure_test_enabled": False,
+        "reference_source_enabled": False, "reference_source_executable": False,
+        "known_model": True, "known_api_profile": True, "api_form": form,
+        "transport": interface.get("transport_adapter_id"), "route_profile": source_id,
+        "reference_source": contract_id, "reference_contract_id": contract_id,
+        "allowed_reference_sources": [], "allowed_reference_contract_ids": [],
+        "default_api_version": interface.get("default_api_version"), "api_versions": copy.deepcopy(interface.get("api_versions") or {}),
+        "parameter_capabilities": copy.deepcopy(capabilities),
+        "parameter_constraints": deep_merge(contract.get("parameter_constraints") or {}, interface.get("parameter_constraints") or {}),
+        "source_conflicts": visible_conflicts,
+        **({"observation_request_model_id": model, "observation_projection": "request_variant_only"} if variant_projection else {}),
+        "default_expectation": "reference_only", "expectations": {}, "parameter_expectations": {},
+        "execution_target": None, "execution_target_boundary": {"included": False, "used_for_reference_resolution": False},
+        "test_scope": "read_only_core_observations", "certification_scope": "no_execution_binding_created",
+        "disabled_reason": "Reference display only; the ordinary parameter binding is absent, disabled or uncertified.",
+        "catalog_digest": catalog.payload["catalog_digest"], "test_extension_digest": catalog.payload["test_extension_digest"],
+    }
 
 
-def _normalize_capability_payload(
-    payload: dict[str, Any],
-    *,
-    source_label: str,
-) -> dict[str, Any]:
-    schema_version = int(payload.get("schema_version") or 1)
-    if schema_version == 3:
-        return _migrate_v3_capability_payload(payload, source_label=source_label)
-    if schema_version not in {1, 2, CAPABILITY_SCHEMA_VERSION}:
-        raise RuntimeError(
-            f"{source_label} has unsupported schema_version={schema_version}."
-        )
-    return copy.deepcopy(payload)
+def _read_only_recorded_observation_capability(
+    modality, family, model, *, api_form, route_profile, reference_source, provider_override,
+):
+    from .model_profile_catalog import get_model_profile_catalog
+    from model_profile_db.recorded_reference import CLOSED_RECORDED_CONTRACTS, recorded_reference_capability
+    if reference_source not in CLOSED_RECORDED_CONTRACTS:
+        return None
+    return recorded_reference_capability(get_model_profile_catalog(), modality=modality, family=family,
+        model=model, reference_contract_id=reference_source, api_form=api_form,
+        route_profile=route_profile, provider_override=provider_override)
 
 
-def load_model_capability_profiles(path: str | Path | None = None) -> dict[str, Any]:
-    specs_path = Path(path) if path else CAPABILITY_PROFILES_PATH
-    if not specs_path.exists():
-        raise RuntimeError(f"Missing model capability profiles file: {specs_path}")
-    payload = _normalize_capability_payload(
-        _read_yaml_cached(str(specs_path.resolve()), specs_path.stat().st_mtime_ns),
-        source_label=str(specs_path),
-    )
-    if path is None and LOCAL_CAPABILITY_PROFILES_PATH.exists():
-        local_payload = _read_yaml_cached(
-            str(LOCAL_CAPABILITY_PROFILES_PATH.resolve()),
-            LOCAL_CAPABILITY_PROFILES_PATH.stat().st_mtime_ns,
-        )
-        if "schema_version" in local_payload:
-            local_payload = _normalize_capability_payload(
-                local_payload,
-                source_label=str(LOCAL_CAPABILITY_PROFILES_PATH),
-            )
-        payload = deep_merge(payload, local_payload)
-    schema_version = int(payload.get("schema_version") or 1)
-    modalities = payload.get("modalities")
-    if not isinstance(modalities, dict) or not modalities:
-        raise RuntimeError(f"{specs_path} must define modalities.")
-    return payload
+def _read_only_observation_snapshot(cap: dict[str, Any], reference_source: str | None) -> dict[str, Any]:
+    result = copy.deepcopy(cap)
+    parameters = (list(cap.get("parameter_capabilities") or {}) if cap.get("read_only_recorded_reference") is True
+                  else [row["parameter"] for row in reference_param_rows(reference_source)])
+    result.update(selected_reference_source=reference_source, resolved_expectations={}, supported_profiles=[], unsupported_profiles=[],
+                  resolved_parameter_expectations={parameter: "reference_only" for parameter in parameters},
+                  supported_parameters=[], unsupported_parameters=[])
+    return result
 
 
 def load_model_capability_profile(
@@ -689,448 +692,74 @@ def load_model_capability_profile(
     family: str,
     model: str,
     *,
-    path: str | Path | None = None,
     api_form: str | None = None,
     route_profile: str | None = None,
     reference_source: str | None = None,
     provider_override: dict[str, Any] | None = None,
+    read_only: bool = False,
 ) -> dict[str, Any]:
-    """Load one explicit family/API-form/model/route capability profile."""
-    payload = load_model_capability_profiles(path)
-    modalities = payload["modalities"]
-    modality_key = str(modality).strip().casefold()
-    family_key = str(family).strip()
-    model_key = str(model).strip()
+    """Load one exact Profile/Interface/Test Binding/Contract chain from MPDB."""
+    if type(read_only) is not bool:
+        raise ValueError("read_only must be boolean")
+    if read_only:
+        recorded = _read_only_recorded_observation_capability(modality, family, model,
+            api_form=api_form, route_profile=route_profile, reference_source=reference_source,
+            provider_override=provider_override)
+        if recorded is not None:
+            return recorded
+        core = _read_only_gc_observation_capability(
+            str(modality).strip().casefold(), str(family).strip(), str(model).strip(),
+            api_form=api_form, route_profile=route_profile, reference_source=reference_source,
+            provider_override=provider_override,
+        )
+        if core is not None:
+            return core
+    from .model_profile_catalog import catalog_capability_profile
 
-    modality_cfg = modalities.get(modality_key)
-    if not isinstance(modality_cfg, dict):
-        raise KeyError(f"Unknown capability modality {modality!r}")
-    families = modality_cfg.get("families") or {}
-    if family_key == "openai":
-        inferred = infer_model_family(model_key)
-        if inferred in families:
-            family_key = inferred
-    if not isinstance(families, dict) or family_key not in families:
-        raise KeyError(f"Unknown capability family {family!r} for modality {modality_key!r}")
-    family_cfg = families[family_key] if isinstance(families[family_key], dict) else {}
-    schema_version = int(payload.get("schema_version") or 1)
-    models = family_cfg.get("canonical_models") or family_cfg.get("models") or {}
-    if not isinstance(models, dict):
-        models = {}
-    profile_id, canonical_cfg = _match_model_profile(models, model_key)
-    if canonical_cfg is None:
-        canonical_cfg = {}
-    if not isinstance(canonical_cfg, dict):
-        raise RuntimeError(
-            f"Capability model entry for {modality_key}/{family_key}/{model_key} must be a mapping."
-        )
-    route_cfg: dict[str, Any] = {}
-    form_cfg: dict[str, Any] = {}
-    form_model_cfg: dict[str, Any] = {}
-    known_api_form = False
-    known_api_profile = False
-    route_known = False
-    selected_form = str(api_form or "").strip()
-    selected_route = str(route_profile or "").strip()
-    if schema_version >= 4:
-        routes = family_cfg.get("route_profiles") or {}
-        if not isinstance(routes, dict) or not routes:
-            raise RuntimeError(
-                f"Capability family {modality_key}/{family_key} must define route_profiles."
-            )
-        selected_route = _select_capability_route(
-            routes,
-            selected_route or None,
-            reference_source,
-        )
-        raw_route_cfg = routes.get(selected_route)
-        route_known = isinstance(raw_route_cfg, dict)
-        route_cfg = raw_route_cfg if isinstance(raw_route_cfg, dict) else {}
-        api_forms = route_cfg.get("api_forms") or {}
-        if route_known and (not isinstance(api_forms, dict) or not api_forms):
-            raise RuntimeError(
-                f"Capability route {modality_key}/{family_key}/{selected_route} "
-                "must define api_forms."
-            )
-        if route_known:
-            selected_form = _select_capability_api_form(
-                route_cfg,
-                api_forms,
-                selected_form or None,
-                reference_source,
-            )
-        elif not selected_form and reference_source:
-            selected_form = str(
-                get_reference_source(reference_source).get("api_form") or ""
-            )
-        raw_form_cfg = api_forms.get(selected_form) if isinstance(api_forms, dict) else None
-        known_api_form = isinstance(raw_form_cfg, dict)
-        form_cfg = raw_form_cfg if isinstance(raw_form_cfg, dict) else {}
-        form_models = form_cfg.get("model_profiles") or {}
-        if known_api_form and not isinstance(form_models, dict):
-            raise RuntimeError(
-                f"{modality_key}/{family_key}/{selected_route}/{selected_form}."
-                "model_profiles must be a mapping."
-            )
-        raw_form_model = (
-            form_models.get(str(profile_id))
-            if isinstance(form_models, dict) and profile_id
-            else None
-        )
-        form_model_cfg = raw_form_model if isinstance(raw_form_model, dict) else {}
-        known_api_profile = (
-            profile_id is not None
-            and isinstance(form_models, dict)
-            and str(profile_id) in form_models
-        )
-    else:
-        legacy_sources = _normalize_reference_sources(
-            family_cfg.get("reference_sources") or {}
-        )
-        selected_form = selected_form or _legacy_api_form(
-            legacy_sources,
-            reference_source,
-            modality_key,
-        )
-        form_cfg = {
-            "transport": transport_for_api_form(selected_form)
-            if modality_key == "text"
-            else None,
-            "reference_sources": list(legacy_sources.values()),
-            "default_reference_source": legacy_sources.get(
-                transport_for_api_form(selected_form)
-            ) if modality_key == "text" else None,
-        }
-        selected_route = selected_route or "legacy"
-        route_known = True
-        known_api_form = True
-        known_api_profile = profile_id is not None
-
-    provider_layer = deep_merge({}, provider_override or {})
-    ordered_layers = [
-        family_cfg,
-        canonical_cfg,
-        route_cfg,
-        form_cfg,
-        form_model_cfg,
-        provider_layer,
-    ]
-    default_layers = [family_cfg, route_cfg, form_cfg, provider_layer]
-    model_layers = [canonical_cfg, form_model_cfg]
-    default_expectations = _merge_expectation_layers(
-        default_layers, "default_expectations"
+    capability = catalog_capability_profile(
+        str(modality).strip().casefold(),
+        str(family).strip(),
+        str(model).strip(),
+        api_form=api_form,
+        route_profile=route_profile,
+        reference_contract_id=reference_source,
+        provider_override=provider_override,
     )
-    model_expectations = _merge_expectation_layers(model_layers, "expectations")
-    merged: dict[str, str] = {}
-    for layer in ordered_layers:
-        merged.update(
-            _normalize_expectation_map(
-                layer.get("default_expectations") or {},
-                label="expectations",
-            )
-        )
-        merged.update(
-            _normalize_expectation_map(
-                layer.get("expectations") or {},
-                label="expectations",
-            )
-        )
-    default_parameter_expectations = _merge_expectation_layers(
-        default_layers,
-        "default_parameter_expectations",
-        label="parameter_expectations",
+    snapshot = capability.get("model_profile_database") or {}
+    capability["parameter_capabilities"] = deep_merge(
+        (snapshot.get("reference_contract") or {}).get("parameter_capabilities") or {},
+        (snapshot.get("interface") or {}).get("parameter_capabilities") or {},
     )
-    model_parameter_expectations = _merge_expectation_layers(
-        model_layers,
-        "parameter_expectations",
-        label="parameter_expectations",
-    )
-    merged_parameter_expectations: dict[str, str] = {}
-    for layer in ordered_layers:
-        merged_parameter_expectations.update(
-            _normalize_expectation_map(
-                layer.get("default_parameter_expectations") or {},
-                label="parameter_expectations",
-            )
-        )
-        merged_parameter_expectations.update(
-            _normalize_expectation_map(
-                layer.get("parameter_expectations") or {},
-                label="parameter_expectations",
-            )
-        )
-    allowed_sources = _resolve_allowed_reference_sources(
-        family_cfg,
-        form_cfg,
-        canonical_cfg,
-        form_model_cfg,
-        route_cfg,
-        schema_version=schema_version,
-    )
-    invalid_route_or_form = schema_version >= 4 and (
-        not route_known or not known_api_form
-    )
-    default_reference_source = (
-        ""
-        if invalid_route_or_form
-        else str(
-            reference_source
-            or provider_layer.get("reference_source")
-            or form_model_cfg.get("default_reference_source")
-            or form_cfg.get("default_reference_source")
-            or route_cfg.get("default_reference_source")
-            or canonical_cfg.get("comparison_reference_source")
-            or family_cfg.get("comparison_reference_source")
-            or (allowed_sources[0] if allowed_sources else "")
-        ).strip()
-    )
-    if default_reference_source and default_reference_source not in allowed_sources:
-        raise ValueError(
-            f"Reference source {default_reference_source!r} is not allowed for "
-            f"{family_key}/{selected_form}/{profile_id or model_key}/{selected_route}."
-        )
-    comparison_reference_source = (
-        ""
-        if invalid_route_or_form
-        else str(
-            form_model_cfg.get("comparison_reference_source")
-            or form_cfg.get("comparison_reference_source")
-            or route_cfg.get("comparison_reference_source")
-            or canonical_cfg.get("comparison_reference_source")
-            or family_cfg.get("comparison_reference_source")
-            or default_reference_source
-        ).strip()
-    )
-    if comparison_reference_source and comparison_reference_source not in allowed_sources:
-        comparison_reference_source = default_reference_source
-
-    pressure_profiles: dict[str, list[str]] = {}
-    pressure_omit: list[str] = []
-    pressure_parameter_aliases: dict[str, str] = {}
-    pressure_overrides: dict[str, Any] = {}
-    pressure_transport_overrides: dict[str, dict[str, Any]] = {}
-    for layer in ordered_layers:
-        pressure_profiles.update(
-            _normalize_pressure_profiles(layer.get("pressure_profiles") or {})
-        )
-        pressure_omit.extend(
-            _normalize_name_list(
-                layer.get("pressure_omit_params") or [],
-                label="pressure_omit_params",
-            )
-        )
-        pressure_parameter_aliases.update(
-            _normalize_parameter_aliases(
-                layer.get("pressure_parameter_aliases") or {}
-            )
-        )
-        pressure_overrides = deep_merge(
-            pressure_overrides,
-            _normalize_pressure_overrides(layer.get("pressure_overrides") or {}),
-        )
-        pressure_transport_overrides = deep_merge(
-            pressure_transport_overrides,
-            _normalize_pressure_transport_overrides(
-                layer.get("pressure_transport_overrides") or {}
-            ),
-        )
-
-    transport = str(
-        provider_layer.get("transport") or form_cfg.get("transport") or ""
-    ).strip()
-    if not transport and modality_key == "text" and selected_form:
-        transport = transport_for_api_form(selected_form)
-    effective = {}
-    for layer in ordered_layers:
-        effective = deep_merge(effective, layer)
-    legacy_reference_sources = {transport: default_reference_source} if transport and default_reference_source else {}
-
-    return {
-        "modality": modality_key,
-        "family": family_key,
-        "model": model_key,
-        "profile_id": profile_id,
-        "model_api_profile_id": (
-            f"{family_key}/{profile_id}@{selected_route}/{selected_form}"
-            if profile_id and selected_route and selected_form
-            else None
-        ),
-        "api_form": selected_form,
-        "transport": transport,
-        "route_profile": selected_route,
-        "route_profile_known": route_known,
-        "reference_source": default_reference_source or None,
-        "default_reference_source": default_reference_source or None,
-        "comparison_reference_source": comparison_reference_source or None,
-        "reference_sources": legacy_reference_sources,
-        "allowed_reference_sources": allowed_sources,
-        "alternate_sources": [
-            source for source in allowed_sources if source != default_reference_source
-        ],
-        "suite": effective.get("suite"),
-        "default_expectation": normalize_expectation(
-            effective.get("default_expectation"),
-            default="supported",
-        ),
-        "default_expectations": default_expectations,
-        "model_expectations": model_expectations,
-        "expectations": merged,
-        "default_parameter_expectations": default_parameter_expectations,
-        "model_parameter_expectations": model_parameter_expectations,
-        "parameter_expectations": merged_parameter_expectations,
-        "pressure_profiles": pressure_profiles,
-        "pressure_omit_params": list(dict.fromkeys(pressure_omit)),
-        "pressure_parameter_aliases": pressure_parameter_aliases,
-        "pressure_overrides": pressure_overrides,
-        "pressure_transport_overrides": pressure_transport_overrides,
-        "parameter_test_enabled": bool(
-            effective.get("parameter_test_enabled", True)
-        ),
-        "pressure_test_enabled": bool(
-            effective.get("pressure_test_enabled", True)
-        ),
-        "disabled_reason": effective.get("disabled_reason"),
-        "known_model": profile_id is not None,
-        "known_api_form": known_api_form,
-        "known_api_profile": known_api_profile,
-        "profile_status": (
-            "registered"
-            if profile_id is not None and known_api_profile and route_known
-            else "unregistered_route"
-            if profile_id is not None and not route_known
-            else "unregistered_api_form_for_route"
-            if profile_id is not None and not known_api_form
-            else "unregistered_model_profile"
-            if profile_id is not None and not known_api_profile
-            else "unregistered_model"
-        ),
-        "evidence": str(
-            effective.get("evidence")
-            or "family_contract"
-        ),
-        "certification_scope": str(
-            effective.get("certification_scope") or "raw_route_contract"
-        ),
-        "route_stability_required": bool(
-            effective.get("route_stability_required", False)
-        ),
-        "identity": deep_merge({}, effective.get("identity") or {}),
-        "response_validators": list(effective.get("response_validators") or []),
-        "usage_schema": deep_merge({}, effective.get("usage_schema") or {}),
-        "cache_policy": deep_merge({}, effective.get("cache_policy") or {}),
-    }
+    return _app_transport_capability_view(_project_gemini37_rejection_expectations(capability))
 
 
-def _select_capability_route(
-    route_profiles: dict[str, Any],
-    requested: str | None,
-    reference_source: str | None,
-) -> str:
-    if requested:
-        return requested
-    if reference_source:
-        source_route = str(
-            get_reference_source(reference_source).get("route_profile") or ""
-        )
-        if source_route:
-            return source_route
-    if len(route_profiles) == 1:
-        return next(iter(route_profiles))
-    raise ValueError(
-        f"Family exposes multiple route profiles {sorted(route_profiles)}; "
-        "route_profile is required."
-    )
-
-
-def _select_capability_api_form(
-    family_cfg: dict[str, Any],
-    api_forms: dict[str, Any],
-    requested: str | None,
-    reference_source: str | None,
-) -> str:
-    if requested:
-        return requested
-    if reference_source:
-        source_form = str(get_reference_source(reference_source).get("api_form") or "")
-        if source_form in api_forms:
-            return source_form
-    default_form = str(family_cfg.get("default_api_form") or "").strip()
-    if default_form:
-        if default_form not in api_forms:
-            raise RuntimeError(
-                f"default_api_form {default_form!r} is not declared in api_forms."
-            )
-        return default_form
-    if len(api_forms) == 1:
-        return next(iter(api_forms))
-    raise ValueError(
-        f"Family exposes multiple API forms {sorted(api_forms)}; api_form is required."
-    )
-
-
-def _legacy_api_form(
-    reference_sources: dict[str, str],
-    reference_source: str | None,
-    modality: str,
-) -> str:
-    if reference_source:
-        source_form = str(get_reference_source(reference_source).get("api_form") or "")
-        if source_form:
-            return source_form
-    if reference_sources:
-        return api_form_for_transport(next(iter(reference_sources)))
-    if modality == "image":
-        return "openai_images_generations"
-    return "openai_chat_completions"
-
-
-def _reference_source_ids(raw: Any) -> list[str]:
-    if raw is None:
-        return []
-    if isinstance(raw, list):
-        values = raw
-    elif isinstance(raw, dict):
-        values = list(raw.values())
-    else:
-        raise RuntimeError("reference_sources must be a list or mapping")
-    result = [str(item).strip() for item in values if str(item).strip()]
-    return list(dict.fromkeys(result))
-
-
-def _resolve_allowed_reference_sources(
-    family_cfg: dict[str, Any],
-    form_cfg: dict[str, Any],
-    canonical_cfg: dict[str, Any],
-    form_model_cfg: dict[str, Any],
-    route_cfg: dict[str, Any],
-    *,
-    schema_version: int,
-) -> list[str]:
-    if schema_version < 4:
-        result = _reference_source_ids(family_cfg.get("reference_sources") or {})
-        result.extend(
-            item
-            for item in _reference_source_ids(canonical_cfg.get("reference_sources") or {})
-            if item not in result
-        )
-        for layer in (family_cfg, canonical_cfg):
-            for item in layer.get("alternate_sources") or []:
-                source_id = str(item).strip()
-                if source_id and source_id not in result:
-                    result.append(source_id)
-        return result
-
-    result = _reference_source_ids(route_cfg.get("reference_sources") or [])
-    for layer in (form_cfg, form_model_cfg):
-        if "reference_sources" not in layer:
-            continue
-        restricted = _reference_source_ids(layer.get("reference_sources"))
-        if result:
-            allowed = set(restricted)
-            result = [item for item in result if item in allowed]
-        else:
-            result = restricted
+def _project_gemini37_rejection_expectations(capability, parameter_rows=None):
+    """Project exact model field rejections without requiring duplicate overrides."""
+    contract_id = (capability.get("reference_contract_id") or capability.get("reference_source")
+                   or capability.get("default_reference_source"))
+    if (capability.get("source_id") != "google_ai_studio"
+            or capability.get("profile_id") != "text/google_ai_studio/gemini/gemini-3.7-flash"
+            or capability.get("api_form") != "gemini_generate_content"
+            or contract_id != "gemini_3_7_flash_generate_content"):
+        return capability
+    result = copy.deepcopy(capability)
+    unsupported = {name for name, value in result.get("parameter_capabilities", {}).items()
+                   if value.get("state") == "unsupported" and value.get("http_rejection_expected") is not False}
+    for name in unsupported:
+        result.setdefault("parameter_expectations", {}).setdefault(name, "unsupported")
+    for row in (reference_param_rows(contract_id) if parameter_rows is None else parameter_rows):
+        if row["parameter"] in unsupported:
+            for case in row["test_profiles"]:
+                result.setdefault("expectations", {}).setdefault(case, "unsupported")
     return result
+
+
+def pressure_test_runnable(capability: dict[str, Any]) -> bool:
+    """Return true only for explicitly pressure-enabled text capabilities."""
+    return (
+        str(capability.get("modality") or "") == "text"
+        and capability.get("pressure_test_enabled") is True
+    )
 
 
 def resolve_profile_expectation(
@@ -1139,11 +768,11 @@ def resolve_profile_expectation(
     model: str,
     profile: str,
     *,
-    path: str | Path | None = None,
     capability_profile: dict[str, Any] | None = None,
     reference_source: str | None = None,
     api_form: str | None = None,
     route_profile: str | None = None,
+    parameter_probe: bool = True,
 ) -> str:
     """Resolve supported/unsupported for one probe within a family suite."""
     profile_key = str(profile).strip()
@@ -1153,11 +782,15 @@ def resolve_profile_expectation(
         modality,
         family,
         model,
-        path=path,
         api_form=api_form,
         route_profile=route_profile,
         reference_source=reference_source,
     )
+    if cap.get("read_only_core_facts") is True:
+        raise ValueError("Read-only core observations cannot resolve execution expectations")
+    source_policy = non_thinking_probe_policy(cap, profile_key) if parameter_probe else {}
+    if source_policy:
+        return source_policy["expectation"]
     expectations = cap.get("expectations")
     if not isinstance(expectations, dict):
         # Snapshots may expose resolved_expectations instead of the merged map.
@@ -1196,7 +829,6 @@ def resolve_parameter_expectation(
     model: str,
     parameter: str,
     *,
-    path: str | Path | None = None,
     capability_profile: dict[str, Any] | None = None,
     api_form: str | None = None,
     route_profile: str | None = None,
@@ -1208,10 +840,11 @@ def resolve_parameter_expectation(
         modality,
         family,
         model,
-        path=path,
         api_form=api_form,
         route_profile=route_profile,
     )
+    if cap.get("read_only_core_facts") is True:
+        raise ValueError("Read-only core observations cannot resolve execution expectations")
     expectations = cap.get("parameter_expectations")
     if not isinstance(expectations, dict):
         expectations = {}
@@ -1233,7 +866,6 @@ def resolve_suite_expectations(
     model: str,
     profiles: list[str],
     *,
-    path: str | Path | None = None,
     reference_source: str | None = None,
     api_form: str | None = None,
     route_profile: str | None = None,
@@ -1242,7 +874,6 @@ def resolve_suite_expectations(
         modality,
         family,
         model,
-        path=path,
         api_form=api_form,
         route_profile=route_profile,
         reference_source=reference_source,
@@ -1266,22 +897,59 @@ def capability_profile_snapshot(
     model: str,
     profiles: list[str] | None = None,
     *,
-    path: str | Path | None = None,
     reference_source: str | None = None,
     api_form: str | None = None,
     route_profile: str | None = None,
     provider_override: dict[str, Any] | None = None,
+    model_profile_database: dict[str, Any] | None = None,
+    read_only: bool = False,
 ) -> dict[str, Any]:
-    cap = load_model_capability_profile(
-        modality,
-        family,
-        model,
-        path=path,
-        api_form=api_form,
-        route_profile=route_profile,
-        reference_source=reference_source,
-        provider_override=provider_override,
+    immutable_snapshot = isinstance(model_profile_database, dict)
+    if immutable_snapshot:
+        from .model_profile_catalog import capability_profile_from_database_snapshot
+
+        cap = capability_profile_from_database_snapshot(model_profile_database)
+        cap["parameter_capabilities"] = deep_merge(
+            (cap.get("reference_contract") or {}).get("parameter_capabilities") or {},
+            (cap.get("interface") or {}).get("parameter_capabilities") or {},
+        )
+        cap = _project_gemini37_rejection_expectations(
+            cap, parameter_rows=_reference_param_rows_from_snapshot(cap)
+        )
+        expected = {
+            "modality": modality,
+            "family": family,
+            "model": model,
+            "api_form": api_form,
+            "route_profile": route_profile,
+            "reference_contract_id": reference_source,
+        }
+        conflicts = [
+            field
+            for field, value in expected.items()
+            if value not in (None, "") and str(cap.get(field) or "") != str(value)
+        ]
+        if conflicts:
+            raise ValueError(
+                "Capability request conflicts with immutable MPDB snapshot: "
+                + ", ".join(conflicts)
+            )
+    else:
+        cap = load_model_capability_profile(
+            modality,
+            family,
+            model,
+            api_form=api_form,
+            route_profile=route_profile,
+            reference_source=reference_source,
+            provider_override=provider_override,
+            read_only=read_only,
+        )
+    selected_reference_source = reference_source or str(
+        cap.get("reference_contract_id") or cap.get("reference_source") or ""
     )
+    if cap.get("read_only_core_facts") is True:
+        return _read_only_observation_snapshot(cap, reference_source)
     profile_list = [str(item) for item in (profiles or [])]
     resolved = {
         profile: resolve_profile_expectation(
@@ -1290,12 +958,17 @@ def capability_profile_snapshot(
             model,
             profile,
             capability_profile=cap,
-            reference_source=reference_source,
+            reference_source=None if immutable_snapshot else reference_source,
         )
         for profile in profile_list
     }
     resolved_parameters: dict[str, str] = {}
-    if reference_source:
+    if selected_reference_source:
+        parameter_rows = (
+            _reference_param_rows_from_snapshot(cap)
+            if immutable_snapshot
+            else reference_param_rows(selected_reference_source)
+        )
         resolved_parameters = {
             str(row["parameter"]): _resolved_parameter_expectation_for_row(
                 cap,
@@ -1305,7 +978,7 @@ def capability_profile_snapshot(
                 row,
                 resolved,
             )
-            for row in reference_param_rows(reference_source)
+            for row in parameter_rows
         }
     for parameter, expectation in (
         cap.get("parameter_expectations") or {}
@@ -1321,9 +994,18 @@ def capability_profile_snapshot(
     return {
         "modality": cap["modality"],
         "family": cap["family"],
+        "suite_family_id": cap.get("suite_family_id"),
+        "canonical_family_id": cap.get("canonical_family_id"),
         "model": cap["model"],
+        "canonical_model_slug": cap.get("canonical_model_slug"),
         "profile_id": cap.get("profile_id"),
         "model_api_profile_id": cap.get("model_api_profile_id"),
+        "interface_id": cap.get("interface_id"),
+        "source_id": cap.get("source_id"),
+        "test_binding_id": cap.get("test_binding_id"),
+        "reference_contract_id": cap.get("reference_contract_id"),
+        "parameter_test_binding_id": cap.get("parameter_test_binding_id"),
+        "reference_identity": copy.deepcopy(cap.get("reference_identity") or {}),
         "profile_status": cap.get("profile_status"),
         "api_form": cap.get("api_form"),
         "transport": cap.get("transport"),
@@ -1331,7 +1013,13 @@ def capability_profile_snapshot(
         "route_profile_known": cap.get("route_profile_known"),
         "reference_source": cap.get("reference_source"),
         "comparison_reference_source": cap.get("comparison_reference_source"),
-        "selected_reference_source": reference_source,
+        "selected_reference_source": selected_reference_source,
+        "source_id": cap.get("source_id"),
+        "interface_id": cap.get("interface_id"),
+        "parameter_constraints": copy.deepcopy(cap.get("parameter_constraints") or {}),
+        "parameter_capabilities": copy.deepcopy(cap.get("parameter_capabilities") or {}),
+        "source_conflicts": copy.deepcopy(cap.get("source_conflicts") or {}),
+        **{key: copy.deepcopy(cap[key]) for key in ("app_transport_available", "catalog_execution_flags") if key in cap},
         "reference_sources": dict(cap.get("reference_sources") or {}),
         "allowed_reference_sources": list(
             cap.get("allowed_reference_sources") or []
@@ -1346,6 +1034,7 @@ def capability_profile_snapshot(
         "default_expectation": cap.get("default_expectation"),
         "default_expectations": dict(cap.get("default_expectations") or {}),
         "model_expectations": dict(cap.get("model_expectations") or {}),
+        "image_case_expectations": copy.deepcopy(cap.get("image_case_expectations") or {}),
         "expectations": expectations,
         "resolved_expectations": resolved,
         "supported_profiles": sorted(
@@ -1388,13 +1077,66 @@ def capability_profile_snapshot(
             cap.get("pressure_transport_overrides") or {},
         ),
         "parameter_test_enabled": cap.get("parameter_test_enabled"),
+        "test_policy_parameter_test_enabled": cap.get("test_policy_parameter_test_enabled"),
+        "validation_api_version": cap.get("validation_api_version"),
+        "image_case_expectations": copy.deepcopy(cap.get("image_case_expectations") or {}),
         "pressure_test_enabled": cap.get("pressure_test_enabled"),
+        "test_policy_pressure_test_enabled": cap.get(
+            "test_policy_pressure_test_enabled"
+        ),
         "disabled_reason": cap.get("disabled_reason"),
         "identity": deep_merge({}, cap.get("identity") or {}),
         "response_validators": list(cap.get("response_validators") or []),
         "usage_schema": deep_merge({}, cap.get("usage_schema") or {}),
         "cache_policy": deep_merge({}, cap.get("cache_policy") or {}),
+        "execution_target": copy.deepcopy(cap.get("execution_target") or {}),
+        "model_profile_database": copy.deepcopy(
+            cap.get("model_profile_database")
+        ),
     }
+
+
+def _model_reference_param_rows(
+    payload: dict[str, Any], capability: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Add exact Interface declarations without assigning test coverage."""
+    rows = copy.deepcopy(payload["comparison"])
+    by_parameter = {row["parameter"]: row for row in rows}
+    constraints = capability.get("parameter_constraints") or {}
+    for parameter, raw in (capability.get("parameter_capabilities") or {}).items():
+        declaration = raw if isinstance(raw, dict) else {}
+        parameter = str(parameter)
+        state = str(declaration.get("state") or "unknown")
+        row = by_parameter.get(parameter)
+        if row is None:
+            row = {
+                "parameter": parameter,
+                "local": "reference",
+                "coverage": "not tested",
+                "coverage_mode": "not_tested",
+                "test_profiles": [],
+            }
+            rows.append(row)
+            by_parameter[parameter] = row
+        row.update(
+            state=state,
+            official=(
+                "required"
+                if state == "supported" and declaration.get("required")
+                else state
+            ),
+            source_id=capability.get("source_id"),
+            interface_id=capability.get("interface_id"),
+            official_sources=copy.deepcopy(
+                declaration.get("official_sources") or payload.get("official_sources") or []
+            ),
+        )
+        for key in _BEHAVIOR_METADATA_FIELDS:
+            if key in declaration:
+                row[key] = copy.deepcopy(declaration[key])
+        if parameter in constraints:
+            row["parameter_constraints"] = copy.deepcopy(constraints[parameter])
+    return rows
 
 
 def model_reference_spec_payload(
@@ -1406,28 +1148,67 @@ def model_reference_spec_payload(
     api_form: str | None = None,
     route_profile: str | None = None,
     provider_override: dict[str, Any] | None = None,
+    model_profile_database: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    payload = reference_spec_payload(source_id)
-    profiles = list(payload.get("test_profiles") or [])
-    capability = capability_profile_snapshot(
-        modality,
-        family,
-        model,
-        profiles,
-        reference_source=source_id,
-        api_form=api_form,
-        route_profile=route_profile,
-        provider_override=provider_override,
-    )
+    recorded = _read_only_recorded_observation_capability(modality, family, model,
+        api_form=api_form, route_profile=route_profile, reference_source=source_id,
+        provider_override=provider_override)
+    if recorded is not None:
+        from model_profile_db.recorded_reference import recorded_reference_payload
+        capability = _read_only_observation_snapshot(recorded, source_id)
+        payload = recorded_reference_payload(capability)
+    else:
+        payload = reference_spec_payload(source_id)
+        profiles = list(payload.get("test_profiles") or [])
+        capability = capability_profile_snapshot(
+            modality,
+            family,
+            model,
+            profiles,
+            reference_source=source_id,
+            api_form=api_form,
+            route_profile=route_profile,
+            provider_override=provider_override,
+            read_only=True,
+            model_profile_database=model_profile_database,
+        )
+    comparison_rows = _model_reference_param_rows(payload, capability)
+    payload["param_count"] = len(comparison_rows)
+    if capability.get("read_only_core_facts") is True:
+        rows = []
+        for raw in comparison_rows:
+            row = dict(raw)
+            row.update(test_profiles=[], profile_expectations={}, coverage_mode="reference_only", coverage="reference_only",
+                       model_expectation="reference_only", local="reference_only", execution_coverage="not_executed")
+            rows.append(row)
+        payload.update(reference_only=True, read_only_core_facts=True, test_profiles=[],
+                       enabled=False, executable=False, runner_enabled=False, parameter_test_enabled=False, pressure_test_enabled=False,
+                       test_binding_status=capability["test_binding_status"], disabled_reason=capability["disabled_reason"],
+                       params=rows, comparison=rows, tested_params=[],
+                       untested_params=[row["parameter"] for row in rows], model_capability_profile=capability)
+        return payload
     resolved_profiles = capability["resolved_expectations"]
     resolved_parameters = capability["resolved_parameter_expectations"]
     rows: list[dict[str, Any]] = []
-    for raw in payload["comparison"]:
+    for raw in comparison_rows:
         row = dict(raw)
         row_profiles = list(row.get("test_profiles") or [])
-        row["model_expectation"] = resolved_parameters.get(
-            str(row["parameter"]),
-            "supported",
+        constraint_controls = {
+            profile: non_thinking_probe_policy(capability, profile)["rejection_parameter"]
+            for profile in row_profiles
+            if non_thinking_probe_policy(capability, profile).get("rejection_parameter")
+            and str(row["parameter"]) in {"temperature", "top_p"}
+        }
+        if constraint_controls:
+            row_profiles = [profile for profile in row_profiles if profile not in constraint_controls]
+            row["test_profiles"] = row_profiles
+            row["not_exercised_controls"] = constraint_controls
+            if not row_profiles:
+                row["coverage_mode"] = "not_tested"
+        state = row.get("state")
+        row["model_expectation"] = (
+            state if state and state != "supported"
+            else resolved_parameters.get(str(row["parameter"]), "supported")
         )
         row["profile_expectations"] = {
             profile: resolved_profiles.get(profile, "supported")
@@ -1437,6 +1218,8 @@ def model_reference_spec_payload(
         rows.append(row)
     payload["params"] = rows
     payload["comparison"] = rows
+    payload["tested_params"] = [row["parameter"] for row in rows if row["coverage_mode"] != "not_tested"]
+    payload["untested_params"] = [row["parameter"] for row in rows if row["coverage_mode"] == "not_tested"]
     payload["model_capability_profile"] = capability
     return payload
 
@@ -1461,7 +1244,7 @@ def pressure_profiles_for_model(
         raise ValueError(
             f"Missing registered text model capability profile for {family}/{model}."
         )
-    if capability.get("pressure_test_enabled") is not True:
+    if not pressure_test_runnable(capability):
         raise ValueError(
             f"Pressure testing is disabled for {family}/{model}: "
             f"{capability.get('disabled_reason') or 'model profile policy'}."
@@ -1485,6 +1268,7 @@ def pressure_profiles_for_model(
             profile,
             capability_profile=capability,
             reference_source=reference_source,
+            parameter_probe=False,
         )
         == "supported"
     ]
@@ -1508,6 +1292,10 @@ def _resolved_parameter_expectation_for_row(
         resolved_profiles[profile]
         for profile in (row.get("test_profiles") or [])
         if profile in resolved_profiles
+        and not (
+            non_thinking_probe_policy(capability, profile).get("rejection_parameter")
+            and non_thinking_probe_policy(capability, profile)["rejection_parameter"] != parameter
+        )
     ]
     if profile_expectations and all(
         expectation == "unsupported" for expectation in profile_expectations
@@ -1520,175 +1308,3 @@ def _resolved_parameter_expectation_for_row(
         parameter,
         capability_profile=capability,
     )
-
-
-def _match_model_profile(
-    models: dict[str, Any],
-    model: str,
-) -> tuple[str | None, dict[str, Any] | None]:
-    if model in models:
-        raw = models[model]
-        return model, raw if isinstance(raw, dict) else raw
-    folded = model.casefold()
-    for profile_id, raw in models.items():
-        if str(profile_id).casefold() == folded:
-            return str(profile_id), raw if isinstance(raw, dict) else raw
-        cfg = raw if isinstance(raw, dict) else {}
-        aliases = cfg.get("aliases") or []
-        if any(str(alias).casefold() == folded for alias in aliases):
-            return str(profile_id), cfg
-    return None, None
-
-
-def _normalize_reference_sources(raw: Any) -> dict[str, str]:
-    if not isinstance(raw, dict):
-        raise RuntimeError("reference_sources must map transport -> source ID")
-    result: dict[str, str] = {}
-    for transport, source in raw.items():
-        transport_key = str(transport).strip()
-        source_id = str(source).strip()
-        if not transport_key or not source_id:
-            raise RuntimeError("reference_sources requires non-empty transport/source IDs")
-        result[transport_key] = source_id
-    return result
-
-
-def _normalize_pressure_profiles(raw: Any) -> dict[str, list[str]]:
-    if not isinstance(raw, dict):
-        raise RuntimeError("pressure_profiles must map reference source -> profile list")
-    return {
-        str(source): _normalize_name_list(
-            profiles,
-            label=f"pressure_profiles.{source}",
-        )
-        for source, profiles in raw.items()
-    }
-
-
-def _normalize_parameter_aliases(raw: Any) -> dict[str, str]:
-    if not isinstance(raw, dict):
-        raise RuntimeError(
-            "pressure_parameter_aliases must map source parameter -> target parameter"
-        )
-    result: dict[str, str] = {}
-    for source, target in raw.items():
-        source_name = str(source).strip()
-        target_name = str(target).strip()
-        if not source_name or not target_name:
-            raise RuntimeError(
-                "pressure_parameter_aliases requires non-empty parameter names"
-            )
-        result[source_name] = target_name
-    return result
-
-
-def _normalize_pressure_overrides(raw: Any) -> dict[str, Any]:
-    if not isinstance(raw, dict):
-        raise RuntimeError("pressure_overrides must be a mapping")
-    result: dict[str, Any] = {}
-    for parameter, value in raw.items():
-        name = str(parameter).strip()
-        if not name:
-            raise RuntimeError(
-                "pressure_overrides requires non-empty parameter names"
-            )
-        result[name] = value
-    return deep_merge({}, result)
-
-
-def _normalize_pressure_transport_overrides(raw: Any) -> dict[str, dict[str, Any]]:
-    if not isinstance(raw, dict):
-        raise RuntimeError(
-            "pressure_transport_overrides must map transport -> pressure policy"
-        )
-    result: dict[str, dict[str, Any]] = {}
-    for transport, raw_policy in raw.items():
-        transport_name = str(transport).strip()
-        if not transport_name or not isinstance(raw_policy, dict):
-            raise RuntimeError(
-                "pressure_transport_overrides requires non-empty transport policy mappings"
-            )
-        unknown = sorted(
-            set(raw_policy) - {"omit_params", "parameter_aliases", "overrides"}
-        )
-        if unknown:
-            raise RuntimeError(
-                f"pressure_transport_overrides.{transport_name} contains unknown keys: "
-                f"{unknown}"
-            )
-        result[transport_name] = {
-            "omit_params": _normalize_name_list(
-                raw_policy.get("omit_params") or [],
-                label=f"pressure_transport_overrides.{transport_name}.omit_params",
-            ),
-            "parameter_aliases": _normalize_parameter_aliases(
-                raw_policy.get("parameter_aliases") or {}
-            ),
-            "overrides": _normalize_pressure_overrides(
-                raw_policy.get("overrides") or {}
-            ),
-        }
-    return result
-
-
-def _normalize_name_list(raw: Any, *, label: str) -> list[str]:
-    if not isinstance(raw, list):
-        raise RuntimeError(f"{label} must be a list")
-    result = [str(item).strip() for item in raw]
-    if any(not item for item in result):
-        raise RuntimeError(f"{label} must not contain empty names")
-    if len(set(result)) != len(result):
-        raise RuntimeError(f"{label} must not contain duplicates")
-    return result
-
-
-def _merge_expectation_layers(
-    layers: list[Any],
-    key: str,
-    *,
-    label: str | None = None,
-) -> dict[str, str]:
-    """Merge expectation maps from config layers; later layers override earlier ones."""
-    map_label = label or key
-    merged: dict[str, str] = {}
-    for layer in layers:
-        if not isinstance(layer, dict):
-            continue
-        raw = layer.get(key)
-        if raw is None:
-            continue
-        merged.update(_normalize_expectation_map(raw, label=map_label))
-    return merged
-
-
-def _normalize_expectation_map(
-    raw: Any,
-    *,
-    label: str = "expectations",
-) -> dict[str, str]:
-    if not isinstance(raw, dict):
-        raise RuntimeError(
-            f"{label} must be a mapping of name -> supported|unsupported"
-        )
-    result: dict[str, str] = {}
-    for key, value in raw.items():
-        name = str(key).strip()
-        if not name:
-            continue
-        expected = str(value).strip().casefold()
-        if expected not in VALID_EXPECTATIONS:
-            raise RuntimeError(
-                f"Invalid expectation for {name!r}: {value!r} "
-                f"(expected one of {sorted(VALID_EXPECTATIONS)})"
-            )
-        result[name] = expected
-    return result
-
-
-@lru_cache(maxsize=16)
-def _read_yaml_cached(path: str, _mtime_ns: int) -> dict[str, Any]:
-    with Path(path).open("r", encoding="utf-8") as fh:
-        payload = yaml.safe_load(fh) or {}
-    if not isinstance(payload, dict):
-        raise RuntimeError(f"{path} must contain a YAML object.")
-    return payload

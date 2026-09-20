@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import unittest
 
@@ -83,6 +84,8 @@ class WorkloadPresetTest(unittest.TestCase):
             "qwen_cache_profiles",
         ):
             for profile in profile_names(config, group):
+                if bool((config.get(group) or {}).get(profile, {}).get("skip_minimum_prompt")):
+                    continue
                 family = _family_for_profile(profile)
                 if group.startswith("qwen_"):
                     family = "qwen"
@@ -108,8 +111,114 @@ class WorkloadPresetTest(unittest.TestCase):
             config["test_cases"]["minimum_prompt_tokens"],
         )
 
+    def test_glm_5_3_flash_multimodal_profiles_preserve_inline_messages(self) -> None:
+        config = load_config()
+        expected_types = {
+            "glm53_flash_image_url": ["image_url", "text"],
+            "glm53_flash_image_base64": ["image_url", "text"],
+            "glm53_flash_multi_image": ["image_url", "image_url", "text"],
+            "glm53_flash_video_url": ["video_url", "text"],
+            "glm53_flash_file_url": ["file", "text"],
+            "glm53_flash_file_data": ["file", "text"],
+            "glm53_flash_file_image_mixed": ["file", "image_url", "text"],
+        }
+        for profile, expected in expected_types.items():
+            with self.subTest(profile=profile):
+                request = build_request(
+                    config,
+                    "compatibility_profiles",
+                    profile,
+                    overrides={
+                        "model": "glm-5.3-flash",
+                        "prompt": "this random runner prompt must be ignored",
+                    },
+                    model_family_override="glm",
+                    enforce_model_capabilities=False,
+                )
+                content = request.body["messages"][0]["content"]
+                self.assertEqual([block["type"] for block in content], expected)
+                self.assertEqual(request.metadata["prompt_source"], "messages:inline")
+                self.assertNotIn("this random runner prompt", str(content))
+                self.assertEqual(request.body["thinking"]["type"], "enabled")
+                self.assertEqual(request.body["reasoning_effort"], "low")
+        image_data = build_request(
+            config,
+            "compatibility_profiles",
+            "glm53_flash_image_base64",
+            overrides={"model": "glm-5.3-flash"},
+            model_family_override="glm",
+            enforce_model_capabilities=False,
+        ).body["messages"][0]["content"][0]["image_url"]["url"]
+        self.assertTrue(image_data.startswith("data:image/png;base64,"))
+        image_bytes = base64.b64decode(image_data.split(",", 1)[1], validate=True)
+        self.assertEqual(image_bytes[:8], b"\x89PNG\r\n\x1a\n")
+        self.assertEqual(int.from_bytes(image_bytes[16:20], "big"), 32)
+        self.assertEqual(int.from_bytes(image_bytes[20:24], "big"), 32)
+        file_data = build_request(
+            config,
+            "compatibility_profiles",
+            "glm53_flash_file_data",
+            overrides={"model": "glm-5.3-flash"},
+            model_family_override="glm",
+            enforce_model_capabilities=False,
+        ).body["messages"][0]["content"][0]["file"]
+        self.assertTrue(
+            file_data["file_data"].startswith("data:application/pdf;base64,")
+        )
+        file_bytes = base64.b64decode(
+            file_data["file_data"].split(",", 1)[1], validate=True
+        )
+        self.assertTrue(file_bytes.startswith(b"%PDF-1.4\n"))
+        self.assertIn(b"Z.AI GLM-5.3-Flash parameter profile.", file_bytes)
+        self.assertTrue(file_bytes.rstrip().endswith(b"%%EOF"))
+        self.assertEqual(file_data["filename"], "mpdb-profile.pdf")
+
+    def test_standard_rpm_profiles_use_coherent_unpadded_text(self) -> None:
+        config = load_config()
+        prompt_units = []
+        prompts = []
+        profiles = tuple(config["profile_weights"]["throughput_rpm"])
+
+        self.assertEqual(len(profiles), 8)
+        self.assertEqual(
+            sum(config["profile_weights"]["throughput_rpm"].values()),
+            100,
+        )
+
+        for profile in profiles:
+            with self.subTest(profile=profile):
+                request = build_request(
+                    config,
+                    "throughput_profiles",
+                    profile,
+                    model_family_override="claude",
+                )
+                prompt = _user_prompt_text(request.body)
+                prompt_key = config["throughput_profiles"][profile]["prompt_key"]
+                self.assertEqual(prompt, config["prompts"][prompt_key])
+                prompts.append(prompt)
+                prompt_units.append(estimated_text_token_units(prompt))
+                self.assertGreaterEqual(estimated_text_token_units(prompt), 100)
+                self.assertNotIn("测试输入长度填充", prompt)
+                self.assertNotIn("load-request-", prompt)
+                self.assertEqual(
+                    request.body["system"],
+                    "你是一名简洁的文字助手，请严格按照用户要求作答。",
+                )
+                self.assertNotIn("load testing", request.body["system"].lower())
+                self.assertNotIn("api", request.body["system"].lower())
+                self.assertIs(request.body["stream"], False)
+                self.assertEqual(request.body["max_tokens"], 128)
+                self.assertEqual(request.body["thinking"], {"type": "disabled"})
+                self.assertIn(profile, config["qwen_throughput_profiles"])
+
+        self.assertEqual(len(set(prompts)), len(profiles))
+        self.assertLessEqual(max(prompt_units) - min(prompt_units), 20)
+
     def test_streaming_latency_preset_uses_comparable_streaming_requests(self) -> None:
         config = load_config()
+        config["active_provider"] = "yibu"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         entries = weighted_workload_profiles(config, "throughput_streaming")
         profiles = [entry[1] for entry in entries]
         requests = [
@@ -143,11 +252,25 @@ class WorkloadPresetTest(unittest.TestCase):
 
     def test_rpm_and_tpm_presets_select_expected_profiles(self) -> None:
         config = load_config()
+        config["active_provider"] = "yibu"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
 
         rpm_entries = weighted_workload_profiles(config, "throughput_rpm")
         tpm_entries = weighted_workload_profiles(config, "throughput_tpm")
 
-        self.assertEqual({entry[1] for entry in rpm_entries}, {"baseline_short", "baseline_medium"})
+        self.assertEqual(
+            {entry[1] for entry in rpm_entries},
+            {
+                "standard_short",
+                "standard_medium",
+                "standard_extract",
+                "standard_rewrite",
+                "standard_translate",
+                "standard_classify",
+                "standard_arithmetic",
+                "standard_plan",
+            },
+        )
         self.assertEqual(
             {entry[1] for entry in tpm_entries},
             {
@@ -160,22 +283,33 @@ class WorkloadPresetTest(unittest.TestCase):
             },
         )
 
-    def test_fixture_chars_limits_generated_prompt_size(self) -> None:
+    def test_disabled_pressure_policy_still_blocks_default_pro_workloads(self) -> None:
+        config = load_config()
+        config["active_provider"] = "yibu"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        for workload in ("throughput_rpm", "throughput_tpm", "throughput_streaming"):
+            with self.subTest(workload=workload):
+                with self.assertRaisesRegex(ValueError, "Pressure testing is disabled"):
+                    weighted_workload_profiles(config, workload)
+
+    def test_compact_fixture_can_expand_to_target_size(self) -> None:
         prompt = _resolve_prompt(
             {},
             {
-                "fixture": "fixtures/half_million_context.txt",
-                "fixture_chars": 1_000,
+                "fixture": "fixtures/long_context.txt",
+                "fixture_repeat_to_chars": 40_000,
             },
         )
 
-        self.assertGreater(len(prompt), 1_000)
-        self.assertLess(len(prompt), 1_100)
+        self.assertGreater(len(prompt), 40_000)
+        self.assertLess(len(prompt), 40_100)
 
 
 def _family_for_profile(profile: str) -> str:
-    if profile.startswith(("gpt5_chat_", "openai_responses_")):
+    if profile.startswith(("gpt5_chat_", "gpt6_", "openai_responses_")):
         return "gpt"
+    if profile.startswith("glm53_"):
+        return "glm"
     for family in ("gemini", "qwen", "glm", "deepseek", "claude", "grok"):
         if profile.startswith(f"{family}_"):
             return family
@@ -241,10 +375,15 @@ class ClaudeFamilyWorkloadTest(unittest.TestCase):
             config,
             "compatibility_profiles",
             "claude_thinking_disabled",
+            overrides={"model": "claude-sonnet-4-5-20250929"},
             model_family_override="claude",
+            api_form_override="openai_chat_completions",
+            route_profile_override="vendor_compat",
+            reference_source="claude_openai_compat",
+            enforce_model_capabilities=False,
         )
-        self.assertNotIn("thinking", disabled.body)
-        self.assertEqual(disabled.body["extra_body"]["thinking"]["type"], "disabled")
+        self.assertEqual(disabled.body["thinking"]["type"], "disabled")
+        self.assertNotIn("extra_body", disabled.body)
 
     def test_claude_native_messages_profiles_validate(self) -> None:
         config = load_config()
@@ -321,7 +460,8 @@ class ClaudeFamilyWorkloadTest(unittest.TestCase):
         self.assertEqual(streaming.body["output_config"]["effort"], "medium")
         self.assertNotIn("top_p", streaming.body)
         self.assertTrue(streaming.body["stream"])
-        self.assertEqual(streaming.body["temperature"], 0)
+        self.assertNotIn("temperature", streaming.body)
+        self.assertNotIn("top_k", streaming.body)
 
     def test_claude_fable_cache_uses_messages_adaptive_effort(self) -> None:
         config = load_config()
@@ -428,6 +568,8 @@ def _user_prompt_text(body: dict) -> str:
         )
     if "input" in body:
         return _responses_input_text(body["input"])
+    if "prompt" in body:
+        return str(body.get("prompt") or "")
     return "\n".join(
         str(part.get("text") or "")
         for content in body.get("contents") or []

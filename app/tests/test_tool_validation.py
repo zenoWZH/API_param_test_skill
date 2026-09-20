@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import unittest
@@ -759,6 +760,226 @@ class ToolValidationTest(unittest.TestCase):
             assistant["reasoning_content"],
             "I need the weather tool.",
         )
+
+    def test_glm_5_3_high_max_require_reasoning_but_low_does_not(self) -> None:
+        no_reasoning = {
+            "choices": [{"message": {"role": "assistant", "content": "pong"}}]
+        }
+        with_reasoning = {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "reasoning_content": "The user asked for a short reply.",
+                        "content": "pong",
+                    }
+                }
+            ]
+        }
+        for profile in (
+            "glm53_reasoning_high",
+            "glm53_reasoning_max",
+        ):
+            with self.subTest(profile=profile):
+                self.assertEqual(
+                    validate_profile_response(
+                        profile,
+                        no_reasoning,
+                        result(),
+                        reference_source="zhipu_glm_5_3_openai_compat",
+                    ),
+                    "reasoning_content_missing",
+                )
+                self.assertIsNone(
+                    validate_profile_response(
+                        profile,
+                        with_reasoning,
+                        result(),
+                        reference_source="zhipu_glm_5_3_openai_compat",
+                    )
+                )
+        tool_without_reasoning = {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": [
+                            {
+                                "id": "call_weather",
+                                "type": "function",
+                                "function": {
+                                    "name": "get_weather",
+                                    "arguments": json.dumps({"city": "Beijing"}),
+                                },
+                            }
+                        ],
+                    }
+                }
+            ]
+        }
+        tool_with_reasoning = {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "reasoning_content": "I need the weather tool.",
+                        "tool_calls": [
+                            {
+                                "id": "call_weather",
+                                "type": "function",
+                                "function": {
+                                    "name": "get_weather",
+                                    "arguments": json.dumps({"city": "Beijing"}),
+                                },
+                            }
+                        ],
+                    }
+                }
+            ]
+        }
+        self.assertEqual(
+            validate_profile_response(
+                "glm53_tool_calls_thinking",
+                tool_without_reasoning,
+                result(),
+                reference_source="zhipu_glm_5_3_openai_compat",
+            ),
+            "reasoning_content_missing",
+        )
+        self.assertIsNone(
+            validate_profile_response(
+                "glm53_tool_calls_thinking",
+                tool_with_reasoning,
+                result(),
+                reference_source="zhipu_glm_5_3_openai_compat",
+            )
+        )
+        self.assertIsNone(
+            validate_profile_response(
+                "glm53_reasoning_low",
+                no_reasoning,
+                result(),
+                reference_source="zhipu_glm_5_3_openai_compat",
+            )
+        )
+        self.assertIsNone(
+            validate_profile_response(
+                "glm53_thinking_enabled",
+                no_reasoning,
+                result(),
+                reference_source="zhipu_glm_5_3_openai_compat",
+            )
+        )
+
+    def test_glm_5_3_flash_multimodal_responses_require_semantic_content(self) -> None:
+        empty = {"choices": [{"message": {"role": "assistant", "content": ""}}]}
+        self.assertEqual(
+            validate_profile_response(
+                "glm53_flash_image_url",
+                empty,
+                result(),
+                reference_source="zhipu_glm_5_3_flash_openai_compat",
+            ),
+            "multimodal_content_missing",
+        )
+        red = {
+            "choices": [
+                {"message": {"role": "assistant", "content": "red"}}
+            ]
+        }
+        self.assertIsNone(
+            validate_profile_response(
+                "glm53_flash_image_base64",
+                red,
+                result(),
+                reference_source="zhipu_glm_5_3_flash_openai_compat",
+            )
+        )
+        self.assertEqual(
+            validate_profile_response(
+                "glm53_flash_image_base64",
+                {
+                    "choices": [
+                        {"message": {"role": "assistant", "content": "blue"}}
+                    ]
+                },
+                result(),
+                reference_source="zhipu_glm_5_3_flash_openai_compat",
+            ),
+            "multimodal_image_semantics_mismatch",
+        )
+        for content in ("The image could not be rendered.", "not red", "red and blue"):
+            with self.subTest(content=content):
+                self.assertEqual(validate_profile_response(
+                    "glm53_flash_image_base64",
+                    {"choices": [{"message": {"content": content}}]},
+                    result(),
+                    reference_source="zhipu_glm_5_3_flash_openai_compat",
+                ), "multimodal_image_semantics_mismatch")
+        for content in ("Red.", "**red**", "红色", "红。"):
+            with self.subTest(content=content):
+                self.assertIsNone(validate_profile_response(
+                    "glm53_flash_image_base64",
+                    {"choices": [{"message": {"content": content}}]},
+                    result(),
+                    reference_source="zhipu_glm_5_3_flash_openai_compat",
+                ))
+        file_text = {
+            "choices": [
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "Z.AI GLM-5.3-Flash parameter profile.",
+                    }
+                }
+            ]
+        }
+        self.assertIsNone(
+            validate_profile_response(
+                "glm53_flash_file_data",
+                file_text,
+                result(),
+                reference_source="zhipu_glm_5_3_flash_openai_compat",
+            )
+        )
+        self.assertEqual(
+            validate_profile_response(
+                "glm53_reasoning_high",
+                {"choices": [{"message": {"content": "answer"}}]},
+                result(),
+                reference_source="zhipu_glm_5_3_flash_openai_compat",
+            ),
+            "reasoning_content_missing",
+        )
+
+    def test_glm_flash_file_data_requires_complete_exact_fixture_text(self) -> None:
+        expected = "Z.AI GLM-5.3-Flash parameter profile."
+        profile = self.config["compatibility_profiles"]["glm53_flash_file_data"]
+        data_uri = profile["messages"][0]["content"][0]["file"]["file_data"]
+        pdf_bytes = base64.b64decode(data_uri.split(",", 1)[1], validate=True)
+        self.assertIn(f"({expected}) Tj".encode("ascii"), pdf_bytes)
+        cases = (
+            (expected, None),
+            ("  \n" + expected + "\t\n", None),
+            ("I cannot read the PDF. The phrase Z.AI GLM-5.3-Flash parameter "
+             "profile is only a guess.", "multimodal_file_semantics_mismatch"),
+            (expected + " I am guessing.", "multimodal_file_semantics_mismatch"),
+            ("The file says: " + expected, "multimodal_file_semantics_mismatch"),
+            (expected + "\n" + expected, "multimodal_file_semantics_mismatch"),
+            (expected.lower(), "multimodal_file_semantics_mismatch"),
+            (expected.rstrip("."), "multimodal_file_semantics_mismatch"),
+            ("```text\n" + expected + "\n```", "multimodal_file_semantics_mismatch"),
+        )
+        for content, error in cases:
+            with self.subTest(content=content):
+                self.assertEqual(validate_profile_response(
+                    "glm53_flash_file_data",
+                    {"choices": [{"message": {"content": content}}]},
+                    result(),
+                    reference_source="zhipu_glm_5_3_flash_openai_compat",
+                ), error)
 
     def test_qwen_reasoning_and_preserved_history_semantics(self) -> None:
         no_reasoning = {

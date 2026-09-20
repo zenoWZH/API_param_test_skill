@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "approval_code": "R7-ALL-MODELS-EFFECT-PROOF",
+  "approval_key": "approved_kimi_sampling_constraints_20260907",
+  "source_id": "moonshot",
+  "profile_id": "text/moonshot/kimi/kimi-k2.6",
+  "interface_id": "text/moonshot/kimi/kimi-k2.6#openai-chat-default",
+  "api_form": "openai_chat_completions",
+  "routing_mode": "vendor_direct",
+  "official_reference": {
+    "url": "https://platform.kimi.ai/docs/guide/kimi-k2-6-quickstart",
+    "retrieved_at": "2026-09-07",
+    "section": "Parameters Differences in Request Body",
+    "evidence_scope": "official_documentation_only",
+    "facts": {
+      "temperature": "Thinking enabled requires 1.0; disabled requires 0.6; other explicit values error.",
+      "top_p": "Explicit top_p must equal 0.95; other values error."
+    }
+  },
+  "preconditions": {
+    "thinking.type.allowed_values": [
+      "enabled",
+      "disabled"
+    ],
+    "thinking.type.default": "enabled",
+    "temperature_absent": true,
+    "top_p_absent": true
+  },
+  "operations": [
+    {
+      "operation": "add",
+      "field_path": [
+        "parameter_constraints",
+        "temperature"
+      ],
+      "value": {
+        "type": "number",
+        "const_by_thinking_type": {
+          "enabled": 1.0,
+          "disabled": 0.6
+        }
+      }
+    },
+    {
+      "operation": "add",
+      "field_path": [
+        "parameter_constraints",
+        "top_p"
+      ],
+      "value": {
+        "type": "number",
+        "const": 0.95
+      }
+    }
+  ],
+  "execution_gates_changed": false,
+  "existing_constraints_preserved": true,
+  "live_requests": 0,
+  "full_matrix_certified": false
+}

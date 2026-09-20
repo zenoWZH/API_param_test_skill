@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import copy
 import json
+import math
 import re
 import secrets
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit
 
 from .config import (
     PROJECT_ROOT,
@@ -24,6 +26,13 @@ from .config import (
     transport_for_api_form,
 )
 from .credential_security import validate_profile_request_headers
+from .gemini_api_version import build_gemini_api_url, is_ai_studio_origin
+from .parameter_reference_policy import (
+    apply_non_thinking_probe_policy,
+    non_thinking_probe_policy,
+    validate_probe_reference_identity,
+    validate_reference_request,
+)
 
 
 SUPPORTED_PARAMS = {
@@ -45,6 +54,7 @@ SUPPORTED_PARAMS = {
     "parallel_tool_calls",
     "presence_penalty",
     "prompt_cache_key",
+    "prompt_cache_options",
     "repetition_penalty",
     "request_id",
     "response_format",
@@ -67,6 +77,7 @@ SUPPORTED_PARAMS = {
     "stop_sequences",
     "system",
     "user_id",
+    "verbosity",
 }
 
 GLM_OPENAI_COMPATIBLE_PARAMS = {
@@ -105,6 +116,10 @@ OPENAI_CHAT_BASE_PARAMS = {
     "n",
     "presence_penalty",
     "prompt_cache_key",
+    "prompt_cache_options",
+    "logprobs",
+    "top_logprobs",
+    "verbosity",
 }
 
 # xAI Grok Chat Completions: reasoning models reject stop / penalties.
@@ -276,8 +291,16 @@ PROFILE_KEYS = {
     "prompt_fixture",
     "fixture",
     "fixture_chars",
+    "fixture_repeat_to_chars",
     "tools_fixture",
     "multi_turn",
+    "interaction_generation_config",
+    "interaction_labels",
+    "interaction_response_format",
+    "interaction_store",
+    "interaction_stream",
+    "interaction_system_instruction",
+    "interaction_tools",
     "native_cached_content",
     "native_generation_config",
     "native_labels",
@@ -293,6 +316,8 @@ PROFILE_KEYS = {
     "send_deprecated",
     "preserve_rejected_params",
     "pass_reasoning_content",
+    "skip_minimum_prompt",
+    "run_success_mode",
     "transport",
 }
 
@@ -328,6 +353,28 @@ GLM_REASONING_EFFORTS = {
     "max",
 }
 
+# Native GLM-5.3 Chat Completions: thinking is always on and reasoning_effort
+# is only low|high|max. none/minimal/medium/xhigh are not mapped; they are
+# sent as-is so origin-contract reject probes can observe 400/1210.
+GLM53_REASONING_EFFORTS = {
+    "low",
+    "high",
+    "max",
+}
+
+GLM53_DISPLAY_ALIASES = {
+    "glm-5.3",
+    "glm-5.3-flash",
+    "glm5.3",
+    "glm5.3-flash",
+}
+
+
+def _is_glm_5_3_model(model: str) -> bool:
+    folded = str(model or "").strip().casefold().replace("_", "-")
+    return folded in GLM53_DISPLAY_ALIASES
+
+
 # Gemini 3 maps OpenAI-compatible effort values directly to thinkingLevel.
 # Unlike DeepSeek aliases, minimal/low/medium/high are behaviorally distinct.
 GEMINI_REASONING_EFFORTS = {
@@ -351,6 +398,28 @@ DEFAULT_MINIMUM_PROMPT_TOKENS = 100
 _PROMPT_PADDING_MARKER = "测试输入长度填充；以下数字仅作为背景数据，回答时请忽略："
 
 
+GEMINI_37_INTERACTIONS_PROFILES = {
+    "gemini_3_7_flash_interactions_basic",
+    "gemini_3_7_flash_interactions_system_instruction",
+    "gemini_3_7_flash_interactions_response_format_json",
+    "gemini_3_7_flash_interactions_stream",
+    "gemini_3_7_flash_interactions_store_false",
+    "gemini_3_7_flash_interactions_max_output_tokens",
+    "gemini_3_7_flash_interactions_seed",
+    "gemini_3_7_flash_interactions_stop_sequences",
+    "gemini_3_7_flash_interactions_reject_thinking_minimal",
+    "gemini_3_7_flash_interactions_thinking_low",
+    "gemini_3_7_flash_interactions_thinking_medium",
+    "gemini_3_7_flash_interactions_thinking_high",
+    "gemini_3_7_flash_interactions_thinking_summaries_auto",
+    "gemini_3_7_flash_interactions_tools_auto",
+    "gemini_3_7_flash_interactions_tools_any",
+    "gemini_3_7_flash_interactions_tools_none",
+    "gemini_3_7_flash_interactions_tools_validated",
+    "gemini_3_7_flash_interactions_labels",
+}
+
+
 @dataclass
 class BuiltRequest:
     group: str
@@ -358,6 +427,25 @@ class BuiltRequest:
     body: dict[str, Any]
     metadata: dict[str, Any] = field(default_factory=dict)
     warnings: list[str] = field(default_factory=list)
+
+
+def _ai_studio_endpoint_metadata(
+    provider_cfg: dict[str, Any], transport: str, model: str,
+) -> dict[str, Any]:
+    interface = (provider_cfg.get("api_interfaces") or {}).get(transport) or {}
+    base_url = str(interface.get("base_url") or provider_cfg.get("base_url") or "")
+    if not is_ai_studio_origin(base_url):
+        return {}
+    default_path = (
+        "/interactions" if transport == "gemini_interactions"
+        else "/models/{model}:generateContent"
+    )
+    path = str(interface.get("path") or default_path).format(model=model)
+    url = build_gemini_api_url(
+        base_url, path,
+        api_version=interface.get("api_version") or interface.get("default_api_version"),
+    )
+    return {"request_endpoint": urlsplit(url).path, "api_version": "v1beta"}
 
 
 def apply_request_mode(
@@ -403,6 +491,12 @@ def apply_request_mode(
                                 block[text_key] = marker + block[text_key]
                                 return True
         return False
+    if transport == "fim_completions":
+        prompt = body.get("prompt")
+        if isinstance(prompt, str):
+            body["prompt"] = marker + prompt
+            return True
+        return False
     for message in body.get("messages") or []:
         if not isinstance(message, dict) or message.get("role") != "user":
             continue
@@ -428,7 +522,30 @@ def build_request(
     route_profile_override: str | None = None,
     reference_source: str | None = None,
     enforce_model_capabilities: bool = True,
+    pressure_policy_override: dict[str, Any] | None = None,
+    parameter_reference_profile: dict[str, Any] | None = None,
+    parameter_test: bool = False,
+    provider_override: str | None = None,
+    execution_route_override: str | None = None,
 ) -> BuiltRequest:
+    reference_source = _pinned_reference_contract(config, reference_source)
+    if (provider_override is not None or execution_route_override is not None) and not parameter_test:
+        raise ValueError("provider_override is restricted to functional parameter requests")
+    if parameter_test:
+        # Keep parameter evidence tied to the declared input. Load workloads
+        # may deliberately pad prompts; parameter probes must not add tokens.
+        config = copy.deepcopy(config)
+        config.pop("_functional_parameter_target", None)
+        config["_parameter_test_exact_input"] = True
+        if provider_override is not None:
+            if not isinstance(provider_override, str) or not provider_override:
+                raise ValueError("Parameter provider override must be a nonempty provider ID")
+            selected_provider = get_provider_config(config, provider_override)["name"]
+            selected_model = str((overrides or {}).get("model") or get_selected_model(config, selected_provider))
+            config["_functional_parameter_target"] = {"provider": selected_provider, "model": selected_model}
+            if execution_route_override is not None:
+                config["_functional_parameter_target"]["route_profile"] = get_model_route_profile(
+                    config, selected_model, selected_provider, route_profile=execution_route_override)
     provider_name = get_active_provider_name(config)
     provider_cfg = get_provider_config(config, provider_name)
     selected_model = get_selected_model(config, provider_name)
@@ -457,6 +574,7 @@ def build_request(
         profile,
         model_family_override=model_family,
     )
+    profile_default_settings = copy.deepcopy(settings)
     if overrides:
         settings = deep_merge(settings, overrides)
     omit_params = settings.get("omit_params") or []
@@ -533,19 +651,74 @@ def build_request(
             api_form,
             route_profile,
             reference_source,
+            pressure_policy_override,
         )
-    if model_family == "claude_fable":
-        _apply_claude_fable_compat(settings)
+    # Shared load/cache workloads require adaptive/default-effort normalization;
+    # compatibility probes must retain their exact source-scoped wire values.
+    if model_family == "claude_fable" and logical_group in {
+        "throughput_profiles",
+        "cache_profiles",
+    }:
+        _apply_claude_fable_compat(settings, omit_sampling=True)
     elif model_family == "qwen":
         _apply_qwen_compat(settings)
     warnings: list[str] = list(capability_warnings)
 
+    if transport == "gemini_interactions":
+        if model_family != "gemini":
+            raise ValueError(
+                "gemini_interactions transport requires the gemini reference family."
+            )
+        if not model:
+            raise ValueError("A model is required for Gemini Interactions.")
+        if reference_source == "gemini_3_7_flash_interactions":
+            if str(model) != "gemini-3.7-flash":
+                raise ValueError(
+                    "gemini_3_7_flash_interactions requires model gemini-3.7-flash."
+                )
+            if profile not in GEMINI_37_INTERACTIONS_PROFILES:
+                raise ValueError(
+                    f"Profile {profile!r} is outside the Gemini 3.7 Flash "
+                    "Interactions safe text contract."
+                )
+        body = _build_gemini_interactions_body(config, settings, str(model))
+        metadata = {
+            "provider": provider_name,
+            "provider_label": provider_cfg.get("label") or provider_name,
+            "model_family": model_family,
+            "api_form": api_form,
+            "route_profile": route_profile,
+            "reference_source": reference_source,
+            "requested_model": str(model),
+            "transport": transport,
+            "request_endpoint": "/v1/interactions",
+            **_ai_studio_endpoint_metadata(provider_cfg, transport, str(model)),
+            # Stateful tool-result continuation is deliberately outside this
+            # safe text runner. A requires_action response is the terminal
+            # evidence for tool profiles.
+            "multi_turn": False,
+            "pass_reasoning_content": False,
+            "prompt_source": _prompt_source(settings),
+            "profile_group": yaml_group,
+            **capability_metadata,
+        }
+        return BuiltRequest(
+            group=logical_group,
+            profile=profile,
+            body=body,
+            metadata=metadata,
+            warnings=warnings,
+        )
     if transport == "gemini_generate_content":
         if model_family != "gemini":
             raise ValueError("gemini_generate_content transport requires the gemini reference family.")
         if not model:
             raise ValueError("A model is required for Gemini GenerateContent.")
         body = _build_gemini_native_body(config, settings)
+        if reference_source == "gemini_3_7_flash_generate_content":
+            if str(model) != "gemini-3.7-flash":
+                raise ValueError("gemini_3_7_flash_generate_content requires model gemini-3.7-flash.")
+            _enforce_gemini_37_generate_content_safety(profile, settings, body)
         metadata = {
             "provider": provider_name,
             "provider_label": provider_cfg.get("label") or provider_name,
@@ -556,6 +729,7 @@ def build_request(
             "requested_model": str(model),
             "transport": transport,
             "request_endpoint": f"/models/{model}:generateContent",
+            **_ai_studio_endpoint_metadata(provider_cfg, transport, str(model)),
             "multi_turn": bool(settings.get("multi_turn", False)),
             "pass_reasoning_content": False,
             "prompt_source": _prompt_source(settings),
@@ -573,13 +747,25 @@ def build_request(
             warnings=warnings,
         )
     if transport == "claude_messages":
-        if model_family not in {"claude", "claude_fable"}:
+        if model_family not in {"claude", "claude_fable", "deepseek"}:
             raise ValueError(
-                "claude_messages transport requires the claude or claude_fable reference family."
+                "claude_messages transport requires the claude, claude_fable, "
+                "or DeepSeek Anthropic-compatible reference family."
             )
         if not model:
-            raise ValueError("A model is required for Claude Messages.")
-        body = _build_claude_messages_body(config, settings, str(model))
+            raise ValueError("A model is required for Anthropic Messages.")
+        body = (
+            _build_deepseek_anthropic_messages_body(config, settings, str(model))
+            if model_family == "deepseek"
+            else _build_claude_messages_body(
+                config, settings, str(model), reference_source=reference_source,
+                # Family-isolated construction uses route_profile for the
+                # reference Contract; caching must bind to the execution route.
+                runtime_route_profile=(
+                    route_profile if model_family_override is None else None
+                ),
+            )
+        )
         metadata = {
             "provider": provider_name,
             "provider_label": provider_cfg.get("label") or provider_name,
@@ -606,7 +792,9 @@ def build_request(
     if transport == "openai_responses":
         if not model:
             raise ValueError("A model is required for OpenAI Responses.")
-        body = _build_openai_responses_body(config, settings, str(model))
+        body = _build_openai_responses_body(
+            config, settings, str(model), reference_source=reference_source
+        )
         metadata = {
             "provider": provider_name,
             "provider_label": provider_cfg.get("label") or provider_name,
@@ -630,8 +818,66 @@ def build_request(
             metadata=metadata,
             warnings=warnings,
         )
+    if transport == "fim_completions":
+        if model_family != "deepseek":
+            raise ValueError(
+                "fim_completions transport requires the DeepSeek reference family."
+            )
+        if not model:
+            raise ValueError("A model is required for DeepSeek FIM Completions.")
+        body = _build_fim_completion_body(config, settings, str(model))
+        metadata = {
+            "provider": provider_name,
+            "provider_label": provider_cfg.get("label") or provider_name,
+            "model_family": model_family,
+            "api_form": api_form,
+            "route_profile": route_profile,
+            "reference_source": reference_source,
+            "requested_model": str(model),
+            "transport": transport,
+            "request_endpoint": "/beta/completions",
+            "multi_turn": False,
+            "pass_reasoning_content": False,
+            "prompt_source": _prompt_source(settings),
+            "profile_group": yaml_group,
+            **capability_metadata,
+        }
+        return BuiltRequest(
+            group=logical_group,
+            profile=profile,
+            body=body,
+            metadata=metadata,
+            warnings=warnings,
+        )
     if transport != "chat_completions":
         raise ValueError(f"Unsupported profile transport: {transport}")
+
+    parameter_reference_policy: dict[str, Any] = {}
+    if (logical_group == "compatibility_profiles" and not enforce_model_capabilities
+            and profile == "sampling_non_thinking"
+            and model_family == "kimi" and reference_source):
+        from .reference_specs import get_reference_source, load_model_capability_profile
+
+        reference_capability = parameter_reference_profile
+        if reference_capability is None:
+            reference_capability = load_model_capability_profile(
+                "text", model_family, str(model), api_form=api_form,
+                route_profile=route_profile, reference_source=reference_source,
+            )
+        if reference_capability.get("reference_source") != reference_source:
+            raise ValueError("parameter capability does not match the selected reference Contract")
+        validate_probe_reference_identity(
+            reference_capability, model=str(model), family=model_family,
+            api_form=api_form, reference_source=reference_source,
+            source_id=str(get_reference_source(reference_source)["source_id"]),
+        )
+        selected_policy = non_thinking_probe_policy(reference_capability, profile)
+        parameter_reference_policy = apply_non_thinking_probe_policy(
+            settings, selected_policy,
+            default_settings=profile_default_settings,
+            explicit_overrides=overrides,
+            omitted_parameters=omit_params,
+        )
 
     body: dict[str, Any] = {
         "model": model,
@@ -644,7 +890,9 @@ def build_request(
     if "tools_fixture" in settings and "tools" not in settings:
         settings["tools"] = _read_json_fixture(settings["tools_fixture"])
 
-    family_supported = _supported_params_for_family(model_family, route_profile)
+    family_supported = set(_supported_params_for_family(model_family, route_profile))
+    if parameter_reference_policy:
+        family_supported.add("thinking")
     deprecated_params = set(DEPRECATED_PARAMS)
     if model_family == "deepseek":
         deprecated_params.add("presence_penalty")
@@ -673,8 +921,50 @@ def build_request(
         body,
         model_family,
         preserve_rejected_params=bool(settings.get("preserve_rejected_params", False)),
+        fable_official_compat_profile=(
+            logical_group == "compatibility_profiles" and model_family == "claude_fable"
+            and str(model) == "claude-fable-5" and api_form == "openai_chat_completions"
+            and route_profile == "vendor_compat" and reference_source == "claude_fable_openai_compat"
+        ),
+        preserve_claude_parameter_body=(
+            logical_group == "compatibility_profiles" and model_family == "claude"
+            and api_form == "openai_chat_completions" and route_profile == "vendor_compat"
+            and reference_source == "claude_openai_compat"
+            and (bool(settings.get("preserve_rejected_params", False))
+                 or "thinking" in (overrides or {}))
+        ),
+        preserve_fable_parameter_body=(
+            logical_group == "compatibility_profiles" and model_family == "claude_fable"
+            and str(model) == "claude-fable-5" and api_form == "openai_chat_completions"
+            and route_profile == "vendor_compat" and reference_source == "claude_fable_openai_compat"
+            and (parameter_test or bool(settings.get("preserve_rejected_params", False)))
+        ),
     )
+    if (logical_group == "compatibility_profiles" and api_form == "openai_chat_completions"
+            and route_profile == "vendor_compat"
+            and (model_family, reference_source) in {
+                ("claude", "claude_openai_compat"), ("claude_fable", "claude_fable_openai_compat")}
+            and not parameter_test and not bool(settings.get("preserve_rejected_params", False))
+            and "max_tokens" in body and "max_completion_tokens" in body):
+        explicit_limits = {name for name in ("max_tokens", "max_completion_tokens")
+                           if overrides is not None and name in overrides and name not in omit_params}
+        if len(explicit_limits) != 1:
+            raise ValueError("Anthropic official Chat accepts one output-limit field; choose max_tokens or max_completion_tokens.")
+        selected_limit = next(iter(explicit_limits))
+        body.pop("max_tokens" if selected_limit == "max_completion_tokens" else "max_completion_tokens")
+    if (logical_group == "compatibility_profiles" and model_family == "claude"
+            and api_form == "openai_chat_completions" and route_profile == "vendor_compat"
+            and reference_source == "claude_openai_compat"
+            and not parameter_test and not bool(settings.get("preserve_rejected_params", False))
+            and "temperature" in body and "top_p" in body):
+        explicit_sampling = {name for name in ("temperature", "top_p")
+                             if overrides is not None and name in overrides and name not in omit_params}
+        if len(explicit_sampling) > 1:
+            raise ValueError("Anthropic official Chat sampling requires one field; choose temperature or top_p.")
+        selected_sampling = next(iter(explicit_sampling)) if explicit_sampling else "temperature"
+        body.pop("top_p" if selected_sampling == "temperature" else "temperature")
     _validate_body(body, settings, model_family)
+    validate_reference_request(body, parameter_reference_policy)
 
     metadata = {
         "provider": provider_name,
@@ -691,6 +981,7 @@ def build_request(
         "prompt_source": _prompt_source(settings),
         "profile_group": yaml_group,
         **capability_metadata,
+        **({"parameter_reference_policy": parameter_reference_policy} if parameter_reference_policy else {}),
     }
     return BuiltRequest(group=logical_group, profile=profile, body=body, metadata=metadata, warnings=warnings)
 
@@ -716,12 +1007,197 @@ def profile_names(config: dict[str, Any], group: str) -> list[str]:
     return list((config.get(group) or {}).keys())
 
 
+def _pinned_reference_contract(
+    config: dict[str, Any], requested: str | None
+) -> str | None:
+    """Keep request construction on the immutable runtime MPDB binding."""
+
+    database = config.get("_model_profile_database")
+    pinned = (
+        str(database.get("reference_contract_id") or "").strip()
+        if isinstance(database, dict)
+        else ""
+    )
+    selected = str(requested or "").strip()
+    if pinned and selected and pinned != selected:
+        raise ValueError(
+            "Requested reference Contract conflicts with the runtime MPDB snapshot."
+        )
+    return selected or pinned or None
+
+
+def _runtime_model_capability(
+    config: dict[str, Any],
+    provider: str,
+    family: str,
+    model: str,
+    transport: str,
+    api_form: str,
+    route_profile: str,
+    reference_source: str | None,
+) -> dict[str, Any]:
+    from .model_profile_catalog import capability_profile_from_database_snapshot
+    from .reference_specs import load_model_capability_profile
+
+    database = config.get("_model_profile_database")
+    if not isinstance(database, dict):
+        return load_model_capability_profile(
+            "text",
+            family,
+            model,
+            api_form=api_form,
+            route_profile=route_profile,
+            reference_source=reference_source,
+            provider_override=get_model_api_forms(
+                config,
+                model,
+                provider,
+                route_profile=route_profile,
+            )[api_form],
+        )
+
+    capability = capability_profile_from_database_snapshot(database)
+    target = capability.get("execution_target") or {}
+    expected = {
+        "provider_id": provider,
+        "request_model_id": model,
+        "route_profile": route_profile,
+        "api_form": api_form,
+        "transport": transport,
+    }
+    conflicts = [
+        field
+        for field, value in expected.items()
+        if target.get(field) not in (None, "", value)
+    ]
+    if str(capability.get("modality") or "") != "text":
+        conflicts.append("modality")
+    if str(capability.get("family") or "") != family:
+        conflicts.append("family")
+    if reference_source and (
+        str(capability.get("reference_contract_id") or "") != reference_source
+    ):
+        conflicts.append("reference_contract_id")
+    if conflicts:
+        raise ValueError(
+            "Request construction conflicts with immutable MPDB snapshot: "
+            + ", ".join(sorted(set(conflicts)))
+        )
+    return capability
+
+
 def _family_default_transport(group: str, family: str) -> str:
     if family == "claude" and group == "throughput_profiles":
         return "claude_messages"
     if family == "claude_fable" and group in {"throughput_profiles", "cache_profiles"}:
         return "claude_messages"
     return "chat_completions"
+
+
+def load_pressure_capability(
+    config: dict[str, Any],
+    provider: str,
+    family: str,
+    model: str,
+    api_form: str,
+    route_profile: str,
+    reference_source: str | None = None,
+) -> dict[str, Any]:
+    """Restore pressure policy from the selected immutable MPDB snapshot."""
+    from .reference_specs import catalog_model_id_for_runtime, load_model_capability_profile
+
+    snapshot = config.get("_model_profile_database")
+    cached = config.get("_model_capability_profile")
+    if cached is not None and not isinstance(cached, dict):
+        raise ValueError("Cached pressure capability must be an object.")
+    if snapshot is None and isinstance(cached, dict):
+        snapshot = cached.get("model_profile_database")
+        if not isinstance(snapshot, dict):
+            raise ValueError("Cached pressure capability requires an immutable MPDB snapshot.")
+    if snapshot is None:
+        return load_model_capability_profile(
+            "text", family, catalog_model_id_for_runtime(config, model, provider),
+            api_form=api_form, route_profile=route_profile,
+            reference_source=reference_source,
+            provider_override=get_model_api_forms(
+                config, model, provider, route_profile=route_profile,
+            )[api_form],
+        )
+
+    from .model_profile_catalog import binding_from_database_snapshot
+
+    binding = binding_from_database_snapshot(snapshot)
+    target = binding["execution_target"]
+    expected_target = {
+        "provider_id": provider, "request_model_id": model,
+        "api_form": api_form, "route_profile": route_profile,
+    }
+    conflicts = [
+        field for field, expected in expected_target.items()
+        if target.get(field) not in (None, "", expected)
+    ]
+    expected_identity = {
+        "modality": "text", "suite_family_id": family, "api_form": api_form,
+    }
+    if reference_source:
+        expected_identity["reference_contract_id"] = reference_source
+    conflicts.extend(
+        field for field, expected in expected_identity.items()
+        if snapshot.get(field) != expected
+    )
+    accepted_models = {
+        str(value) for value in (
+            snapshot.get("model_slug"),
+            *(binding["profile"].get("request_model_ids") or []),
+        ) if value
+    }
+    if not target.get("request_model_id") and model not in accepted_models:
+        conflicts.append("request_model_id")
+    policy = copy.deepcopy(binding.get("test_binding") or {})
+    if isinstance(cached, dict):
+        cached_identity = {
+            "modality": "text", "family": family, "api_form": api_form,
+            "route_profile": route_profile,
+            "reference_source": snapshot["reference_contract_id"],
+            **{field: snapshot[field] for field in (
+                "source_id", "profile_id", "interface_id", "test_binding_id",
+                "reference_contract_id",
+            )},
+        }
+        conflicts.extend(
+            "capability." + field for field, expected in cached_identity.items()
+            if cached.get(field) not in (None, "", expected)
+        )
+        if cached.get("model") not in (None, "", model, *accepted_models):
+            conflicts.append("capability.model")
+        if cached.get("model_profile_database", snapshot) != snapshot:
+            conflicts.append("capability.model_profile_database")
+        if cached.get("disabled_reason") or any(
+            cached.get(field) is False for field in (
+                "pressure_test_enabled", "enabled", "executable", "runner_enabled",
+                "known_model", "known_api_profile", "route_profile_known",
+            )
+        ):
+            raise ValueError("Pressure testing is disabled by the frozen capability.")
+    if conflicts:
+        raise ValueError("Pressure snapshot conflicts with runtime selection: " + ", ".join(conflicts))
+    if (policy.get("pressure_test_enabled") is not True
+            or policy.get("disabled_reason")
+            or any(policy.get(field) is False for field in ("enabled", "executable", "runner_enabled"))
+            or binding["reference_contract"].get("test_binding_status", "required") != "required"):
+        raise ValueError("Pressure testing is disabled by the frozen MPDB policy.")
+    return {
+        **policy, **expected_identity,
+        "model": model, "family": family, "route_profile": route_profile,
+        **{field: snapshot[field] for field in (
+            "source_id", "profile_id", "interface_id", "test_binding_id",
+            "reference_contract_id",
+        )},
+        "transport": binding["interface"].get("transport_adapter_id"),
+        "known_model": True, "known_api_profile": True, "route_profile_known": True,
+        "profile_status": "registered", "model_profile_database": copy.deepcopy(snapshot),
+        "evidence": binding["interface"].get("evidence") or binding["profile"].get("evidence"),
+    }
 
 
 def weighted_workload_profiles(
@@ -732,35 +1208,23 @@ def weighted_workload_profiles(
     route_profile: str | None = None,
     reference_source: str | None = None,
 ) -> list[tuple[str, str, int]]:
+    reference_source = _pinned_reference_contract(config, reference_source)
     if workload.startswith("throughput") or workload in {"mixed_compat", "cache_suite"}:
         provider = get_active_provider_name(config)
         model = get_selected_model(config, provider)
         family = get_model_family(config, model, provider)
-        from .reference_specs import load_model_capability_profile
+        from .reference_specs import pressure_test_runnable
 
         selected_route_profile = route_profile or get_model_route_profile(
             config, model, provider
         )
         selected_api_form = get_model_api_form(
-            config,
-            model,
-            provider,
-            route_profile=selected_route_profile,
-            api_form=api_form,
+            config, model, provider,
+            route_profile=selected_route_profile, api_form=api_form,
         )
-        capability = load_model_capability_profile(
-            "text",
-            family,
-            model,
-            api_form=selected_api_form,
-            route_profile=selected_route_profile,
-            reference_source=reference_source,
-            provider_override=get_model_api_forms(
-                config,
-                model,
-                provider,
-                route_profile=selected_route_profile,
-            )[selected_api_form],
+        capability = load_pressure_capability(
+            config, provider, family, model, selected_api_form,
+            selected_route_profile, reference_source,
         )
         if (
             capability.get("known_model") is not True
@@ -771,7 +1235,7 @@ def weighted_workload_profiles(
                 f"Missing registered text model/API/route profile for "
                 f"{family}/{selected_api_form}/{model}/{selected_route_profile}."
             )
-        if capability.get("pressure_test_enabled") is not True:
+        if not pressure_test_runnable(capability):
             raise ValueError(
                 f"Pressure testing is disabled for {family}/{model}: "
                 f"{capability.get('disabled_reason') or 'model profile policy'}."
@@ -798,23 +1262,40 @@ def weighted_workload_profiles(
             pressure_profiles_for_model,
         )
 
-        selected_reference_source = reference_source or (
+        snapshot = capability.get("model_profile_database")
+        selected_reference_source = reference_source or capability.get("reference_contract_id") or (
             default_reference_source_for_model(
-                config,
-                family,
-                model,
-                provider,
-                api_form=selected_api_form,
-                route_profile=selected_route_profile,
+                config, family, model, provider,
+                api_form=selected_api_form, route_profile=selected_route_profile,
             )
         )
-        allowed_profiles = pressure_profiles_for_model(
-            family,
-            model,
-            selected_reference_source,
-            api_form=selected_api_form,
-            route_profile=selected_route_profile,
-        )
+        if isinstance(snapshot, dict) and (
+            config.get("_model_profile_database") is not None
+            or isinstance(config.get("_model_capability_profile"), dict)
+        ):
+            from .reference_specs import resolve_profile_expectation
+
+            suite_profiles = list((snapshot.get("parameter_test_binding") or {}).get("test_cases") or [])
+            configured = (capability.get("pressure_profiles") or {}).get(selected_reference_source)
+            candidates = list(configured) if configured is not None else suite_profiles
+            if set(candidates) - set(suite_profiles):
+                raise ValueError("Frozen pressure profiles are outside the selected MPDB test suite.")
+            allowed_profiles = [
+                name for name in candidates
+                if resolve_profile_expectation(
+                    "text", family, model, name,
+                    capability_profile=capability,
+                    reference_source=selected_reference_source, parameter_probe=False,
+                ) == "supported"
+            ]
+        else:
+            from .reference_specs import catalog_model_id_for_runtime
+
+            allowed_profiles = pressure_profiles_for_model(
+                family, catalog_model_id_for_runtime(config, model, provider),
+                selected_reference_source, api_form=selected_api_form,
+                route_profile=selected_route_profile,
+            )
         entries = [
             (
                 "compatibility_profiles",
@@ -849,43 +1330,46 @@ def _apply_model_pressure_capability(
     api_form: str,
     route_profile: str,
     reference_source: str | None,
+    pressure_policy_override: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], list[str]]:
     """Remove parameters a model profile marks unsafe for pressure traffic.
 
     Parameter probes bypass this policy through ``model_family_override`` so
     unsupported values are still sent and their rejection can be verified.
     """
-    from .reference_specs import load_model_capability_profile
+    if pressure_policy_override is None:
+        from .reference_specs import pressure_test_runnable
 
-    try:
-        capability = load_model_capability_profile(
-            "text",
-            family,
-            model,
-            api_form=api_form,
-            route_profile=route_profile,
-            reference_source=reference_source,
-            provider_override=get_model_api_forms(
-                config,
-                model,
-                provider,
-                route_profile=route_profile,
-            )[api_form],
+        try:
+            capability = load_pressure_capability(
+                config, provider, family, model, api_form, route_profile,
+                reference_source,
+            )
+        except KeyError as exc:
+            raise ValueError(
+                f"Missing text capability family/profile for {family}/{model}."
+            ) from exc
+        if (
+            capability.get("known_model") is not True
+            or capability.get("known_api_profile") is not True
+            or capability.get("route_profile_known") is not True
+        ):
+            raise ValueError(
+                f"Missing registered text model/API/route profile for "
+                f"{family}/{api_form}/{model}/{route_profile}."
+            )
+        runnable = pressure_test_runnable(capability)
+    else:
+        capability = copy.deepcopy(pressure_policy_override)
+        runnable = bool(
+            capability.get("pressure_test_enabled") is True
+            and capability.get("disabled_reason") in (None, "")
+            and all(
+                capability.get(field) is not False
+                for field in ("enabled", "executable", "runner_enabled")
+            )
         )
-    except KeyError as exc:
-        raise ValueError(
-            f"Missing text capability family/profile for {family}/{model}."
-        ) from exc
-    if (
-        capability.get("known_model") is not True
-        or capability.get("known_api_profile") is not True
-        or capability.get("route_profile_known") is not True
-    ):
-        raise ValueError(
-            f"Missing registered text model/API/route profile for "
-            f"{family}/{api_form}/{model}/{route_profile}."
-        )
-    if capability.get("pressure_test_enabled") is not True:
+    if not runnable:
         raise ValueError(
             f"Pressure testing is disabled for {family}/{model}: "
             f"{capability.get('disabled_reason') or 'model profile policy'}."
@@ -1105,7 +1589,13 @@ def build_openai_responses_tool_followup_request(
 
     followup = copy.deepcopy(original_body)
     prior_output = copy.deepcopy(first_response.get("output") or [])
-    followup_input: list[dict[str, Any]] = []
+    original_input = original_body.get("input")
+    followup_input: list[dict[str, Any]] = (
+        copy.deepcopy(original_input) if isinstance(original_input, list)
+        else [{"role": "user", "content": original_input}]
+        if isinstance(original_input, str)
+        else []
+    )
     if isinstance(prior_output, list):
         followup_input.extend(item for item in prior_output if isinstance(item, dict))
     for call in calls:
@@ -1138,6 +1628,8 @@ def _build_openai_responses_body(
     config: dict[str, Any],
     settings: dict[str, Any],
     model: str,
+    *,
+    reference_source: str | None = None,
 ) -> dict[str, Any]:
     body: dict[str, Any] = {"model": model}
 
@@ -1169,6 +1661,39 @@ def _build_openai_responses_body(
     ):
         if key in settings:
             body[key] = copy.deepcopy(settings[key])
+
+    if reference_source == "deepseek_v4_pro_0813_responses":
+        # The official contract tests accepted-but-ignored fields as well as
+        # effective parameters. Dropping them here would make those probes
+        # vacuous. Keep this parity increment on its exact source contract.
+        if model != "deepseek-v4-pro":
+            raise ValueError("DeepSeek 0813 Responses requires model deepseek-v4-pro.")
+        for key in (
+            "temperature", "top_p", "top_logprobs", "user", "max_tool_calls",
+            "conversation", "background", "include", "truncation", "service_tier",
+            "safety_identifier", "prompt_cache_retention", "context_management",
+            "stream_options",
+        ):
+            if key in settings:
+                body[key] = copy.deepcopy(settings[key])
+        if "responses_prompt" in settings:
+            body["prompt"] = copy.deepcopy(settings["responses_prompt"])
+        for key, maximum in (("temperature", 2), ("top_p", 1)):
+            if key in body:
+                value = body[key]
+                if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value <= maximum:
+                    raise ValueError(f"DeepSeek Responses {key} must be numeric in [0, {maximum}].")
+        if "top_logprobs" in body and (
+            type(body["top_logprobs"]) is not int or not 0 <= body["top_logprobs"] <= 20
+        ):
+            raise ValueError("DeepSeek Responses top_logprobs must be an integer in [0, 20].")
+
+    if reference_source == "openai_gpt6_astra_responses":
+        # Keep GPT-6's supported include and explicit rejection probes on the
+        # wire; dropping a rejected field would make the test meaningless.
+        for key in ("include", "temperature", "top_p", "top_logprobs"):
+            if key in settings:
+                body[key] = copy.deepcopy(settings[key])
 
     if "reasoning" in settings:
         reasoning = copy.deepcopy(settings["reasoning"])
@@ -1229,10 +1754,11 @@ def _build_openai_responses_body(
     if prompt_cache_options is not None:
         if not isinstance(prompt_cache_options, dict) or not prompt_cache_options:
             raise ValueError("prompt_cache_options must be a non-empty object.")
-        mode = str(prompt_cache_options.get("mode") or "").lower()
-        if mode not in {"implicit", "explicit"}:
-            raise ValueError("prompt_cache_options.mode must be implicit/explicit.")
-        prompt_cache_options["mode"] = mode
+        if "mode" in prompt_cache_options:
+            mode = str(prompt_cache_options.get("mode") or "").lower()
+            if mode not in {"implicit", "explicit"}:
+                raise ValueError("prompt_cache_options.mode must be implicit/explicit.")
+            prompt_cache_options["mode"] = mode
         ttl = prompt_cache_options.get("ttl")
         if ttl is not None and (not isinstance(ttl, str) or not ttl.strip()):
             raise ValueError("prompt_cache_options.ttl must be a non-empty string.")
@@ -1253,14 +1779,17 @@ def _openai_responses_tools(raw_tools: Any) -> list[dict[str, Any]]:
             raise ValueError("OpenAI Responses tools must contain objects.")
         if tool.get("type") == "function" and isinstance(tool.get("function"), dict):
             function = tool["function"]
-            tools.append(
-                {
-                    "type": "function",
-                    "name": str(function.get("name") or ""),
-                    "description": str(function.get("description") or ""),
-                    "parameters": copy.deepcopy(function.get("parameters") or {}),
-                }
-            )
+            converted = {
+                "type": "function",
+                "name": str(function.get("name") or ""),
+                "description": str(function.get("description") or ""),
+                "parameters": copy.deepcopy(function.get("parameters") or {}),
+            }
+            if "strict" in function:
+                if not isinstance(function["strict"], bool):
+                    raise ValueError("OpenAI Responses function strict must be boolean.")
+                converted["strict"] = function["strict"]
+            tools.append(converted)
         elif tool.get("type") == "function" and tool.get("name"):
             tools.append(copy.deepcopy(tool))
         else:
@@ -1295,6 +1824,8 @@ def _ensure_responses_input_minimum_prompt(
 
 def ensure_minimum_prompt_text(config: dict[str, Any], prompt: str) -> str:
     """Pad short test prompts with deterministic, tokenizer-safe numeric tokens."""
+    if config.get("_parameter_test_exact_input"):
+        return str(prompt)
     minimum = _minimum_prompt_tokens(config)
     text = str(prompt)
     # Only trust unpadded text when the cheap estimate is four times the floor;
@@ -1343,6 +1874,9 @@ def extract_content(response_json: dict[str, Any]) -> str:
     responses_text = extract_openai_responses_text(response_json)
     if responses_text:
         return responses_text
+    interactions_text = extract_gemini_interactions_text(response_json)
+    if interactions_text:
+        return interactions_text
     return ""
 
 
@@ -1365,6 +1899,54 @@ def extract_openai_responses_function_calls(response_json: dict[str, Any]) -> li
         if isinstance(item, dict) and item.get("type") == "function_call":
             calls.append(item)
     return calls
+
+
+def extract_gemini_interactions_text(response_json: dict[str, Any]) -> str:
+    texts: list[str] = []
+    for step in response_json.get("steps") or []:
+        if not isinstance(step, dict) or step.get("type") != "model_output":
+            continue
+        for block in step.get("content") or []:
+            if (
+                isinstance(block, dict)
+                and block.get("type") == "text"
+                and isinstance(block.get("text"), str)
+            ):
+                texts.append(block["text"])
+    return "".join(texts)
+
+
+def extract_gemini_interactions_function_calls(
+    response_json: dict[str, Any],
+) -> list[dict[str, Any]]:
+    return [
+        step
+        for step in response_json.get("steps") or []
+        if isinstance(step, dict) and step.get("type") == "function_call"
+    ]
+
+
+def extract_gemini_interactions_thought_summaries(
+    response_json: dict[str, Any],
+) -> list[str]:
+    summaries: list[str] = []
+    for step in response_json.get("steps") or []:
+        if not isinstance(step, dict) or step.get("type") != "thought":
+            continue
+        raw_summary = step.get("summary") or []
+        if isinstance(raw_summary, dict):
+            raw_summary = [raw_summary]
+        if isinstance(raw_summary, str):
+            raw_summary = [{"type": "text", "text": raw_summary}]
+        for block in raw_summary if isinstance(raw_summary, list) else []:
+            if isinstance(block, dict):
+                content = block.get("content")
+                if isinstance(content, dict):
+                    block = content
+                text = block.get("text")
+                if isinstance(text, str) and text.strip():
+                    summaries.append(text)
+    return summaries
 
 
 def extract_reasoning_content(response_json: dict[str, Any]) -> str:
@@ -1534,15 +2116,213 @@ def _build_messages(config: dict[str, Any], settings: dict[str, Any]) -> list[di
         return messages
 
     prompt = _resolve_prompt(config, settings)
-    messages = [
-        {
+    messages = [{"role": "user", "content": prompt}]
+    if not config.get("_parameter_test_exact_input"):
+        messages.insert(0, {
             "role": "system",
             "content": "You are a concise assistant for API compatibility and load testing.",
-        },
-        {"role": "user", "content": prompt},
-    ]
+        })
     _validate_messages(messages)
     return messages
+
+
+def _build_gemini_interactions_body(
+    config: dict[str, Any],
+    settings: dict[str, Any],
+    model: str,
+) -> dict[str, Any]:
+    """Build the stateless, text-only Gemini Interactions v1 request shape."""
+    if settings.get("store") is True:
+        raise ValueError(
+            "Gemini Interactions safe text profiles do not implement store=true."
+        )
+    if settings.get("previous_interaction_id") is not None:
+        raise ValueError(
+            "Gemini Interactions previous_interaction_id is outside the stateless text runner."
+        )
+    if settings.get("background") is not None:
+        raise ValueError(
+            "Gemini Interactions background execution is outside the synchronous text runner."
+        )
+    if settings.get("safety_settings") is not None:
+        raise ValueError(
+            "Gemini Interactions safety_settings is not enabled for the model-specific safe matrix."
+        )
+
+    body: dict[str, Any] = {
+        "model": model,
+        "input": _resolve_prompt(config, settings),
+        # Never create retained server-side state from the parameter runner.
+        "store": False,
+    }
+
+    store = settings.get("interaction_store")
+    if store is not None:
+        if store is not False:
+            raise ValueError(
+                "Gemini Interactions safe text profiles require interaction_store=false."
+            )
+        body["store"] = False
+
+    stream = settings.get("interaction_stream")
+    if stream is not None:
+        if not isinstance(stream, bool):
+            raise ValueError("interaction_stream must be a boolean.")
+        body["stream"] = stream
+
+    system_instruction = settings.get("interaction_system_instruction")
+    if system_instruction is not None:
+        if not isinstance(system_instruction, str) or not system_instruction.strip():
+            raise ValueError("interaction_system_instruction must be non-empty text.")
+        body["system_instruction"] = system_instruction
+
+    generation_config = settings.get("interaction_generation_config")
+    if generation_config is not None:
+        if not isinstance(generation_config, dict) or not generation_config:
+            raise ValueError("interaction_generation_config must be a non-empty object.")
+        generation = copy.deepcopy(generation_config)
+        allowed_generation_keys = {
+            "max_output_tokens",
+            "seed",
+            "stop_sequences",
+            "thinking_level",
+            "thinking_summaries",
+            "tool_choice",
+        }
+        unknown = sorted(set(generation) - allowed_generation_keys)
+        if unknown:
+            raise ValueError(
+                "Unsupported Gemini Interactions generation_config fields: "
+                + ", ".join(unknown)
+            )
+        max_output_tokens = generation.get("max_output_tokens")
+        if max_output_tokens is not None and (
+            isinstance(max_output_tokens, bool)
+            or not isinstance(max_output_tokens, int)
+            or max_output_tokens <= 0
+        ):
+            raise ValueError("generation_config.max_output_tokens must be a positive integer.")
+        seed = generation.get("seed")
+        if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+            raise ValueError("generation_config.seed must be an integer.")
+        stop_sequences = generation.get("stop_sequences")
+        if stop_sequences is not None and (
+            not isinstance(stop_sequences, list)
+            or not stop_sequences
+            or not all(isinstance(item, str) and item for item in stop_sequences)
+        ):
+            raise ValueError(
+                "generation_config.stop_sequences must be a non-empty string list."
+            )
+        thinking_level = generation.get("thinking_level")
+        if thinking_level is not None and thinking_level not in {
+            "minimal",
+            "low",
+            "medium",
+            "high",
+        }:
+            raise ValueError(
+                "generation_config.thinking_level must be minimal/low/medium/high."
+            )
+        thinking_summaries = generation.get("thinking_summaries")
+        if thinking_summaries is not None and thinking_summaries not in {"auto", "none"}:
+            raise ValueError(
+                "generation_config.thinking_summaries must be auto or none."
+            )
+        tool_choice = generation.get("tool_choice")
+        if tool_choice is not None:
+            _validate_gemini_interactions_tool_choice(tool_choice)
+        body["generation_config"] = generation
+
+    tools = settings.get("interaction_tools")
+    if tools is not None:
+        if not isinstance(tools, list) or not tools:
+            raise ValueError("interaction_tools must be a non-empty list.")
+        for tool in tools:
+            if not isinstance(tool, dict) or tool.get("type") != "function":
+                raise ValueError(
+                    "Gemini Interactions safe text profiles permit function tools only."
+                )
+            if not isinstance(tool.get("name"), str) or not tool["name"].strip():
+                raise ValueError("Gemini Interactions function tools require a name.")
+            parameters = tool.get("parameters")
+            if not isinstance(parameters, dict) or not parameters:
+                raise ValueError(
+                    "Gemini Interactions function tools require a JSON Schema parameters object."
+                )
+        body["tools"] = copy.deepcopy(tools)
+
+    response_format = settings.get("interaction_response_format")
+    if response_format is not None:
+        if not isinstance(response_format, dict) or not response_format:
+            raise ValueError("interaction_response_format must be a non-empty object.")
+        if response_format.get("type") != "text":
+            raise ValueError(
+                "Gemini Interactions text runner only permits response_format.type=text."
+            )
+        if response_format.get("mime_type") not in {"text/plain", "application/json"}:
+            raise ValueError(
+                "Gemini Interactions text response_format mime_type is unsupported."
+            )
+        schema = response_format.get("schema")
+        if schema is not None and not isinstance(schema, dict):
+            raise ValueError("interaction_response_format.schema must be an object.")
+        body["response_format"] = copy.deepcopy(response_format)
+
+    labels = settings.get("interaction_labels")
+    if labels is not None:
+        if not isinstance(labels, dict) or not labels:
+            raise ValueError("interaction_labels must be a non-empty object.")
+        if not all(
+            isinstance(key, str)
+            and key.strip()
+            and isinstance(value, str)
+            and value.strip()
+            for key, value in labels.items()
+        ):
+            raise ValueError("interaction_labels keys and values must be non-empty strings.")
+        body["labels"] = copy.deepcopy(labels)
+
+    generation = body.get("generation_config")
+    if (
+        isinstance(generation, dict)
+        and generation.get("tool_choice") is not None
+        and not body.get("tools")
+    ):
+        raise ValueError(
+            "Gemini Interactions generation_config.tool_choice requires tools."
+        )
+
+    return body
+
+
+def _validate_gemini_interactions_tool_choice(value: Any) -> None:
+    if isinstance(value, str):
+        if value not in {"auto", "any", "none", "validated"}:
+            raise ValueError(
+                "generation_config.tool_choice must be auto/any/none/validated."
+            )
+        return
+    if not isinstance(value, dict) or set(value) != {"allowed_tools"}:
+        raise ValueError(
+            "generation_config.tool_choice must be a mode string or allowed_tools object."
+        )
+    allowed = value.get("allowed_tools")
+    if not isinstance(allowed, dict):
+        raise ValueError("generation_config.tool_choice.allowed_tools must be an object.")
+    if allowed.get("mode") not in {"auto", "any", "none", "validated"}:
+        raise ValueError(
+            "generation_config.tool_choice.allowed_tools.mode is invalid."
+        )
+    names = allowed.get("tools")
+    if names is not None and (
+        not isinstance(names, list)
+        or not names
+        or not all(isinstance(name, str) and name for name in names)
+    ):
+        raise ValueError(
+            "generation_config.tool_choice.allowed_tools.tools must be a non-empty string list."
+        )
 
 
 def _build_gemini_native_body(config: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
@@ -1621,10 +2401,120 @@ def _request_headers_from_settings(settings: dict[str, Any]) -> dict[str, str]:
     return validate_profile_request_headers(request_headers)
 
 
+def _build_fim_completion_body(
+    config: dict[str, Any],
+    settings: dict[str, Any],
+    model: str,
+) -> dict[str, Any]:
+    preserve_rejected_params = bool(settings.get("preserve_rejected_params", False))
+    if "prompt" in settings:
+        prompt = settings["prompt"]
+    else:
+        prompt = _resolve_prompt(config, settings)
+    if not isinstance(prompt, str) or not prompt:
+        raise ValueError("DeepSeek FIM prompt must be non-empty text.")
+
+    body: dict[str, Any] = {"model": model, "prompt": prompt}
+    for key in (
+        "suffix",
+        "echo",
+        "logprobs",
+        "max_tokens",
+        "stop",
+        "stream",
+        "stream_options",
+        "temperature",
+        "top_p",
+        "frequency_penalty",
+        "presence_penalty",
+    ):
+        if key in settings:
+            body[key] = copy.deepcopy(settings[key])
+
+    suffix = body.get("suffix")
+    if suffix is not None and not isinstance(suffix, str):
+        raise ValueError("DeepSeek FIM suffix must be text.")
+    if "echo" in body and not isinstance(body["echo"], bool):
+        raise ValueError("DeepSeek FIM echo must be a boolean.")
+    if "logprobs" in body:
+        logprobs = body["logprobs"]
+        if isinstance(logprobs, bool) or not isinstance(logprobs, int):
+            raise ValueError("DeepSeek FIM logprobs must be an integer.")
+        if not preserve_rejected_params and not 0 <= logprobs <= 20:
+            raise ValueError("DeepSeek FIM logprobs must be an integer in [0, 20].")
+    if "max_tokens" in body:
+        max_tokens = body["max_tokens"]
+        if (
+            isinstance(max_tokens, bool)
+            or not isinstance(max_tokens, int)
+            or max_tokens <= 0
+        ):
+            raise ValueError("DeepSeek FIM max_tokens must be a positive integer.")
+    if "stream" in body and not isinstance(body["stream"], bool):
+        raise ValueError("DeepSeek FIM stream must be a boolean.")
+    if "stream_options" in body:
+        stream_options = body["stream_options"]
+        if body.get("stream") is not True:
+            raise ValueError("DeepSeek FIM stream_options requires stream=true.")
+        if not isinstance(stream_options, dict):
+            raise ValueError("DeepSeek FIM stream_options must be an object.")
+        if "include_usage" in stream_options and not isinstance(
+            stream_options["include_usage"], bool
+        ):
+            raise ValueError(
+                "DeepSeek FIM stream_options.include_usage must be a boolean."
+            )
+    if "stop" in body:
+        stop = body["stop"]
+        stop_values = stop if isinstance(stop, list) else [stop]
+        if not all(isinstance(item, str) for item in stop_values):
+            raise ValueError("DeepSeek FIM stop values must be strings.")
+        if not preserve_rejected_params and len(stop_values) > 16:
+            raise ValueError(
+                "DeepSeek FIM stop must be a string or a list of up to 16 strings."
+            )
+    for key, maximum in (("temperature", 2), ("top_p", 1)):
+        if key not in body:
+            continue
+        value = body[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"DeepSeek FIM {key} must be numeric.")
+        if not math.isfinite(float(value)):
+            raise ValueError(f"DeepSeek FIM {key} must be finite.")
+        if not preserve_rejected_params and not 0 <= float(value) <= maximum:
+            raise ValueError(f"DeepSeek FIM {key} must be in [0, {maximum}].")
+    for key in ("frequency_penalty", "presence_penalty"):
+        if key not in body:
+            continue
+        value = body[key]
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"DeepSeek FIM {key} must be numeric when provided.")
+        if not math.isfinite(float(value)):
+            raise ValueError(f"DeepSeek FIM {key} must be finite.")
+    return body
+
+
+def _build_deepseek_anthropic_messages_body(
+    config: dict[str, Any],
+    settings: dict[str, Any],
+    model: str,
+) -> dict[str, Any]:
+    return _build_claude_messages_body(
+        config,
+        settings,
+        model,
+        validation_family="deepseek",
+    )
+
+
 def _build_claude_messages_body(
     config: dict[str, Any],
     settings: dict[str, Any],
     model: str,
+    *,
+    validation_family: str = "claude",
+    reference_source: str | None = None,
+    runtime_route_profile: str | None = None,
 ) -> dict[str, Any]:
     body: dict[str, Any] = {
         "model": model,
@@ -1633,6 +2523,7 @@ def _build_claude_messages_body(
     }
     system = settings.get(
         "system",
+        None if config.get("_parameter_test_exact_input") else
         "You are a concise assistant for API compatibility and load testing.",
     )
     if isinstance(system, str) and system.strip():
@@ -1640,7 +2531,22 @@ def _build_claude_messages_body(
     elif isinstance(system, list) and system:
         body["system"] = copy.deepcopy(system)
 
-    for key in ("stream", "temperature", "top_p", "top_k", "metadata"):
+    if "cache_control" in settings:
+        body["cache_control"] = _claude_native_cache_control(
+            config, settings, model, reference_source=reference_source,
+            validation_family=validation_family, route_profile=runtime_route_profile,
+        )
+
+    for key in (
+        "stream",
+        "temperature",
+        "top_p",
+        "top_k",
+        "metadata",
+        "container",
+        "mcp_servers",
+        "service_tier",
+    ):
         if key in settings:
             body[key] = copy.deepcopy(settings[key])
 
@@ -1667,8 +2573,81 @@ def _build_claude_messages_body(
     if "tool_choice" in settings:
         body["tool_choice"] = _claude_native_tool_choice(settings["tool_choice"])
 
-    _validate_claude_messages_body(body)
+    _validate_claude_messages_body(
+        body,
+        family=validation_family,
+        preserve_rejected_params=bool(
+            settings.get("preserve_rejected_params", False)
+        ),
+    )
     return body
+
+
+def _claude_native_cache_control(
+    config: dict[str, Any], settings: dict[str, Any], model: str, *,
+    reference_source: str | None, validation_family: str,
+    route_profile: str | None,
+) -> Any:
+    """Keep explicit automatic caching only within its installed native source.
+
+    https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+    The documented top-level field selects the last cacheable input block.
+    This builder adds no default and makes no cache-hit or TTL-effect claim.
+    """
+    from .model_profile_catalog import resolve_runtime_parameter_config
+    from .reference_specs import default_reference_source_for_model
+
+    provider = get_active_provider_name(config)
+    runtime_route = route_profile or get_model_route_profile(config, model, provider)
+    if validation_family != "claude":
+        raise ValueError("cache_control requires an Anthropic Messages reference binding.")
+    try:
+        get_model_api_form(config, model, provider, route_profile=runtime_route,
+                           api_form="anthropic_messages")
+        contract_id = reference_source or default_reference_source_for_model(
+            config, "claude", model, provider, api_form="anthropic_messages", route_profile=runtime_route
+        )
+        selected = resolve_runtime_parameter_config(
+            config, provider, model, "claude", runtime_route, "anthropic_messages", contract_id=contract_id
+        )
+    except (KeyError, ValueError, RuntimeError) as exc:
+        raise ValueError("cache_control requires a valid runtime-to-official parameter binding.") from exc
+    if contract_id != "claude_native_messages":
+        raise ValueError("cache_control requires the supported claude_native_messages Contract.")
+    contract, profile, interface = selected["contract"], selected["profile"], selected["interface"]
+    # An adapter's endpoint, route and wire model belong to execution_target.
+    # Their strict mapping supplies the official reference identity; requiring
+    # an origin-vendor endpoint here would break legitimate comparisons.
+    target = selected["execution_target"]
+    if (selected.get("source_id") != "anthropic" or selected.get("contract_id") != contract_id
+            or any(target.get(k) != v for k, v in {"provider_id": provider, "request_model_id": model,
+                       "route_profile": runtime_route, "api_form": "anthropic_messages"}.items())
+            or profile.get("source_id") != "anthropic" or profile.get("lifecycle") != "active"
+            or contract.get("source_id") != "anthropic" or contract.get("source_ids") != ["anthropic"]
+            or contract.get("family_id") != "claude" or contract.get("api_form") != "anthropic_messages"
+            or contract.get("routing_mode") != "vendor_direct"):
+        raise ValueError("cache_control Contract identity differs from the native Anthropic source.")
+    capability = interface.get("parameter_capabilities", {}).get(
+        "cache_control", contract.get("parameter_capabilities", {}).get("cache_control", {})
+    )
+    if (interface.get("source_id") != "anthropic" or interface.get("api_form") != "anthropic_messages"
+            or interface.get("routing_mode") != "vendor_direct" or contract_id not in interface.get("contract_ids", [])
+            or interface.get("enabled") is not True or interface.get("executable") is not True
+            or not isinstance(capability, dict) or capability.get("state") != "supported"):
+        raise ValueError("cache_control is not supported by the exact native Interface.")
+    constraint = deep_merge(contract.get("parameter_constraints", {}).get("cache_control", {}),
+                            interface.get("parameter_constraints", {}).get("cache_control", {}))
+    value = settings["cache_control"]
+    if not settings.get("preserve_rejected_params", False):
+        properties = constraint.get("properties", {})
+        valid = (constraint.get("type") == "object" and isinstance(value, dict)
+                 and set(constraint.get("required", [])) <= set(value)
+                 and (constraint.get("additionalProperties") is not False or set(value) <= set(properties))
+                 and all(key not in properties or "enum" not in properties[key]
+                         or value[key] in properties[key]["enum"] for key in value))
+        if not valid:
+            raise ValueError("cache_control does not match the installed native Contract; explicit negative probes require preserve_rejected_params.")
+    return copy.deepcopy(value)
 
 
 def _build_claude_messages(config: dict[str, Any], settings: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1729,7 +2708,12 @@ def _claude_native_tool_choice(raw_choice: Any) -> dict[str, Any]:
     return {"type": "tool", "name": choice}
 
 
-def _validate_claude_messages_body(body: dict[str, Any]) -> None:
+def _validate_claude_messages_body(
+    body: dict[str, Any],
+    *,
+    family: str = "claude",
+    preserve_rejected_params: bool = False,
+) -> None:
     if not body.get("model"):
         raise ValueError("Claude Messages body requires model.")
     if int(body.get("max_tokens") or 0) <= 0:
@@ -1746,9 +2730,31 @@ def _validate_claude_messages_body(body: dict[str, Any]) -> None:
         raise ValueError("Claude Messages system must be text or a block list.")
     if "stream" in body and not isinstance(body["stream"], bool):
         raise ValueError("Claude Messages stream must be a boolean.")
-    if "temperature" in body and not 0 <= float(body["temperature"]) <= 1:
-        raise ValueError("Claude Messages temperature must be in [0, 1].")
-    if "top_p" in body and not 0 <= float(body["top_p"]) <= 1:
+    temperature_max = 2 if family == "deepseek" else 1
+    if family == "deepseek" and "temperature" in body and (
+        isinstance(body["temperature"], bool)
+        or not isinstance(body["temperature"], (int, float))
+    ):
+        raise ValueError("DeepSeek Anthropic Messages temperature must be numeric.")
+    if (
+        "temperature" in body
+        and not (family == "deepseek" and preserve_rejected_params)
+        and not 0 <= float(body["temperature"]) <= temperature_max
+    ):
+        raise ValueError(
+            f"{'DeepSeek Anthropic' if family == 'deepseek' else 'Claude'} "
+            f"Messages temperature must be in [0, {temperature_max}]."
+        )
+    if family == "deepseek" and "top_p" in body and (
+        isinstance(body["top_p"], bool)
+        or not isinstance(body["top_p"], (int, float))
+    ):
+        raise ValueError("DeepSeek Anthropic Messages top_p must be numeric.")
+    if (
+        "top_p" in body
+        and not (family == "deepseek" and preserve_rejected_params)
+        and not 0 <= float(body["top_p"]) <= 1
+    ):
         raise ValueError("Claude Messages top_p must be in [0, 1].")
     if "top_k" in body and int(body["top_k"]) < 0:
         raise ValueError("Claude Messages top_k must be non-negative.")
@@ -1764,10 +2770,23 @@ def _validate_claude_messages_body(body: dict[str, Any]) -> None:
         raise ValueError("Claude Messages tool_choice must be an object.")
     thinking = body.get("thinking")
     if thinking is not None:
-        allowed_types = ("enabled", "disabled", "adaptive")
-        if not isinstance(thinking, dict) or thinking.get("type") not in allowed_types:
+        allowed_types = (
+            ("enabled", "disabled")
+            if family == "deepseek"
+            else ("enabled", "disabled", "adaptive")
+        )
+        if not isinstance(thinking, dict):
+            label = "DeepSeek Anthropic" if family == "deepseek" else "Claude"
+            raise ValueError(f"{label} Messages thinking must be an object.")
+        if (
+            thinking.get("type") not in allowed_types
+            and not (family == "deepseek" and preserve_rejected_params)
+        ):
             allowed = " / ".join(allowed_types)
-            raise ValueError(f"Claude Messages thinking must be {{'type': '{allowed}'}}.")
+            label = "DeepSeek Anthropic" if family == "deepseek" else "Claude"
+            raise ValueError(
+                f"{label} Messages thinking must be {{'type': '{allowed}'}}."
+            )
         if "budget_tokens" in thinking and int(thinking["budget_tokens"]) <= 0:
             raise ValueError("Claude Messages thinking.budget_tokens must be positive.")
     output_config = body.get("output_config")
@@ -1776,9 +2795,18 @@ def _validate_claude_messages_body(body: dict[str, Any]) -> None:
             raise ValueError("Claude Messages output_config must be a non-empty object.")
         if "effort" in output_config:
             effort = str(output_config.get("effort") or "").lower()
-            if effort not in {"low", "medium", "high", "xhigh", "max"}:
+            allowed_efforts = (
+                {"high", "max"}
+                if family == "deepseek"
+                else {"low", "medium", "high", "xhigh", "max"}
+            )
+            if effort not in allowed_efforts and not (
+                family == "deepseek" and preserve_rejected_params
+            ):
+                allowed = "/".join(sorted(allowed_efforts))
                 raise ValueError(
-                    "Claude Messages output_config.effort must be low/medium/high/xhigh/max."
+                    f"{'DeepSeek Anthropic' if family == 'deepseek' else 'Claude'} "
+                    f"Messages output_config.effort must be {allowed}."
                 )
 
 
@@ -1789,7 +2817,29 @@ def _resolve_prompt(config: dict[str, Any], settings: dict[str, Any]) -> str:
         prompt = _read_text_fixture(settings["prompt_fixture"])
     elif "fixture" in settings:
         text = _read_text_fixture(settings["fixture"])
-        if "fixture_chars" in settings:
+        if "fixture_chars" in settings and "fixture_repeat_to_chars" in settings:
+            raise ValueError(
+                "fixture_chars and fixture_repeat_to_chars are mutually exclusive."
+            )
+        if "fixture_repeat_to_chars" in settings:
+            try:
+                fixture_repeat_to_chars = int(settings["fixture_repeat_to_chars"])
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    "fixture_repeat_to_chars must be a positive integer."
+                ) from exc
+            if fixture_repeat_to_chars <= 0:
+                raise ValueError(
+                    "fixture_repeat_to_chars must be a positive integer."
+                )
+            if not text:
+                raise ValueError("Cannot repeat an empty fixture.")
+            repeat_unit = f"{text}\n"
+            repeat_count = (
+                fixture_repeat_to_chars + len(repeat_unit) - 1
+            ) // len(repeat_unit)
+            text = (repeat_unit * repeat_count)[:fixture_repeat_to_chars]
+        elif "fixture_chars" in settings:
             try:
                 fixture_chars = int(settings["fixture_chars"])
             except (TypeError, ValueError) as exc:
@@ -1806,6 +2856,8 @@ def _resolve_prompt(config: dict[str, Any], settings: dict[str, Any]) -> str:
         if prompt_key not in prompts:
             raise KeyError(f"Prompt key {prompt_key!r} not found in config.prompts")
         prompt = str(prompts[prompt_key])
+    if settings.get("skip_minimum_prompt"):
+        return str(prompt)
     return ensure_minimum_prompt_text(config, prompt)
 
 
@@ -1813,6 +2865,8 @@ def _ensure_messages_minimum_prompt(
     config: dict[str, Any],
     messages: list[dict[str, Any]],
 ) -> None:
+    if config.get("_parameter_test_exact_input"):
+        return
     user_messages = [
         message
         for message in messages
@@ -1853,6 +2907,8 @@ def _estimated_text_token_units(text: str) -> float:
 
 
 def _prompt_source(settings: dict[str, Any]) -> str:
+    if "messages" in settings:
+        return "messages:inline"
     for key in ("prompt", "prompt_fixture", "fixture", "prompt_key", "tools_fixture"):
         if key in settings:
             return f"{key}:{settings[key]}"
@@ -1893,6 +2949,9 @@ def _normalize_body(
     family: str,
     *,
     preserve_rejected_params: bool = False,
+    preserve_fable_parameter_body: bool = False,
+    preserve_claude_parameter_body: bool = False,
+    fable_official_compat_profile: bool = False,
 ) -> None:
     if "reasoning_effort" in body:
         raw = str(body["reasoning_effort"]).lower()
@@ -1918,6 +2977,7 @@ def _normalize_body(
                     "glm reasoning_effort must be one of: "
                     + ", ".join(sorted(GLM_REASONING_EFFORTS))
                 )
+            # GLM-5.3 origin contract does not map none/minimal/medium/xhigh.
             body["reasoning_effort"] = raw
         elif family == "gemini":
             if raw not in GEMINI_REASONING_EFFORTS:
@@ -1937,17 +2997,25 @@ def _normalize_body(
             else:
                 body["reasoning_effort"] = REASONING_EFFORT_ALIASES[raw]
     if family == "claude_fable":
-        _apply_claude_fable_compat(body)
+        if not preserve_fable_parameter_body:
+            if fable_official_compat_profile:
+                # Recorded official Chat controls reject explicit adaptive
+                # thinking; omission is the successful baseline. Keep existing
+                # sampling cleanup without injecting native Messages defaults.
+                body.pop("top_p", None)
+                body.pop("thinking", None)
+            else:
+                _apply_claude_fable_compat(body)
         return
     if family == "qwen":
         _apply_qwen_compat(body)
         return
     if family == "claude":
         thinking = body.get("thinking")
-        # Shared load profiles set thinking.disabled; Opus 4.7/4.8 reject that.
-        # Drop it so throughput/streaming/cache keep working. Explicit probes can
-        # still send disabled via extra_body.thinking.
-        if isinstance(thinking, dict) and thinking.get("type") == "disabled":
+        # Shared load defaults may request disabled thinking on models that
+        # reject it. Explicit official parameter probes keep their HTTP field.
+        if (not preserve_claude_parameter_body and isinstance(thinking, dict)
+                and thinking.get("type") == "disabled"):
             body.pop("thinking", None)
     if family == "grok":
         # Shared throughput profiles may inject thinking.disabled / stop; drop them.
@@ -1958,11 +3026,30 @@ def _normalize_body(
             body.pop("stop", None)
             body.pop("presence_penalty", None)
             body.pop("frequency_penalty", None)
+    if family == "glm" and _is_glm_5_3_model(str(body.get("model") or "")):
+        # Shared throughput/stream/json profiles send thinking.disabled.
+        # Native GLM-5.3 rejects that; rewrite to enabled+low unless this is
+        # an explicit reject probe.
+        thinking = body.get("thinking")
+        if (
+            isinstance(thinking, dict)
+            and thinking.get("type") == "disabled"
+            and not preserve_rejected_params
+        ):
+            thinking["type"] = "enabled"
+            body.setdefault("reasoning_effort", "low")
 
 
-def _apply_claude_fable_compat(payload: dict[str, Any]) -> None:
+def _apply_claude_fable_compat(
+    payload: dict[str, Any], *, omit_sampling: bool = False
+) -> None:
     """Rewrite shared load/cache settings into Fable-compatible Messages shape."""
     payload.pop("top_p", None)
+    if omit_sampling:
+        # Shared load/cache profiles use temperature=0, which is not a valid
+        # explicit Fable sampling value. Preserve the provider default.
+        payload.pop("temperature", None)
+        payload.pop("top_k", None)
     output_config = payload.get("output_config")
     if isinstance(output_config, dict):
         output_config = copy.deepcopy(output_config)
@@ -2096,6 +3183,17 @@ def _validate_body(body: dict[str, Any], settings: dict[str, Any], family: str) 
 
     if "top_logprobs" in body and not body.get("logprobs"):
         raise ValueError("top_logprobs requires logprobs=true.")
+    if "logprobs" in body and not isinstance(body["logprobs"], bool):
+        raise ValueError("logprobs must be a boolean.")
+    if "verbosity" in body and str(body["verbosity"]).lower() not in {"low", "medium", "high"}:
+        raise ValueError("verbosity must be low/medium/high.")
+    prompt_cache_options = body.get("prompt_cache_options")
+    if prompt_cache_options is not None:
+        if not isinstance(prompt_cache_options, dict) or not prompt_cache_options:
+            raise ValueError("prompt_cache_options must be a non-empty object.")
+        ttl = prompt_cache_options.get("ttl")
+        if ttl is not None and (not isinstance(ttl, str) or not ttl.strip()):
+            raise ValueError("prompt_cache_options.ttl must be a non-empty string.")
 
     top_logprobs_max = 5 if family == "qwen" else 20
     if "top_logprobs" in body and not 0 <= int(body["top_logprobs"]) <= top_logprobs_max:
@@ -2216,3 +3314,73 @@ def _optional_int(value: Any) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+GEMINI_37_GENERATE_CONTENT_SAFE_PROFILES = {
+    "gemini_native_tools",
+    "gemini_native_tool_config",
+    "gemini_native_system_instruction",
+    "gemini_native_service_tier",
+    "gemini_native_store",
+    "gemini_native_stop_sequences",
+    "gemini_native_response_mime_type",
+    "gemini_native_response_schema",
+    "gemini_native_response_json_schema",
+    "gemini_native_response_modalities",
+    "gemini_native_candidate_count",
+    "gemini_native_max_output_tokens",
+    "gemini_native_temperature",
+    "gemini_native_top_p",
+    "gemini_native_top_k",
+    "gemini_native_seed",
+    "gemini_native_presence_penalty",
+    "gemini_native_frequency_penalty",
+    "gemini_native_logprobs",
+    "gemini_native_civic_answers",
+    "gemini_native_thinking_minimal",
+    "gemini_native_thinking_low",
+    "gemini_native_thinking_medium",
+    "gemini_native_thinking_high",
+    "gemini_native_media_resolution",
+    "gemini_native_response_format",
+}
+
+
+def _enforce_gemini_37_generate_content_safety(
+    profile: str,
+    settings: dict[str, Any],
+    body: dict[str, Any],
+) -> None:
+    if profile not in GEMINI_37_GENERATE_CONTENT_SAFE_PROFILES:
+        raise ValueError(
+            f"Profile {profile!r} is outside the Gemini 3.7 Flash "
+            "GenerateContent safe text contract."
+        )
+    if settings.get("native_cached_content") is not None or "cachedContent" in body:
+        raise ValueError("Gemini 3.7 Flash safe text profiles must not use cachedContent.")
+    generation = body.get("generationConfig")
+    if isinstance(generation, dict):
+        # The exact 3.7 official JSON retry needed 2048 tokens to finish valid
+        # JSON. Keep this correction local to that contract and preserve larger
+        # user caps; the shared profiles also describe other Gemini models.
+        if profile in {
+            "gemini_native_response_mime_type", "gemini_native_response_schema",
+            "gemini_native_response_json_schema", "gemini_native_response_format",
+        }:
+            generation["maxOutputTokens"] = max(generation.get("maxOutputTokens", 2048), 2048)
+        modalities = generation.get("responseModalities") or []
+        if isinstance(modalities, str):
+            modalities = [modalities]
+        if any(str(value).casefold() == "image" for value in modalities):
+            raise ValueError(
+                "Gemini 3.7 Flash safe text profiles must not request IMAGE output."
+            )
+        if "imageConfig" in generation:
+            raise ValueError(
+                "Gemini 3.7 Flash safe text profiles must not include imageConfig."
+            )
+    for setting in body.get("safetySettings") or []:
+        if isinstance(setting, dict) and str(setting.get("threshold") or "").upper() in {"BLOCK_NONE", "OFF"}:
+            raise ValueError(
+                "Gemini 3.7 Flash safe text profiles must not disable safety blocking."
+            )

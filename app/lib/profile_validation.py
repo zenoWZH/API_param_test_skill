@@ -3,15 +3,104 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from .gemini_schema_validation import validate_gemini37_schema
+from .gemini_interactions_validation import validate_interactions_envelope, validate_interactions_tools, validate_interactions_json
 from .deepseek_params import (
     extract_claude_tool_uses,
     extract_content,
+    extract_gemini_interactions_function_calls,
+    extract_gemini_interactions_text,
     extract_native_function_calls,
     extract_openai_responses_function_calls,
     extract_openai_responses_text,
     extract_reasoning_content,
     extract_tool_calls,
 )
+
+
+STOP_PARAMETER_PROFILES = {
+    "stop_sequences",
+    "glm53_stop_sequences",
+    "aliyun_stop",
+    "gemini_chat_stop_sequences",
+    "gemini_native_stop_sequences",
+    "gemini_3_7_flash_interactions_stop_sequences",
+    "gpt5_chat_reject_stop",
+    "grok_reject_stop",
+    "deepseek0813_anthropic_stop_sequences",
+    "deepseek0813_fim_stop",
+    "deepseek0813_fim_reject_stop_count",
+    "claude_native_stop_sequences",
+}
+STOP_PROBE_VISIBLE_TEXT = "TOKEN_AUDIT_OK"
+STOP_PROBE_TAIL = "TOKEN_AUDIT_TAIL"
+
+
+def validate_parameter_stop_request(
+    profile: str, body: dict[str, Any] | None
+) -> str | None:
+    """Require a declared, complete visible answer before the actual stop."""
+    if profile not in STOP_PARAMETER_PROFILES:
+        return None
+    if not isinstance(body, dict):
+        return "stop_probe_request_missing"
+    generation = body.get("generationConfig") or {}
+    interaction = body.get("generation_config") or {}
+    candidates = [
+        body.get("stop"), body.get("stop_sequences"),
+        generation.get("stopSequences") if isinstance(generation, dict) else None,
+        interaction.get("stop_sequences") if isinstance(interaction, dict) else None,
+    ]
+    stop = next(
+        (value if isinstance(value, str) else value[0]
+         for value in candidates
+         if (isinstance(value, str) and value)
+         or (isinstance(value, list) and value and isinstance(value[0], str) and value[0])),
+        None,
+    )
+    if stop is None:
+        return "stop_probe_sequence_missing"
+
+    def texts(value: Any) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, list):
+            return [text for item in value for text in texts(item)]
+        if isinstance(value, dict):
+            return [text for item in value.values() for text in texts(item)]
+        return []
+
+    declared = STOP_PROBE_VISIBLE_TEXT + stop + STOP_PROBE_TAIL
+    inputs = [body.get(key) for key in ("messages", "contents", "input", "prompt")]
+    if not any(declared in text for text in texts(inputs)):
+        return "stop_probe_declared_input_mismatch"
+    return None
+
+
+def _validate_parameter_stop_output(
+    profile: str, body: dict[str, Any] | None, response: dict[str, Any]
+) -> str | None:
+    error = validate_parameter_stop_request(profile, body)
+    if error or profile not in STOP_PARAMETER_PROFILES:
+        return error
+    choices = response.get("choices") or []
+    if choices:
+        outputs = [
+            str(choice.get("text") or (choice.get("message") or {}).get("content") or "")
+            for choice in choices if isinstance(choice, dict)
+        ]
+    elif response.get("candidates"):
+        outputs = [
+            "".join(str(part.get("text") or "") for part in
+                    (candidate.get("content") or {}).get("parts") or []
+                    if isinstance(part, dict) and part.get("thought") is not True)
+            for candidate in response["candidates"] if isinstance(candidate, dict)
+        ]
+    else:
+        outputs = [extract_content(response)]
+    if not outputs or any(text != STOP_PROBE_VISIBLE_TEXT for text in outputs):
+        return "stop_probe_visible_output_mismatch"
+    return None
 
 
 OPENAI_TOOL_PROFILES = {
@@ -24,6 +113,10 @@ OPENAI_TOOL_PROFILES = {
     "glm_tool_calls",
     "glm_tool_stream",
     "glm_tool_calls_thinking",
+    "glm53_tools",
+    "glm53_tool_choice_auto",
+    "glm53_tool_stream",
+    "glm53_tool_calls_thinking",
     "qwen_tools",
     "qwen_tool_choice_auto",
     "qwen_tool_calls",
@@ -38,6 +131,7 @@ OPENAI_TOOL_PROFILES = {
     "claude_tool_choice_auto",
     "claude_parallel_tool_calls",
     "gpt5_chat_tools",
+    "gpt6_chat_reject_tools",
     "grok_tools",
     "kimi_k3_dynamic_tools",
 }
@@ -54,7 +148,38 @@ CLAUDE_NATIVE_TOOL_PROFILES = {
 
 OPENAI_RESPONSES_TOOL_PROFILES = {
     "openai_responses_tools",
+    "gpt6_responses_tools_strict",
+    "gpt6_responses_parallel_tool_calls",
     "grok_responses_tools",
+}
+
+GEMINI_INTERACTIONS_TOOL_PROFILES = {
+    "gemini_3_7_flash_interactions_tools_auto",
+    "gemini_3_7_flash_interactions_tools_any",
+    "gemini_3_7_flash_interactions_tools_validated",
+}
+
+GEMINI_INTERACTIONS_TOOL_NONE_PROFILES = {
+    "gemini_3_7_flash_interactions_tools_none",
+}
+
+GEMINI_INTERACTIONS_PROFILES = {
+    "gemini_3_7_flash_interactions_basic",
+    "gemini_3_7_flash_interactions_system_instruction",
+    "gemini_3_7_flash_interactions_response_format_json",
+    "gemini_3_7_flash_interactions_stream",
+    "gemini_3_7_flash_interactions_store_false",
+    "gemini_3_7_flash_interactions_max_output_tokens",
+    "gemini_3_7_flash_interactions_seed",
+    "gemini_3_7_flash_interactions_stop_sequences",
+    "gemini_3_7_flash_interactions_reject_thinking_minimal",
+    "gemini_3_7_flash_interactions_thinking_low",
+    "gemini_3_7_flash_interactions_thinking_medium",
+    "gemini_3_7_flash_interactions_thinking_high",
+    "gemini_3_7_flash_interactions_thinking_summaries_auto",
+    *GEMINI_INTERACTIONS_TOOL_PROFILES,
+    *GEMINI_INTERACTIONS_TOOL_NONE_PROFILES,
+    "gemini_3_7_flash_interactions_labels",
 }
 
 # Vertex fingerprint profiles: require usageMetadata.trafficType (absent on AI Studio).
@@ -100,6 +225,28 @@ GLM_NON_REASONING_PROFILES = {
     "glm_reasoning_minimal",
 }
 
+GLM53_OFFICIAL_CONTRACTS = {
+    "zhipu_glm_5_3_openai_compat",
+    "zhipu_glm_5_3_flash_openai_compat",
+}
+
+# GLM-5.3 always thinks; low often omits reasoning_content on trivial prompts.
+# Require an explicit reasoning block only on high/max and interleaved tools.
+GLM53_REASONING_PROFILES = {
+    "glm53_reasoning_high",
+    "glm53_reasoning_max",
+    "glm53_tool_calls_thinking",
+}
+
+GLM53_FLASH_MULTIMODAL_PROFILES = {
+    "glm53_flash_image_url",
+    "glm53_flash_image_base64",
+    "glm53_flash_multi_image",
+    "glm53_flash_video_url",
+    "glm53_flash_file_url",
+    "glm53_flash_file_data",
+}
+
 QWEN_REASONING_PROFILES = {
     "qwen_thinking_enabled",
     "qwen_thinking_budget",
@@ -114,6 +261,7 @@ GEMINI_NATIVE_THOUGHT_SUMMARY_PROFILES = {
 OPENAI_REASONING_CONTEXT_PROFILES = {
     "openai_responses_reasoning_context_all_turns": "all_turns",
     "openai_responses_reasoning_context_current_turn": "current_turn",
+    "gpt6_responses_reasoning_context_current_turn": "current_turn",
 }
 
 
@@ -126,12 +274,52 @@ def validate_profile_response(
     transport: str = "chat_completions",
     tool_validation_mode: str = "auto",
     reference_source: str | None = None,
+    request_context: dict[str, Any] | None = None,
 ) -> str | None:
     if not result.success:
         return result.failure_classification or result.error_type or "request_failed"
+    stop_error = _validate_parameter_stop_output(profile, request_body, response_json)
+    if stop_error:
+        return stop_error
+
+    if (profile == "claude_native_stream" and transport == "claude_messages"
+            and reference_source == "claude_native_messages"):
+        if not isinstance(request_body, dict) or request_body.get("stream") is not True:
+            return "anthropic_stream_request_mismatch"
+        if not request_body.get("tools") and not extract_content(response_json).strip():
+            return "anthropic_content_missing"
+
+    schema_handled, schema_error = validate_gemini37_schema(
+        profile, response_json, body=request_body, transport=transport,
+        reference_source=reference_source, request_context=request_context,
+    )
+    if schema_error:
+        return schema_error
+
+    if profile in GEMINI_INTERACTIONS_PROFILES or transport == "gemini_interactions":
+        error = _validate_gemini_interactions_envelope(
+            profile,
+            response_json,
+            result,
+            request_body=request_body,
+            transport=transport,
+            reference_source=reference_source,
+            request_context=request_context,
+        )
+        if error:
+            return error
+
+    interactions_schema_handled, interactions_schema_error = validate_interactions_json(
+        profile, response_json, body=request_body, transport=transport,
+        reference_source=reference_source, request_context=request_context,
+    )
+    if interactions_schema_error:
+        return interactions_schema_error
+    schema_handled = schema_handled or interactions_schema_handled
 
     json_profiles = {
         "json_output",
+        "glm53_json_output",
         "deepseek_json_output_256",
         "qwen_response_format",
         "aliyun_json_object",
@@ -141,13 +329,16 @@ def validate_profile_response(
         "gemini_native_response_json_schema",
         "gemini_native_response_format",
         "gpt5_chat_json",
+        "gpt6_chat_json_schema",
         "openai_responses_json",
+        "gpt6_responses_json_schema",
         "grok_json",
         "grok_responses_json",
+        "gemini_3_7_flash_interactions_response_format_json",
     }
-    if profile in json_profiles:
+    if profile in json_profiles and not schema_handled:
         content = extract_content(response_json)
-        if profile in {"openai_responses_json", "grok_responses_json"} and not content.strip():
+        if profile in {"openai_responses_json", "grok_responses_json", "gpt6_responses_json_schema"} and not content.strip():
             content = extract_openai_responses_text(response_json)
         try:
             parsed = json.loads(content)
@@ -155,12 +346,16 @@ def validate_profile_response(
             return "json_parse"
         if not isinstance(parsed, dict):
             return "json_not_object"
+        if profile in {"gpt6_chat_json_schema", "gpt6_responses_json_schema"}:
+            if set(parsed) != {"summary"} or not isinstance(parsed["summary"], str):
+                return "json_schema_mismatch"
 
     is_tool_probe = (
         profile in OPENAI_TOOL_PROFILES
         or profile in NATIVE_TOOL_PROFILES
         or profile in CLAUDE_NATIVE_TOOL_PROFILES
         or profile in OPENAI_RESPONSES_TOOL_PROFILES
+        or profile in GEMINI_INTERACTIONS_TOOL_PROFILES
     )
     protocol = _tool_validation_protocol(tool_validation_mode, transport)
     if is_tool_probe and protocol == "openai_compat":
@@ -183,13 +378,28 @@ def validate_profile_response(
         if error:
             return error
 
+    if is_tool_probe and protocol == "gemini_interactions":
+        error = _validate_gemini_interactions_function_calls(
+            response_json, request_body or {}
+        )
+        if error:
+            return error
+
+    if profile in GEMINI_INTERACTIONS_TOOL_NONE_PROFILES:
+        if extract_gemini_interactions_function_calls(response_json):
+            return "tool_calls_unexpected"
+        if not extract_gemini_interactions_text(response_json).strip():
+            return "interaction_text_missing"
+
     if profile in {
         "stream_with_usage",
         "aliyun_stream_usage",
         "gpt5_chat_stream_usage",
+        "gpt6_chat_stream_usage",
         "openai_responses_stream_usage",
         "grok_stream_usage",
         "grok_responses_stream_usage",
+        "gemini_3_7_flash_interactions_stream",
     } and not result.usage:
         return "stream_usage_missing"
 
@@ -240,6 +450,33 @@ def validate_profile_response(
         and extract_reasoning_content(response_json).strip()
     ):
         return "reasoning_content_unexpected"
+
+    if (
+        reference_source in GLM53_OFFICIAL_CONTRACTS
+        and profile in GLM53_REASONING_PROFILES
+        and not extract_reasoning_content(response_json).strip()
+    ):
+        return "reasoning_content_missing"
+
+    if (
+        reference_source == "zhipu_glm_5_3_flash_openai_compat"
+        and profile in GLM53_FLASH_MULTIMODAL_PROFILES
+    ):
+        content = extract_content(response_json).strip()
+        if not content:
+            return "multimodal_content_missing"
+        folded = content.casefold()
+        if profile == "glm53_flash_image_base64" and folded.strip(
+            " \t\r\n.,!?。，！？'\"`*"
+        ) not in {"red", "红", "红色"}:
+            return "multimodal_image_semantics_mismatch"
+        # This fixed PDF contains exactly one sentence. Permit surrounding
+        # whitespace only; case, punctuation, fences, or extra prose are not
+        # normalized away from a "Return the file text exactly" response.
+        if profile == "glm53_flash_file_data" and (
+            content != "Z.AI GLM-5.3-Flash parameter profile."
+        ):
+            return "multimodal_file_semantics_mismatch"
 
     if (
         reference_source == "qwen_openai_compat"
@@ -297,6 +534,24 @@ def validate_profile_response(
         return "thought_summary_missing"
 
     return None
+
+
+def _validate_gemini_interactions_envelope(
+    profile: str,
+    response_json: dict[str, Any],
+    result: Any,
+    *,
+    request_body: dict[str, Any] | None = None,
+    transport: str = "gemini_interactions",
+    reference_source: str | None = None,
+    request_context: dict[str, Any] | None = None,
+) -> str | None:
+    return validate_interactions_envelope(
+        profile, response_json, result, request_body=request_body,
+        transport=transport, reference_source=reference_source,
+        request_context=request_context, tool_profiles=GEMINI_INTERACTIONS_TOOL_PROFILES,
+        tool_none_profiles=GEMINI_INTERACTIONS_TOOL_NONE_PROFILES,
+    )
 
 
 def _has_gemini_native_thought_summary(response_json: dict[str, Any]) -> bool:
@@ -472,6 +727,26 @@ def _validate_openai_responses_function_calls(
     return None
 
 
+def _validate_gemini_interactions_function_calls(
+    response_json: dict[str, Any],
+    request_body: dict[str, Any],
+) -> str | None:
+    return validate_interactions_tools(response_json, request_body)
+
+
+def _declared_gemini_interactions_tool_names(
+    request_body: dict[str, Any],
+) -> set[str]:
+    return {
+        str(tool["name"])
+        for tool in request_body.get("tools") or []
+        if isinstance(tool, dict)
+        and tool.get("type") == "function"
+        and isinstance(tool.get("name"), str)
+        and tool["name"]
+    }
+
+
 def _declared_openai_tool_names(request_body: dict[str, Any]) -> set[str]:
     names: set[str] = set()
     declarations: list[Any] = list(request_body.get("tools") or [])
@@ -532,10 +807,18 @@ def _tool_validation_protocol(mode: str, transport: str) -> str:
             return "claude_native"
         if transport == "openai_responses":
             return "openai_responses"
+        if transport == "gemini_interactions":
+            return "gemini_interactions"
         return "openai_compat"
-    if mode not in {"openai_compat", "gemini_native", "claude_native", "openai_responses"}:
+    if mode not in {
+        "openai_compat",
+        "gemini_native",
+        "gemini_interactions",
+        "claude_native",
+        "openai_responses",
+    }:
         raise ValueError(
             "tool_validation_mode must be auto, openai_compat, gemini_native, "
-            "claude_native, or openai_responses"
+            "gemini_interactions, claude_native, or openai_responses"
         )
     return mode

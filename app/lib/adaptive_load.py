@@ -429,10 +429,9 @@ class AdaptiveLengthController:
 
 
 def _load_corpus(raw_paths: Any) -> str:
-    paths = raw_paths or [
-        "fixtures/long_context.txt",
-        "fixtures/half_million_context.txt",
-    ]
+    # The slicer below cycles this compact corpus when it needs a larger prompt;
+    # the distributable app therefore does not need to bundle a multi-megabyte fixture.
+    paths = raw_paths or ["fixtures/long_context.txt"]
     if not isinstance(paths, list) or not paths:
         raise ValueError("adaptive_load.corpus_fixtures must be a non-empty list")
     chunks: list[str] = []

@@ -1,0 +1,1079 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "type": "locally_generated_synthetic_media",
+    "generator": "fixtures/media_input/generate_fixtures.py",
+    "regenerate_command": "python fixtures/media_input/generate_fixtures.py",
+    "command_working_directory": "fixtures/media_input",
+    "image_description": "Solid red or blue 256 by 256 squares, with no text or metadata containing the answer.",
+    "audio_description": "Offline flite SLT speech synthesis of the exact expected_text. Other audio containers are transcoded from the same WAV.",
+    "ffmpeg_version": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+    "pillow_version": "12.3.0",
+    "runtime_tools_required": []
+  },
+  "total_asset_bytes": 467212,
+  "fixtures": {
+    "red": {
+      "kind": "image",
+      "width": 256,
+      "height": 256,
+      "formats": {
+        "png": {
+          "file": "red.png",
+          "mime_type": "image/png",
+          "sha256": "ba7fc9794d3db90790d76cdf0b4faf0a1b66ff8acc685667ffb318c06e6d66b6",
+          "byte_length": 757,
+          "expected_text": "red",
+          "expected_semantic": {
+            "dominant_color": "red"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                255,
+                0,
+                0
+              ],
+              "format": "PNG",
+              "options": {}
+            }
+          ]
+        },
+        "jpeg": {
+          "file": "red.jpeg",
+          "mime_type": "image/jpeg",
+          "sha256": "1f9ea719d2de94f0fcdd464dfb8840ccfd42eedb502046b0714120993166dbad",
+          "byte_length": 2423,
+          "expected_text": "red",
+          "expected_semantic": {
+            "dominant_color": "red"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                255,
+                0,
+                0
+              ],
+              "format": "JPEG",
+              "options": {
+                "quality": 95,
+                "subsampling": 0
+              }
+            }
+          ]
+        },
+        "webp": {
+          "file": "red.webp",
+          "mime_type": "image/webp",
+          "sha256": "658ad625a854eee806e60cd69ddfebc16968895b27ad55c0628ae897682eb423",
+          "byte_length": 44,
+          "expected_text": "red",
+          "expected_semantic": {
+            "dominant_color": "red"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                255,
+                0,
+                0
+              ],
+              "format": "WEBP",
+              "options": {
+                "lossless": true,
+                "method": 6
+              }
+            }
+          ]
+        },
+        "gif": {
+          "file": "red.gif",
+          "mime_type": "image/gif",
+          "sha256": "22b01c36b00158558cfe2086d8088ccc60dea339e411f3866b807ffd2ac39b02",
+          "byte_length": 463,
+          "expected_text": "red",
+          "expected_semantic": {
+            "dominant_color": "red"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                255,
+                0,
+                0
+              ],
+              "format": "GIF",
+              "options": {}
+            }
+          ]
+        }
+      }
+    },
+    "blue": {
+      "kind": "image",
+      "width": 256,
+      "height": 256,
+      "formats": {
+        "png": {
+          "file": "blue.png",
+          "mime_type": "image/png",
+          "sha256": "3c5a92cecb3f7b408eac12b8c09edad458f89e6f4bbc548391830068bdf88505",
+          "byte_length": 758,
+          "expected_text": "blue",
+          "expected_semantic": {
+            "dominant_color": "blue"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                0,
+                0,
+                255
+              ],
+              "format": "PNG",
+              "options": {}
+            }
+          ]
+        },
+        "jpeg": {
+          "file": "blue.jpeg",
+          "mime_type": "image/jpeg",
+          "sha256": "65ef6fa271d2bb33eea7db5653d5149bc081498b1ef500cbb4901ac200b1679b",
+          "byte_length": 2423,
+          "expected_text": "blue",
+          "expected_semantic": {
+            "dominant_color": "blue"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                0,
+                0,
+                255
+              ],
+              "format": "JPEG",
+              "options": {
+                "quality": 95,
+                "subsampling": 0
+              }
+            }
+          ]
+        },
+        "webp": {
+          "file": "blue.webp",
+          "mime_type": "image/webp",
+          "sha256": "48443fe0dacf39e088632a831e45e030105eb0f74998c1ffb41b055d4ff3dffc",
+          "byte_length": 44,
+          "expected_text": "blue",
+          "expected_semantic": {
+            "dominant_color": "blue"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                0,
+                0,
+                255
+              ],
+              "format": "WEBP",
+              "options": {
+                "lossless": true,
+                "method": 6
+              }
+            }
+          ]
+        },
+        "gif": {
+          "file": "blue.gif",
+          "mime_type": "image/gif",
+          "sha256": "2223d03dfbcddc97411ca38be6d4c8f269cd0382db81104048d4b17242182a7c",
+          "byte_length": 463,
+          "expected_text": "blue",
+          "expected_semantic": {
+            "dominant_color": "blue"
+          },
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "operation": "Image.new('RGB', (256, 256), rgb).save",
+              "rgb": [
+                0,
+                0,
+                255
+              ],
+              "format": "GIF",
+              "options": {}
+            }
+          ]
+        }
+      }
+    },
+    "green_seven": {
+      "kind": "audio",
+      "formats": {
+        "wav": {
+          "file": "green_seven.wav",
+          "mime_type": "audio/wav",
+          "sha256": "39f4413f5bbadc777eda480b875ff5c3b7415c285f55f1aa81cd32799645c274",
+          "byte_length": 87564,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "mp3": {
+          "file": "green_seven.mp3",
+          "mime_type": "audio/mpeg",
+          "sha256": "ba8d6a83caee355d76f0188c673046305beafbd7a85bddf3825b01bfde2b25fb",
+          "byte_length": 8424,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "green_seven.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "libmp3lame",
+              "-b:a",
+              "24k",
+              "-write_xing",
+              "0",
+              "-id3v2_version",
+              "0",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.mp3"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "flac": {
+          "file": "green_seven.flac",
+          "mime_type": "audio/flac",
+          "sha256": "f90b0d701ba104375594528a9226471dd2f9ac4adbf1ec840f434b06026eaaf7",
+          "byte_length": 55792,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "green_seven.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "flac",
+              "-compression_level",
+              "12",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.flac"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "ogg": {
+          "file": "green_seven.ogg",
+          "mime_type": "audio/ogg",
+          "sha256": "9efd9c603d1a60445aa41cca74402497ea0e122327e29e19a32141798822e19a",
+          "byte_length": 11455,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "green_seven.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "libvorbis",
+              "-q:a",
+              "0",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.ogg"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "m4a": {
+          "file": "green_seven.m4a",
+          "mime_type": "audio/m4a",
+          "sha256": "c24ccf7bedcce6af263eacfa135bd8365b801d4dd2159e4c42bcc44abbb13f1c",
+          "byte_length": 9600,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "green_seven.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "24k",
+              "-movflags",
+              "+faststart",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.m4a"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "aac": {
+          "file": "green_seven.aac",
+          "mime_type": "audio/aac",
+          "sha256": "bc396f4fa102c77296f8e643ade8a2cde848255abdc5e3570fa0e804be59befc",
+          "byte_length": 8962,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "green_seven.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "24k",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.aac"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "aiff": {
+          "file": "green_seven.aiff",
+          "mime_type": "audio/aiff",
+          "sha256": "9d446ae50eafb0b15df17d6038a74ff282617d1e0bce928a7149055dd7f939ec",
+          "byte_length": 43814,
+          "expected_text": "The lantern is green. The number is seven.",
+          "expected_semantic": {
+            "lantern_color": "green",
+            "number": 7
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is green. The number is seven.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "green_seven.wav",
+              "-ar",
+              "8000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16be",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "green_seven.aiff"
+            ]
+          ],
+          "sample_rate_hz": 8000,
+          "channels": 1
+        }
+      }
+    },
+    "blue_nine": {
+      "kind": "audio",
+      "formats": {
+        "wav": {
+          "file": "blue_nine.wav",
+          "mime_type": "audio/wav",
+          "sha256": "9c69792e9e11664a8fdfc8496a19d909a1ded9b3a78e4a5692e3e319da2b2bfa",
+          "byte_length": 91244,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "mp3": {
+          "file": "blue_nine.mp3",
+          "mime_type": "audio/mpeg",
+          "sha256": "7325f00325071f4fe84c05eb877048ccfe54c06bf188703f64390a74e4d94736",
+          "byte_length": 8856,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "blue_nine.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "libmp3lame",
+              "-b:a",
+              "24k",
+              "-write_xing",
+              "0",
+              "-id3v2_version",
+              "0",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.mp3"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "flac": {
+          "file": "blue_nine.flac",
+          "mime_type": "audio/flac",
+          "sha256": "0a80f31d3185adfa6720b45d79679752b8804e24ca04378c1be9d33946606d0b",
+          "byte_length": 57534,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "blue_nine.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "flac",
+              "-compression_level",
+              "12",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.flac"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "ogg": {
+          "file": "blue_nine.ogg",
+          "mime_type": "audio/ogg",
+          "sha256": "750919e25da6630b783666cb295ffc03acc38493713eaa45e624414ed47aae0d",
+          "byte_length": 11706,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "blue_nine.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "libvorbis",
+              "-q:a",
+              "0",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.ogg"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "m4a": {
+          "file": "blue_nine.m4a",
+          "mime_type": "audio/m4a",
+          "sha256": "b461313d00cad48deb5a58789bbe40228c0d5703741d18bce783ace24ca9bb2d",
+          "byte_length": 9932,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "blue_nine.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "24k",
+              "-movflags",
+              "+faststart",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.m4a"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "aac": {
+          "file": "blue_nine.aac",
+          "mime_type": "audio/aac",
+          "sha256": "081ea9535f5767678ae00523b3cb88986a11525b17ab6fdf6e131bbaee480e66",
+          "byte_length": 9300,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "blue_nine.wav",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "aac",
+              "-b:a",
+              "24k",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.aac"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "aiff": {
+          "file": "blue_nine.aiff",
+          "mime_type": "audio/aiff",
+          "sha256": "c16aac8d2d341010bb4ac77a087d25cfbd03a374209ff48e42e46372c7da27c4",
+          "byte_length": 45654,
+          "expected_text": "The lantern is blue. The number is nine.",
+          "expected_semantic": {
+            "lantern_color": "blue",
+            "number": 9
+          },
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-f",
+              "lavfi",
+              "-i",
+              "flite=text='The lantern is blue. The number is nine.':voice=slt",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.wav"
+            ],
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "blue_nine.wav",
+              "-ar",
+              "8000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16be",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "blue_nine.aiff"
+            ]
+          ],
+          "sample_rate_hz": 8000,
+          "channels": 1
+        }
+      }
+    }
+  }
+}

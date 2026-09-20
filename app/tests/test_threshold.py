@@ -128,6 +128,46 @@ class CacheThresholdTest(unittest.TestCase):
         self.assertFalse(verdict["pass"])
         self.assertEqual(verdict["failures"][0]["metric"], "cache_gate_thresholds")
 
+    def test_cache_verdict_preserves_model_profile_database_identity(self) -> None:
+        config = {"thresholds": {"cache": {"mode": "observe"}}}
+        snapshot = {"profile_id": "text/openai/gpt/gpt-5.6-sol"}
+        with tempfile.TemporaryDirectory() as output_dir:
+            verdict = check_cache(
+                {
+                    "summary": {},
+                    "source_id": "openai",
+                    "profile_id": snapshot["profile_id"],
+                    "interface_id": "text/openai/gpt/gpt-5.6-sol/responses",
+                    "test_binding_id": "gpt-responses-policy",
+                    "model_profile_database": snapshot,
+                },
+                config,
+                output_dir,
+            )
+        self.assertEqual(verdict["source_id"], "openai")
+        self.assertEqual(verdict["model_profile_database"], snapshot)
+        self.assertIsNot(verdict["model_profile_database"], snapshot)
+        self.assertEqual(verdict["schema_version"], 1)
+        self.assertEqual(verdict["stage"], "cache")
+        self.assertTrue(verdict["completed"])
+
+    def test_aborted_cache_run_fails_even_in_observe_mode(self) -> None:
+        config = {"thresholds": {"cache": {"mode": "observe"}}}
+        with tempfile.TemporaryDirectory() as output_dir:
+            verdict = check_cache(
+                {
+                    "summary": {},
+                    "aborted_reason": "consecutive_failure_limit_reached",
+                },
+                config,
+                output_dir,
+            )
+        self.assertFalse(verdict["completed"])
+        self.assertFalse(verdict["pass"])
+        self.assertEqual(
+            verdict["aborted_reason"], "consecutive_failure_limit_reached"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

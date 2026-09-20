@@ -4,19 +4,46 @@
 [`lib/image_validation.py`](../lib/image_validation.py)，是 GPT Image 2、Banana 与 Grok Imagine
 图片参数测试的完整操作说明。主 README 只保留快速入口。
 
+## GPT Image 2.5
+
+Sunburst 与 Flare 已分别建立生成、编辑、Responses 图片工具矩阵，包含 `xhigh` / `max`、透明图片、精确编辑工作流及独立新版 token 计算规则。详见 [GPT Image 2.5 参数矩阵与原厂验证](gpt_image_25_param_audit.md)。Images 两接口仍保留历史组织认证门槛；Responses 已执行完整 96 项，发现 fidelity 明确拒绝、auto 尺寸未决和遮罩语义失败，详见审计。执行完成不代表完整兼容认证通过。
+
+## 输入输出 token 与完成性
+
+每次实际生成（包括重试中的每次 attempt）都校验输入输出 usage，所有候选必须有正常完成
+证据；截断、流错误、缺 usage 或无法核实的数量不会变为 PASS。请求 prompt 与媒体来自声明
+用例，发送前保存快照，发送或计数期间变异会失败。
+
+GPT Image 2 按原厂计算器的质量和解码尺寸建立输出 token 范围，Gemini 按型号与分辨率表
+建立范围；项目允许 10% 或至少 8 tokens 的浮动，并单独核对伴随 text/thinking 和总数残差。
+不按文件字节数猜 token，不把 provider alias 猜成原厂模型。没有适用规则的模型仍执行
+usage/完成性审计，但数量未验证会阻断整体通过。
+
+带输入媒体时需要覆盖完整输入的独立计数。已配置的 Provider `token_count` 接口可提供
+`official_count`；Google 原生 GenerateContent 用完整 `generateContentRequest` 计数，包含
+system/tools，允许 10% 加 8 tokens 的差异。只有算术一致不代表媒体输入数量已经核实。
+
+详见[参数测试的 token 规则](parameter_testing.md#3-token-accuracy)。新结果使用 schema v4，
+旧 schema v3 的通过记录不满足完整性要求。
+
 ## 1. 测试范围与边界
 
 图片测试已接入 Web Console 的第 2 个「图片（多模态）参数测试」tab，同时保留独立 CLI 作为
-等价复现入口。它仍与通用 Chat 参数矩阵隔离，也不进入 Locust、Staircase、Soak 或
-Cache 指标；Web 与 CLI 明确区分两种 OpenAI-compatible 图片传输和 Google 原生传输：
+等价复现入口。它仍与通用 Chat 参数矩阵隔离，也不进入 Locust、Quick、Staircase、Soak 或
+Cache 压力指标；所有图片和视频 Profile 都固定 `pressure_test_enabled=false`，且不能被 family、
+model 或 Provider overlay 覆盖。图片 runner 只按 case 顺序请求，并拒绝并发、速率、时长、
+RPM/TPM 等压力字段。Web 与 CLI 按 API Form 区分以下传输；是否执行仍取决于精确模型绑定：
 
 ```text
 GET  /v1/models                   # GPT Image 2 / Banana provider model discovery
 GET  /v1/image-generation-models  # Grok Imagine 官方模型发现
-POST /v1/images/generations       # 默认，GPT Image 2、Grok Imagine 或 provider image route
+POST /v1/images/generations       # 默认，GPT Image 2/2.5、Grok Imagine 或已绑定图片 Route
+POST /v1/images/edits             # 精确 GPT Image 2.5 编辑矩阵
+POST /v1/responses                # 精确 GPT Image 2.5 图片工具矩阵
 POST /v1/chat/completions         # Banana only，返回 message 图片
 GET  /v1beta/models               # Google Gemini 原生模型发现
-POST /v1beta/interactions         # Gemini 3.1 Flash Image 原生 Interactions API
+POST /v1beta/interactions         # 保留协议/历史说明；普通 Flash Image 绑定当前关闭
+POST /v1beta/models/{model}:generateContent  # 精确 Banana imageConfig 矩阵
 ```
 
 当前覆盖：
@@ -31,33 +58,46 @@ POST /v1beta/interactions         # Gemini 3.1 Flash Image 原生 Interactions A
 - Banana provider alias 与 `size` 冲突时，实际由哪一个控制输出像素。
 - 固定 Banana 模型通过 `extra_body.google.image_config.image_size` 请求 1K/2K/4K，
   并从 Chat `message.content` / `message.images` 的 data URL 解码实际图片。
-- `gemini-3.1-flash-image` 通过官方 Interactions API 测 512/1K/2K/4K、
-  `response_format.aspect_ratio/image_size/mime_type`、非法小写 `1k` 和非法比例，
-  从最终 `model_output` step 解码图片；thought image 不冒充最终产物。
+- 当前 Banana 快速开始使用官方 GenerateContent v1beta。Interactions 的
+  `response_format.aspect_ratio/image_size/mime_type` 和最终 `model_output` 解码器
+  保留用于历史证据与离线回归；thought image 不冒充最终产物。
 - 输出 token、延迟、字节密度和图像残差是否呈现疑似后置超分信号。
 
 不覆盖：
 
 - 文生图质量、美学、提示词遵循度和内容安全策略排名。
-- Vertex 原生端点。Google AI Studio 的 Interactions API 已覆盖；供应商 Chat
-  兼容模型或 alias 仍不根据名称推断真实上游身份。
+- Vertex 原生端点。供应商 Chat 兼容模型或 alias 不根据名称推断真实上游身份；
+  AI Studio 的历史 Interactions 结果不能视为当前 v1beta 执行许可。
 - 对“原生分辨率生成”“latent refinement”或“生成后超分”的确定性归因。
-- 图片编辑、mask、variation 或批量并发性能。
+- 旧模型的图片编辑、mask、variation 或批量并发性能。GPT Image 2.5 的编辑与 mask 使用上面的独立矩阵。
+
+### Interactions 当前状态
+
+`gemini-3.1-flash-image` 的普通 Interactions Binding 当前
+`parameter_test_enabled=false`，v1beta 状态为 `live_unverified`。Gemini 3.7 普通文字
+Interactions 另有明确的 `user_disabled_interactions` 门禁。显式指定
+`--transport gemini-interactions` 不能绕过这些门禁。下文的请求格式、旧探针和实测快照
+说明历史协议与证据；普通图片操作使用已启用的精确 GenerateContent 绑定。
 
 ## 2. 安装与快速开始
 
 需要 Python 3.11+；脚本使用 `datetime.UTC`，不能由 Python 3.10 直接运行。
-基础结构和尺寸验证使用项目主依赖。半尺寸重采样残差等视觉启发式需要 Pillow：
+所有 PNG、JPEG、WebP 输出都必须完成 Pillow 解码，包括 URL、base64 和 data URL。
+运行任何图片验收前都要安装 `requirements-image.txt`；`--no-visual-forensics` 只关闭
+视觉残差分析，不关闭完整解码，也不能免除 Pillow 依赖：
+
+从仓库的 `app/` 目录执行，使用已创建的 App Python 环境；先安装同 checkout 的 MPDB 源码包，
+再安装图片依赖。MPDB 尚未独立发布，不能只依赖 requirements 中的版本号从注册表安装。
 
 ```bash
-pip install -r requirements.txt
-pip install -r requirements-image.txt  # 可选
+python -m pip install ../packages/model-profile-db
+python -m pip install -r requirements-image.txt  # 所有图片验收必需，已包含项目主依赖
 ```
 
 Web 入口使用 `providers.<name>.image` capability；图片模型与 Chat 模型可以挂在同一
 provider 下，并复用该 provider 的 `base_url`、`api_interfaces` 与 `api_key_env`。配置好
-`image.enabled/default/models` 及 `api_interfaces.images_generations`（Banana Chat 则使用
-`chat_completions`，Google 原生则使用 `gemini_interactions`）后，启动控制台并选择
+`image.enabled/default/models` 及 `api_interfaces.images_generations`（已绑定的 Banana Chat 使用
+`chat_completions`；Google AI Studio 当前示例使用 `gemini_generate_content`）后，启动控制台并选择
 「图片参数测试」：
 
 ```bash
@@ -68,47 +108,44 @@ python scripts/web_console.py
 页面按 provider → model → route profile → API Form 选择图片测试组合；内部 transport 由 API Form 映射，启动前显示最终 case 数和 2K/4K/负向用例
 计费提醒；运行中展示逐 case 进度，完成后展示尺寸/格式判定、缩略图与放大预览、
 `resolution_correspondence`、`postprocess_inference` 和模型列表检查。控制台报告写入
-`reports/jobs/<job_id>/`，重启后可恢复，并按 provider/model 显示最近一次完成或失败结果。
+默认报告根目录下的 `jobs/<job_id>/`，重启后可恢复，并按 provider/model 显示最近一次完成或失败结果。
 密钥仅通过 `LOADTEST_SELECTED_API_KEY` 注入图片子进程，不进入 job spec、命令参数或报告。
 
-CLI 入口仍适合脚本化复现。推荐用环境变量传入地址和密钥：
+CLI 入口适合脚本化复现。先用以下无凭据计划检查参数，再配置真实执行所需的密钥环境变量：
 
 ```bash
 export IMAGE_TEST_BASE_URL='https://provider.example'
-export IMAGE_TEST_API_KEY='<provider-key>'
 
 # 不读取 key、不联网，先检查请求计划
 python scripts/image_param_test.py \
   --family gpt-image-2 --suite resolution --dry-run
 
-# GPT Image 2 分辨率和非法边界
+# GPT Image 2 分辨率和非法边界计划
 python scripts/image_param_test.py \
-  --family gpt-image-2 --suite resolution
+  --family gpt-image-2 --suite resolution --dry-run
 
-# Banana 1K/2K aligned + crossed control
+# Google AI Studio：精确 GenerateContent v1beta，一项 smoke 计划
 python scripts/image_param_test.py \
-  --family banana --suite resolution \
-  --model 'nano-banana-pro-{resolution_lower}'
+  --base-url https://generativelanguage.googleapis.com/v1beta \
+  --family banana --model gemini-3.1-flash-image \
+  --transport gemini-generate-content --route-profile google_ai_studio \
+  --suite smoke --dry-run
 
-# New API 风格的固定 Banana 模型，通过 Chat Completions 返回图片
-python scripts/image_param_test.py \
-  --family banana --transport chat-completions \
-  --suite resolution --model gemini-3.1-flash-image \
-  --no-cross-control
-
-# Google 官方 Gemini 3.1 Flash Image Interactions API
-IMAGE_TEST_BASE_URL='https://generativelanguage.googleapis.com' \
-IMAGE_TEST_API_KEY='<gemini-key>' \
-python scripts/image_param_test.py \
-  --family banana --transport gemini-interactions \
-  --suite resolution --model gemini-3.1-flash-image \
-  --no-cross-control
-
-# Grok Imagine 官方参数矩阵；full 需显式确认 2K 费用
+# Grok Imagine 官方参数矩阵计划；full 需显式确认 2K 费用
 python scripts/image_param_test.py \
   --family grok-imagine --model grok-imagine-image \
-  --suite full --include-2k
+  --suite full --include-2k --dry-run
 ```
+
+上述命令从 `app/` 执行，Python 必须已安装 App 的图片依赖。Banana 示例的预期为
+退出 0、一个 case、endpoint 以 `:generateContent` 结束；它只验证离线计划。
+确认模型、请求数量，并为目标 endpoint 配置相应密钥后，移除 `--dry-run` 才会发送生成请求，
+还会执行模型发现；
+需要隐藏输入时再加 `--api-key-stdin`。`resolution/full` 会扩大范围，先重新 dry-run。
+
+历史 Banana alias 模板与固定 Chat 模型名本身不能提供 MPDB Source 身份；若缺少精确
+Provider/Route/Interface/Contract/Binding 映射，预检会拒绝。历史命令见后文快照，
+当前快速开始使用上面的显式 GenerateContent 组合。
 
 不希望 key 进入进程环境时，可使用隐藏输入：
 
@@ -155,6 +192,7 @@ python scripts/image_param_test.py \
 顶层 `image_config` 不属于通用 Chat request schema，可能被静默丢弃；Gemini 原生
 `generationConfig.imageConfig` 也不是本 transport 的公开请求格式。
 
+Interactions 的历史协议形状如下；当前关闭的普通绑定不可据此执行。
 使用 `--transport gemini-interactions` 时，provider root、`/v1beta` 或完整
 `/v1beta/interactions` 会归一化到 Google Interactions endpoint；默认认证为
 `google_api_key`，即 `x-goog-api-key`，也可为明确使用 Bearer 的兼容网关显式传
@@ -180,16 +218,24 @@ Interactions SDK 的 `output_image` convenience 字段也兼容，但 thought st
 `usage.total_input_tokens/total_output_tokens/total_thought_tokens` 会单独归一化，
 且用官方 `total_tokens = input + output + thought` 算术核对避免重复计数。
 
+使用 `--transport gemini-generate-content` 时，AI Studio 新请求固定为
+`/v1beta/models/{model}:generateContent`；显式旧 v1 或快照版本冲突会拒绝。
+请求使用 `generationConfig.imageConfig`，响应核对 `candidates[].content.parts`、
+`finishReason`、`modelVersion` 和 `usageMetadata`。App CLI 默认仍是
+`images-generations`，因此原生示例必须显式给出 transport，不依赖 root 的默认 resolver。
+
 远端地址必须使用 HTTPS，且 URL 不能携带 userinfo、query 或 fragment。`GET /v1/models`
 使用同一 origin 和鉴权，只作为诊断：即使列表接口缺失、返回空列表或没有列出请求模型，
 生成用例仍会继续运行，详情写入 `model_check.json`。
 
 模型选择规则：
 
-- 所有可运行图片模型必须先在 `model_capability_profiles.yaml` 的
-  `modalities.image.families.<family>.models` 注册；family 的 `suite` 决定使用
-  `gpt_image_2`、`banana` 或 `grok_imagine` 用例生成器。未注册模型会在任务创建阶段
-  被拒绝，不能隐式落到其它图片家族。
+- 所有可运行图片模型必须先在 MPDB 中完成 source-scoped Profile、Interface、
+  Contract 与 Test Binding 审核；Binding 的 `suite` 决定使用 `gpt_image_2`、
+  `banana` 或 `grok_imagine` 用例生成器。未注册模型会在任务创建阶段被拒绝，
+  不能隐式落到其它图片家族。
+- 图片 case 数只表示顺序请求数，不表示并发度；媒体 Profile 中任何非空 pressure map/override
+  或 `pressure_test_enabled=true` 都会在加载阶段被拒绝。
 - `gpt-image-2` 默认模型为 `gpt-image-2`；可用 `--model` 或
   `IMAGE_TEST_MODEL` 覆盖。
 - `grok-imagine` 默认模型为 `grok-imagine-image`；也可显式选择
@@ -232,12 +278,22 @@ Interactions SDK 的 `output_image` convenience 字段也兼容，但 thought st
 说明：
 
 - `smoke` 固定只运行 `baseline_1024_square`；此时 `--include-4k` 不生效。
-- `resolution` 默认 13 项；增加 `--include-4k` 后为 14 项。
+- App `resolution` 默认 13 项；增加 `--include-4k` 后为 14 项。root 已另加四个用例，其 17/18 项计数不适用于 App。
 - `full` 当前等于 resolution + 4K，并强制要求 `--include-4k`，用于显式确认高成本请求。
 - `--no-negative` 会移除五个非法边界用例。
 - 负向请求如果被供应商接受，仍可能实际生成图片并产生费用。
 
-### 4.2 Banana provider aliases
+### 4.2 Banana GenerateContent 与历史 provider aliases
+
+当前四个精确 AI Studio Banana 模型使用独立 GenerateContent v1beta 工厂，按 MPDB
+精确合同展开比例、分辨率和边界。`smoke` 是一个基线；`resolution/full` 的请求数和
+已认证/观测状态以 `--dry-run` 的展开计划为准。4K 需显式 `--include-4k`，
+未证实的 case 仍保持观测，不因模型启用而自动成为支持或拒绝。
+
+App 的 `--reference-candidate` 只接收 GPT/Grok 候选；Banana 候选诊断属于 root CLI。
+下面的 alias/Interactions 探针保留用于解释历史记录。现行执行还要求已登记、已启用的
+Source/Interface/Contract/Binding；不能仅靠 alias 名称启动。
+
 
 Banana 的 1K/2K/4K 预期尺寸是本地探针矩阵，不表示这些 alias 属于 Google 官方命名。
 
@@ -275,7 +331,8 @@ Banana 的 1K/2K/4K 预期尺寸是本地探针矩阵，不表示这些 alias �
 
 这里的 512、1376×768 和大小写规则来自 Gemini 3.1 Flash Image 官方矩阵。兼容供应商
 如果不能接受其中某项，会在同一套模型 profile 下形成可比较差异；它不会被降级成通用
-Banana alias 结论。`--no-negative` 可跳过两个负向项。
+Banana alias 结论。`--no-negative` 可跳过两个负向项。`gemini-3.1-flash-lite-image`
+官方文档只支持 1K，不编进 `banana_512_square`。
 
 ### 4.3 Grok Imagine
 
@@ -311,29 +368,47 @@ Grok profile 只发送 xAI 图片生成字段，不复用 GPT Image 的 `quality
 
 | 参数 | 默认值 | 说明 |
 |---|---|---|
-| `--base-url` | `IMAGE_TEST_BASE_URL` | Provider root、`/v1` 或所选 transport 的完整 endpoint |
+| `--base-url` | `IMAGE_TEST_BASE_URL` | Provider root 或完整 endpoint；AI Studio 新请求要求 v1beta |
+| `--provider` | 无 | 已配置供应商，用于精确模型绑定与身份审计 |
 | `--api-key-env` | `IMAGE_TEST_API_KEY` | 要读取的 key 环境变量名 |
 | `--api-key-stdin` | false | 从隐藏交互提示读取 key |
 | `--family` | `gpt-image-2` | `gpt-image-2`、`banana` 或 `grok-imagine` |
-| `--transport` | `images-generations` | `images-generations`、Banana-only `chat-completions` 或 `gemini-interactions` |
-| `--auth-mode` | 按 transport | `gemini-interactions` 默认 `google_api_key`，其他默认 `bearer` |
+| `--transport` | `images-generations` | `images-generations`、`images-edits`、`openai-responses-image`；Banana 的 `chat-completions`、`gemini-generate-content`，以及受门禁限制的历史 `gemini-interactions` |
+| `--api-form` | 由 transport 映射 | 公共 API Form，必须与 transport 和 Route 一致 |
+| `--route-profile` | `LOADTEST_ROUTE_PROFILE` 或模型绑定 | 官方 AI Studio 使用 `google_ai_studio` |
+| `--api-version` | 官方 AI Studio 为 `v1beta` | 原生 Gemini 版本；官方旧 v1 或快照冲突会拒绝 |
+| `--auth-mode` | 按 transport | 两种原生 Gemini transport 默认 `google_api_key`（`x-goog-api-key`），其余默认 `bearer` |
+| `--reference-candidate` | 无 | 精确官方 GPT/Grok 候选 JSON；只记录诊断，不修改普通执行或认证门禁 |
+| `--max-generation-requests` | 已选择的 case 数 | 仅 candidate 诊断：生成 attempt 总上限，失败和重试均计数 |
+| `--transient-retries` | `0` | 仅 candidate 诊断：每个 case 可追加的瞬时错误重试次数 |
+| `--retry-initial-delay` | `15` | 重试初始等待秒数，逐次加倍至 120 秒，并遵守更长的数值型 Retry-After |
 | `--model` | `IMAGE_TEST_MODEL` 或 family 默认值 | GPT/Grok 模型 ID、固定 Banana ID 或 Banana alias 模板 |
-| `--suite` | `smoke` | `smoke`、`resolution`、`full` |
+| `--suite` | `full` | `smoke`、`resolution`、`full`；默认完整启用套件、1 轮 |
 | `--include-2k` | false | Grok 专用；显式确认并加入 2K cases，Grok full 必需 |
 | `--include-4k` | false | 显式确认并加入 4K case；smoke 中忽略 |
 | `--no-negative` | false | GPT Image 2 / Banana / Grok 跳过非法边界请求 |
 | `--no-cross-control` | false | Banana 跳过 alias/size 冲突请求 |
 | `--case NAME` | 全部 suite cases | 只运行指定 case；可重复传入 |
-| `--quality` | `low` | GPT/Banana Images 的 `low`、`medium`、`high`、`auto`；Grok 不发送 |
+| `--quality` | `low` | GPT/Banana Images 使用 `low/medium/high/auto`；精确 GPT Image 2.5 另支持 `xhigh/max`；Grok 不发送 |
 | `--output-format` | GPT/Banana Images 为 `png`；Gemini Interactions 为 `jpeg` | GPT/Banana Images 可选 `png`、`jpeg`、`webp`；Gemini Interactions 只接受 `jpeg`；Grok 不发送 |
 | `--prompt` | 内置分辨率测试图提示词 | 覆盖测试提示词 |
 | `--store-prompt` | false | 在 `plan.json` 保存明文 prompt；默认只保存 SHA-256 |
 | `--timeout` | `300` | 单个生成请求超时秒数；models 请求最多等待 60 秒 |
-| `--output-dir` | 自动时间戳目录 | 自定义报告目录；相对路径从项目根解析 |
+| `--output-dir` | 自动时间戳目录 | 自定义报告目录；相对路径从 App 根目录解析；绝对路径原样使用 |
 | `--no-visual-forensics` | false | 禁用 Pillow 视觉残差，仅保留结构/像素硬校验 |
 | `--dry-run` | false | 打印公共请求计划，不读取 key、不联网、不创建报告 |
 
-`quality` 不用于 Chat 或 Gemini Interactions；Interactions 固定
+图片入口现在通过[通用功能测试 runner](../../docs/unified_test_runner.md)执行前置依赖和资源清理。
+已开始执行的输出目录拒绝重复发送。`--store-prompt` 控制公共 `plan.json` 的提示词展示；
+冻结执行计划及实际请求证据仍保存执行所需的提示词，保留在本地报告目录中。
+
+`images-edits` 与 `openai-responses-image` 只用于已登记的精确 GPT Image 2.5 型号，
+其 API Form 分别为 `openai_images_edits` 与 `openai_responses`。编辑输入、mask、
+多轮依赖和请求预算由专用矩阵展开，见 [GPT Image 2.5 专项手册](gpt_image_25_param_audit.md)。
+候选文件需匹配 Source、模型、API Form、endpoint 和定义摘要；`--dry-run` 通过只证明计划可构造。
+
+`quality` 不用于 Chat、GenerateContent 或 Gemini Interactions；GenerateContent 记录实际编码格式，
+不把 `--output-format` 透传为 Images API 字段。Interactions 的历史请求固定
 `response_format.mime_type=image/jpeg`。Chat 图片协议不透传这两个字段；Grok 由 profile 自己发送
 `n` 和 `response_format`，编码格式以实际响应为准，但仍会校验文件结构、数量和像素尺寸。
 
@@ -363,7 +438,7 @@ python scripts/image_param_test.py \
 所有图片 family 的 case 都先经过模型 capability profile 展开；模型可以在家族默认之上
 逐 case 覆盖 `supported` / `unsupported`。负向用例只把 HTTP `400` 或 `422` 视为 `expected_rejection`（兼容通过）。HTTP 2xx 记为
 `unexpected_acceptance`（失败，对应 `invalid_parameter_accepted`），5xx/网络失败也不会被误判为正确拒绝。
-GPT Image 2、Banana 与 Grok Imagine 都使用 `model_capability_profiles.yaml`，
+GPT Image 2、Banana 与 Grok Imagine 都使用同一 MPDB catalog/test extension，
 与文字参数矩阵共享同一判定语义。
 
 常见状态：
@@ -378,8 +453,17 @@ GPT Image 2、Banana 与 Grok Imagine 都使用 `model_capability_profiles.yaml`
 | `fail` | false | 鉴权/限流/5xx/解码等非参数兼容失败 |
 
 `verification_level` 进一步区分 `constraint_verified`、`expected_rejection`、
-`diagnostic_observation`、`response_only` 和 `none`。只要任一 case 的 `pass=false`，
-`summary.pass=false`，进程退出码为 `1`；全部通过时退出码为 `0`。
+`diagnostic_observation`、`response_only` 和 `none`。case 的 `pass` 只表示该项兼容性，
+还应检查 `overall_pass`、token 审计与任务身份汇总。
+
+| 模式 | 退出 0 | 退出 1 |
+|---|---|---|
+| 普通执行 | `summary.pass=true`；全部必需 case、token 和模型身份门禁通过 | 任一必需检查失败，包括 case 兼容通过但 token/identity 失败 |
+| `--reference-candidate` 诊断 | 选中观测完整且未耗尽预算，`diagnostic_pass=true` | 观测未完成、仍有未决项或预算不足 |
+
+候选诊断即使退出 0，`summary.pass/compatibility_pass/certified_route_contract_pass`
+仍为 false；退出码只说明观测完成，不能作为合同认证。预检或 CLI 参数错误通常退出 2。
+`--dry-run` 退出 0 只表示计划通过离线预检，没有发送请求或证明供应商兼容。
 
 ## 7. 分辨率对应关系
 
@@ -419,7 +503,8 @@ case 才进入观察集：case 本身通过、`status=pass`、实际宽高严格
 - `>=4`：`strongly_suspected`
 - `confirmed`：始终为 `false`
 
-Pillow 缺失或使用 `--no-visual-forensics` 时，残差信号为 N/A，其它信号仍可计算。
+使用 `--no-visual-forensics` 时，残差信号为 N/A，其它信号仍可计算。
+缺少 Pillow 会使完整图片验收失败，不能用该选项跳过解码要求。
 图片 token 优先读取 `completion_tokens_details.image_tokens`，然后读取正数
 `output_tokens`，最后回退到 `completion_tokens`。这是为了兼容部分 Gemini Chat 网关把
 顶层 `output_tokens` 固定写成 0、但在 completion details 中提供真实图片 token 的响应。
@@ -430,10 +515,11 @@ Pillow 缺失或使用 `--no-visual-forensics` 时，残差信号为 N/A，其�
 
 ## 9. 报告目录与 schema
 
-默认目录：
+App 默认报告根目录为 `~/.config/llm-api-test/reports/`，可由
+`LLM_API_TEST_REPORTS_DIR` 覆盖。CLI 自动目录结构：
 
 ```text
-reports/image_param/<UTC timestamp>-<model>/
+<报告根目录>/image_param/<UTC timestamp>-<model>/
 ├── plan.json
 ├── model_check.json
 ├── case_results.json
@@ -453,6 +539,9 @@ reports/image_param/<UTC timestamp>-<model>/
 `sha256`、`has_alpha` 和 `visual_metrics`。上游 HTTP 错误体最多保存 1000 字符；响应
 header 只保存 content type、request ID、限流和处理时长等白名单字段。
 
+GPT/Grok 候选观测报告另含 `reference_candidate`、`diagnostic_summary` 与逐 attempt 记录。
+`diagnostic_summary.complete=true` 表示所选观测完成，不表示合同认证。
+
 报告目录已被 git 忽略，但图片和可选明文 prompt 仍可能包含敏感业务内容。不要因为“不入库”
 就把报告视为公开数据。
 
@@ -464,6 +553,15 @@ header 只保存 content type、request ID、限流和处理时长等白名单�
 - `/v1/models`、`/v1/images/generations` 和 `/v1/chat/completions` 均关闭自动重定向，
   避免鉴权被带到非预期地址。
 - 如果响应使用签名图片 URL，脚本新建不带 Authorization 的下载请求；URL 可以位于其它 host。
+  下载器只接受 `http(s)` 且拒绝 userinfo、localhost 和全部非公网 DNS 结果；主机名只解析一次，
+  连接只发往该次解析预批准的固定 IP。HTTPS 仍用原始主机名做 SNI 与证书校验，因此不会为
+  绕过 DNS rebinding 而关闭 TLS 身份验证。
+- 图片 URL 的 3xx 一律拒绝，不跟随跳转；下载不使用代理环境。响应必须是 2xx 且
+  `Content-Type` 为 PNG/JPEG/WebP，声明长度和流式累计长度均不得超过 20 MiB。
+- URL、`b64_json` 与 data URL 的 PNG/JPEG/WebP 都必须先经过编码长度上限，再做签名/结构检查及
+  Pillow `verify()` + `load()` 完整解码；只接受单帧静态图片。解码前后都核对尺寸，单边不超过
+  16384、总像素不超过 4000 万、估算解码内存不超过 256 MiB。底层网络异常正文不会写入报告，
+  避免签名 URL query 随异常泄漏。
 - 输出 JSON 在落盘前递归脱敏。Endpoint 会写入报告，因此禁止把 key 放进 URL query 或 userinfo。
 
 ## 11. 成本控制
@@ -473,7 +571,10 @@ header 只保存 content type、request ID、限流和处理时长等白名单�
 - 4K 必须显式使用 `--include-4k`；`full` 还会拒绝缺少该确认的运行。
 - Banana crossed cases 和 GPT 非法边界 case 都可能在宽松供应商上实际生成图片并计费。
 - 可用重复的 `--case` 缩小范围，用 `--no-negative` / `--no-cross-control` 跳过诊断请求。
-- 脚本会额外调用一次 `/v1/models`，但不会为缺失模型自动终止或切换模型。
+- 普通图片 runner 额外调用一次对应协议的模型发现接口（见第 1 节）；发现列表缺少模型不会自动终止或切换模型。GPT Image 2.5 专用工作流的依赖和额外请求以其计划为准。
+
+下面两节的命令与结果是当时的历史记录，依赖当时配置和归档；不保证能通过当前 MPDB
+执行预检。当前新任务使用第 2 节的精确绑定示例；历史结论不外推到新模型、接口或版本。
 
 ## 12. 2026-07-20 nicolessss.com 快照
 
@@ -482,7 +583,7 @@ header 只保存 content type、request ID、限流和处理时长等白名单�
 `bfcc7ecad1f87797a0b41930c3edbae5138aa867f337ea6cd8ac77cc8005969b`。
 以下命令假定 `IMAGE_TEST_API_KEY` 已在当前 shell 中安全设置。
 
-GPT Image 2 的等价复现命令：
+GPT Image 2 的当时命令：
 
 ```bash
 IMAGE_TEST_BASE_URL='https://nicolessss.com' \
@@ -502,7 +603,7 @@ python scripts/image_param_test.py \
 - `postprocess_inference=unknown`：只有两个严格通过样本，像素倍率约 2.67，未达到 3.5
   的比较门槛。2K 的响应结构和 token accounting 差异只支持“可能存在不同管线”，不能确认超分。
 
-Banana 的等价复现命令：
+Banana 的当时命令：
 
 ```bash
 IMAGE_TEST_BASE_URL='https://nicolessss.com' \

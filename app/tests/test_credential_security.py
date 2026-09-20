@@ -99,6 +99,9 @@ providers:
                 "BETA_API_KEY": "beta-secret-value-456",
                 "HF_TOKEN": "hf-secret-value-789",
                 "AWS_SECRET_ACCESS_KEY": "aws-secret-value-012",
+                "LLM_API_TEST_DATA_DIR": "/tmp/llm-api-test-data",
+                "LLM_API_TEST_API_KEY": "namespaced-secret-value-345",
+                "LLM_API_TEST_AUTH_TOKEN": "namespaced-token-value-678",
                 "LOADTEST_WORKLOAD": "throughput",
             },
             clear=True,
@@ -108,10 +111,13 @@ providers:
             self.assertEqual(child[SELECTED_API_KEY_PROVIDER_ENV], "alpha")
             self.assertEqual(child[SKIP_DOTENV_ENV], "1")
             self.assertEqual(child["LOADTEST_WORKLOAD"], "throughput")
+            self.assertEqual(child["LLM_API_TEST_DATA_DIR"], "/tmp/llm-api-test-data")
             self.assertNotIn("ALPHA_API_KEY", child)
             self.assertNotIn("BETA_API_KEY", child)
             self.assertNotIn("HF_TOKEN", child)
             self.assertNotIn("AWS_SECRET_ACCESS_KEY", child)
+            self.assertNotIn("LLM_API_TEST_API_KEY", child)
+            self.assertNotIn("LLM_API_TEST_AUTH_TOKEN", child)
             with patch.dict(os.environ, child, clear=True):
                 self.assertEqual(get_api_key(config, "alpha"), "alpha-secret-value-123")
                 with self.assertRaisesRegex(RuntimeError, "Missing API key"):

@@ -1,0 +1,1861 @@
+{
+  "sources": [
+    {
+      "id": "google-ai-gemini-3.7-flash",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash",
+      "title": "gemini-3.7-flash — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3.7-flash and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.6-flash",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash",
+      "title": "gemini-3.6-flash — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3.6-flash and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.5-flash",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash",
+      "title": "gemini-3.5-flash — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3.5-flash and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.5-flash-lite",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+      "title": "gemini-3.5-flash-lite — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3.5-flash-lite and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3-flash-preview",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3-flash-preview",
+      "title": "gemini-3-flash-preview — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3-flash-preview and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.1-pro-preview",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+      "title": "gemini-3.1-pro-preview — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3.1-pro-preview and lists image and audio among supported input types; output is text.",
+        "The versions section also names gemini-3.1-pro-preview-customtools; its footnote describes a separate API endpoint optimized to prioritize custom tools."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.1-flash-lite",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite",
+      "title": "gemini-3.1-flash-lite — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-3.1-flash-lite and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-2.5-flash",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash",
+      "title": "gemini-2.5-flash — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-2.5-flash and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-2.5-pro",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-pro",
+      "title": "gemini-2.5-pro — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-2.5-pro and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-2.5-flash-lite",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite",
+      "title": "gemini-2.5-flash-lite — Gemini API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model table names gemini-2.5-flash-lite and lists image and audio among supported input types; output is text."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-2.5-flash",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/2-5-flash",
+      "title": "gemini-2.5-flash — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-2.5-flash and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-2.5-flash-lite",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/2-5-flash-lite",
+      "title": "gemini-2.5-flash-lite — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-2.5-flash-lite and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-2.5-pro",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/2-5-pro",
+      "title": "gemini-2.5-pro — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-2.5-pro and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3-flash-preview",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-flash",
+      "title": "gemini-3-flash-preview — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3-flash-preview and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.1-flash-lite",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite",
+      "title": "gemini-3.1-flash-lite — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3.1-flash-lite and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.1-pro-preview",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-pro",
+      "title": "gemini-3.1-pro-preview — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3.1-pro-preview and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.5-flash",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash",
+      "title": "gemini-3.5-flash — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3.5-flash and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.5-flash-lite",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash-lite",
+      "title": "gemini-3.5-flash-lite — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3.5-flash-lite and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.6-flash",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-6-flash",
+      "title": "gemini-3.6-flash — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3.6-flash and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.7-flash",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-7-flash",
+      "title": "gemini-3.7-flash — Google Cloud",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The model page names gemini-3.7-flash and explicitly lists image and audio as input modalities, with text output."
+      ]
+    },
+    {
+      "id": "google-ai-openai-compat",
+      "url": "https://ai.google.dev/gemini-api/docs/openai",
+      "title": "Gemini API — OpenAI compatibility",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The Gemini compatibility API documents image input with a user messages content block of type image_url whose url is a base64 JPEG data URI.",
+        "The audio-understanding example uses a user content block of type input_audio with base64 data and format wav at /v1beta/openai/chat/completions."
+      ]
+    },
+    {
+      "id": "google-ai-generate-content",
+      "url": "https://ai.google.dev/api/generate-content",
+      "title": "Gemini API — Generating content",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "models.generateContent accepts multipart contents and includes image and audio input examples; model-specific capabilities are delegated to the model guide.",
+        "Part accepts mutually exclusive text, inlineData or fileData; inlineData carries a MIME type and base64 bytes. Blob lists image MIME types and audio/* examples."
+      ]
+    },
+    {
+      "id": "google-ai-image",
+      "url": "https://ai.google.dev/gemini-api/docs/image-understanding",
+      "title": "Gemini API — Image understanding",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The image guide lists PNG, JPEG, WebP, HEIC and HEIF MIME types and states Gemini models can understand images."
+      ]
+    },
+    {
+      "id": "google-ai-audio",
+      "url": "https://ai.google.dev/gemini-api/docs/audio",
+      "title": "Gemini API — Audio understanding",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The audio guide lists WAV, MP3, AIFF, AAC, OGG, FLAC, MPEG, M4A, L16, Opus, ALAW, MULAW and WebM MIME types.",
+        "The current narrative examples use Interactions. GenerateContent encoding is therefore sourced separately from its API reference; this matrix does not enable Interactions."
+      ]
+    },
+    {
+      "id": "google-vertex-image",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/image-understanding",
+      "title": "Google Cloud — Image understanding",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The guide documents image understanding with one or multiple image parts and a GenerateContent call.",
+        "Examples document PNG, JPEG and WebP and fileData.fileUri with mimeType. Cloud Storage and public HTTP URLs have distinct access restrictions."
+      ]
+    },
+    {
+      "id": "google-vertex-audio",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/audio-understanding",
+      "title": "Google Cloud — Audio understanding (speech only)",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The supported-model table includes all ten Vertex candidates in this inventory and lists speech transcription, translation or summarization as applicable audio understanding tasks.",
+        "The shared MIME list is audio/x-aac, audio/flac, audio/mp3, audio/m4a, audio/mpeg, audio/mpga, audio/mp4, audio/ogg, audio/pcm, audio/wav and audio/webm.",
+        "A request supports one audio file; REST examples use fileData and GenerateContent. Timestamp examples add generationConfig.audioTimestamp."
+      ]
+    },
+    {
+      "id": "google-vertex-content",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/rest/v1/Content",
+      "title": "Google Cloud — Content REST resource",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "Part accepts inlineData and fileData. Blob is defined for image, audio and video, requiring MIME type and base64 data.",
+        "FileData requires a MIME type and a file URI; its schema describes Google Cloud Storage."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.7-flash-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash",
+      "title": "gemini-3.7-flash — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.6-flash-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash",
+      "title": "gemini-3.6-flash — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.5-flash-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash",
+      "title": "gemini-3.5-flash — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.5-flash-lite-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite",
+      "title": "gemini-3.5-flash-lite — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3-flash-preview-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3-flash-preview",
+      "title": "gemini-3-flash-preview — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.1-pro-preview-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-pro-preview",
+      "title": "gemini-3.1-pro-preview — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality.",
+        "The versions section also names gemini-3.1-pro-preview-customtools; its separate endpoint changes custom-tool prioritization."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-3.1-flash-lite-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite",
+      "title": "gemini-3.1-flash-lite — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-2.5-flash-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash",
+      "title": "gemini-2.5-flash — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-2.5-pro-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-pro",
+      "title": "gemini-2.5-pro — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-gemini-2.5-flash-lite-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-lite",
+      "title": "gemini-2.5-flash-lite — Gemini API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-2.5-flash-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/2-5-flash",
+      "title": "gemini-2.5-flash — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-2.5-flash-lite-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/2-5-flash-lite",
+      "title": "gemini-2.5-flash-lite — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-2.5-pro-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/2-5-pro",
+      "title": "gemini-2.5-pro — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3-flash-preview-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-flash",
+      "title": "gemini-3-flash-preview — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.1-flash-lite-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-flash-lite",
+      "title": "gemini-3.1-flash-lite — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.1-pro-preview-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-1-pro",
+      "title": "gemini-3.1-pro-preview — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.5-flash-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash",
+      "title": "gemini-3.5-flash — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.5-flash-lite-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-flash-lite",
+      "title": "gemini-3.5-flash-lite — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.6-flash-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-6-flash",
+      "title": "gemini-3.6-flash — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-vertex-gemini-3.7-flash-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-7-flash",
+      "title": "gemini-3.7-flash — Google Cloud - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The exact model table lists Video among input modalities; text remains the output modality."
+      ]
+    },
+    {
+      "id": "google-ai-native-video-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/generate-content/video-understanding",
+      "title": "Gemini GenerateContent video understanding",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "GenerateContent accepts base64 video bytes in inlineData and uploaded or supported external video references in fileData. MP4 is documented.",
+        "The inline example says total request under 20 MB, while its summary table says under 100 MB. Use tiny fixtures below 20 MB and record the discrepancy.",
+        "Default static sampling is 1 FPS. videoMetadata supports fps and clipping offsets. Agentic processing is separate and changes response parts; no such mode is enabled here."
+      ]
+    },
+    {
+      "id": "google-ai-openai-video-review-20260920",
+      "url": "https://ai.google.dev/gemini-api/docs/openai",
+      "title": "Gemini OpenAI compatibility - video input review",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The page documents image and audio Chat Completions parts but does not define a direct video input content carrier.",
+        "Its video section concerns Veo video generation, and the cached_content example does not define direct video input. Native video support is not automatically OpenAI-compatible video support."
+      ]
+    },
+    {
+      "id": "google-vertex-video-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/capabilities/video-understanding",
+      "title": "Vertex video understanding",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The supported-model table includes all ten configured Vertex Gemini models, including 3 Flash and 3.1 Pro previews.",
+        "Video files can include audio; documented sources include Cloud Storage, eligible public URLs, and inline base64. Source-specific restrictions still apply.",
+        "Agentic video processing is restricted to named models and v1beta1; default static GenerateContent does not require it."
+      ]
+    },
+    {
+      "id": "google-vertex-video-content-20260920",
+      "url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/reference/rest/v1/Content",
+      "title": "Vertex Content and VideoMetadata",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "A Part carries video bytes in inlineData or a reference in fileData. Optional videoMetadata applies to either carrier.",
+        "videoMetadata fields are startOffset, endOffset and fps. The documented FPS range is greater than zero and at most 24; default is 1."
+      ]
+    }
+  ],
+  "models": [
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.7-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.7-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.7-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.7-flash-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.6-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.6-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.6-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.6-flash-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.6-flash",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.6-flash",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.6-flash",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3.6-flash-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.5-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.5-flash",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.5-flash-lite",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-lite",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-lite",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-lite-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.5-flash-lite",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-lite",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-lite",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3.5-flash-lite-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3-flash-preview",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3-flash-preview",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3-flash-preview",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3-flash-preview-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3-flash-preview",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3-flash-preview",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3-flash-preview",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3-flash-preview-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.1-pro-preview",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.1-pro-preview",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.1-pro-preview-customtools",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-generate-content"
+        ],
+        "notes": "The exact customtools endpoint is listed as a version beneath the shared Gemini 3.1 Pro input-type table; no separate modality restriction is documented there. Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-generate-content"
+        ],
+        "notes": "The exact customtools endpoint is listed as a version beneath the shared Gemini 3.1 Pro input-type table; no separate modality restriction is documented there. Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.1-pro-preview-customtools",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-openai-compat"
+        ],
+        "notes": "The exact customtools endpoint is listed as a version beneath the shared Gemini 3.1 Pro input-type table; no separate modality restriction is documented there. Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview",
+          "google-ai-openai-compat"
+        ],
+        "notes": "The exact customtools endpoint is listed as a version beneath the shared Gemini 3.1 Pro input-type table; no separate modality restriction is documented there. Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3.1-pro-preview-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.1-flash-lite",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-flash-lite",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-flash-lite",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-flash-lite-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-3.1-flash-lite",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-flash-lite",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-3.1-flash-lite",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-3.1-flash-lite-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-2.5-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-2.5-flash",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-2.5-pro",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-pro",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-pro",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-pro-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-2.5-pro",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-pro",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-pro",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-2.5-pro-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-2.5-flash-lite",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-lite",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-lite",
+          "google-ai-generate-content"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-lite-video-20260920",
+          "google-ai-native-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_ai_studio",
+      "model": "gemini-2.5-flash-lite",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-lite",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-lite",
+          "google-ai-openai-compat"
+        ],
+        "notes": "Model input support is taken from its model table; request encoding is documented by the cited API-form reference. This is documentation evidence, not a live compatibility result."
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "google-ai-gemini-2.5-flash-lite-video-20260920",
+          "google-ai-openai-video-review-20260920"
+        ],
+        "notes": "Model supports video, but this API form has no documented direct video carrier. Do not send invented video_url parts.",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-2.5-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-flash",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-flash",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-flash-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-2.5-flash-lite",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-flash-lite",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-flash-lite",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-flash-lite-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-2.5-pro",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-pro",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-pro",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-2.5-pro-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3-flash-preview",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3-flash-preview",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3-flash-preview",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3-flash-preview-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3.1-flash-lite",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.1-flash-lite",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.1-flash-lite",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.1-flash-lite-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3.1-pro-preview",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.1-pro-preview",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.1-pro-preview",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.1-pro-preview-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3.5-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.5-flash",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.5-flash",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.5-flash-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3.5-flash-lite",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.5-flash-lite",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.5-flash-lite",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.5-flash-lite-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3.6-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.6-flash",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.6-flash",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.6-flash-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    },
+    {
+      "source_id": "google_vertex",
+      "model": "gemini-3.7-flash",
+      "api_form": "gemini_generate_content",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.7-flash",
+          "google-vertex-image",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "audio": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.7-flash",
+          "google-vertex-audio",
+          "google-vertex-content"
+        ],
+        "notes": "Official Google Cloud model evidence. The local inventory route is a third-party gateway and does not establish official direct access; the existing disabled Vertex interface policy is not changed."
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "google-vertex-gemini-3.7-flash-video-20260920",
+          "google-vertex-video-20260920"
+        ],
+        "notes": "Documented native GenerateContent video input; existing route execution gates remain separate.",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "inlineData",
+          "mime_type": "video/mp4",
+          "carrier": "inline_data"
+        }
+      }
+    }
+  ],
+  "protocols": [
+    {
+      "api_form": "gemini_generate_content",
+      "source_id": "google_ai_studio",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/heic",
+        "image/heif"
+      ],
+      "audio_formats": [
+        "audio/wav",
+        "audio/mp3",
+        "audio/aiff",
+        "audio/aac",
+        "audio/ogg",
+        "audio/flac",
+        "audio/mpeg",
+        "audio/m4a",
+        "audio/l16",
+        "audio/opus",
+        "audio/alaw",
+        "audio/mulaw",
+        "audio/webm"
+      ],
+      "image_parameters": [
+        "contents[].parts[].inlineData.mimeType",
+        "contents[].parts[].inlineData.data",
+        "contents[].parts[].fileData.mimeType",
+        "contents[].parts[].fileData.fileUri",
+        "contents[].parts[].text"
+      ],
+      "audio_parameters": [
+        "contents[].parts[].inlineData.mimeType",
+        "contents[].parts[].inlineData.data",
+        "contents[].parts[].fileData.mimeType",
+        "contents[].parts[].fileData.fileUri",
+        "contents[].parts[].text"
+      ],
+      "notes": "The list records published input MIME types, not proof that each format was tested. Use model-specific capability rows together with this protocol. Inline data needs base64 bytes without a data-URI prefix. Ordinary Interactions remains outside scope. File upload and lifecycle are not exercised by this research.",
+      "evidence": [
+        "google-ai-generate-content",
+        "google-ai-image",
+        "google-ai-audio",
+        "google-ai-native-video-20260920"
+      ],
+      "video_sources": [
+        "base64",
+        "url",
+        "file_id"
+      ],
+      "video_formats": [
+        "video/mp4",
+        "video/mpeg",
+        "video/quicktime",
+        "video/avi",
+        "video/x-flv",
+        "video/mpg",
+        "video/webm",
+        "video/wmv",
+        "video/3gpp"
+      ],
+      "video_parameters": [
+        "contents[].parts[].inlineData.mimeType",
+        "contents[].parts[].inlineData.data",
+        "contents[].parts[].fileData.mimeType",
+        "contents[].parts[].fileData.fileUri",
+        "contents[].parts[].videoMetadata.fps",
+        "contents[].parts[].videoMetadata.startOffset",
+        "contents[].parts[].videoMetadata.endOffset"
+      ],
+      "video_constraints": {
+        "baseline_mime_type": "video/mp4",
+        "baseline_processing": "static",
+        "default_fps": 1,
+        "inline_fixture_request_bytes_max": 19999999,
+        "file_lifecycle_separate": true
+      },
+      "video_examples": [
+        {
+          "inlineData": {
+            "mimeType": "video/mp4",
+            "data": "<BASE64_VIDEO_BYTES>"
+          }
+        },
+        {
+          "fileData": {
+            "mimeType": "video/mp4",
+            "fileUri": "<OFFICIAL_FILE_URI>"
+          }
+        }
+      ],
+      "video_carrier": "inline_data"
+    },
+    {
+      "api_form": "openai_chat_completions",
+      "source_id": "google_ai_studio",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/heic",
+        "image/heif"
+      ],
+      "audio_formats": [
+        "wav"
+      ],
+      "image_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].image_url.url",
+        "messages[].content[].text"
+      ],
+      "audio_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].input_audio.data",
+        "messages[].content[].input_audio.format",
+        "messages[].content[].text"
+      ],
+      "notes": "Image MIME support is combined with the image-understanding guide linked from compatibility documentation. The compatibility example explicitly uses base64 JPEG data URI and input_audio format wav; other audio format names are not inferred from the native API. No audio URL carrier or detail-value support is asserted.",
+      "evidence": [
+        "google-ai-openai-compat",
+        "google-ai-image",
+        "google-ai-openai-video-review-20260920"
+      ],
+      "video_sources": [],
+      "video_formats": [],
+      "video_parameters": []
+    },
+    {
+      "api_form": "gemini_generate_content",
+      "source_id": "google_vertex",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp"
+      ],
+      "audio_formats": [
+        "audio/x-aac",
+        "audio/flac",
+        "audio/mp3",
+        "audio/m4a",
+        "audio/mpeg",
+        "audio/mpga",
+        "audio/mp4",
+        "audio/ogg",
+        "audio/pcm",
+        "audio/wav",
+        "audio/webm"
+      ],
+      "image_parameters": [
+        "contents[].parts[].inlineData.mimeType",
+        "contents[].parts[].inlineData.data",
+        "contents[].parts[].fileData.mimeType",
+        "contents[].parts[].fileData.fileUri",
+        "contents[].parts[].text"
+      ],
+      "audio_parameters": [
+        "contents[].parts[].inlineData.mimeType",
+        "contents[].parts[].inlineData.data",
+        "contents[].parts[].fileData.mimeType",
+        "contents[].parts[].fileData.fileUri",
+        "contents[].parts[].text",
+        "generationConfig.audioTimestamp"
+      ],
+      "notes": "Image formats are the shared documented example subset; exact model pages can document further MIME types. Audio is scoped to speech understanding. Inline data and referenced files are separately documented carriers. Existing Vertex interfaces remain disabled and third-party routing is not official direct verification.",
+      "evidence": [
+        "google-vertex-image",
+        "google-vertex-audio",
+        "google-vertex-content",
+        "google-vertex-video-20260920",
+        "google-vertex-video-content-20260920"
+      ],
+      "video_sources": [
+        "base64",
+        "url",
+        "file_id"
+      ],
+      "video_formats": [
+        "video/mp4",
+        "video/mpeg",
+        "video/quicktime",
+        "video/avi",
+        "video/x-flv",
+        "video/mpg",
+        "video/webm",
+        "video/wmv",
+        "video/3gpp"
+      ],
+      "video_parameters": [
+        "contents[].parts[].inlineData.mimeType",
+        "contents[].parts[].inlineData.data",
+        "contents[].parts[].fileData.mimeType",
+        "contents[].parts[].fileData.fileUri",
+        "contents[].parts[].videoMetadata.fps",
+        "contents[].parts[].videoMetadata.startOffset",
+        "contents[].parts[].videoMetadata.endOffset"
+      ],
+      "video_constraints": {
+        "baseline_mime_type": "video/mp4",
+        "baseline_processing": "static",
+        "default_fps": 1,
+        "inline_fixture_request_bytes_max": 19999999,
+        "file_lifecycle_separate": true
+      },
+      "video_examples": [
+        {
+          "inlineData": {
+            "mimeType": "video/mp4",
+            "data": "<BASE64_VIDEO_BYTES>"
+          }
+        },
+        {
+          "fileData": {
+            "mimeType": "video/mp4",
+            "fileUri": "<OFFICIAL_FILE_URI>"
+          }
+        }
+      ],
+      "video_carrier": "inline_data"
+    }
+  ]
+}

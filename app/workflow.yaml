@@ -1,6 +1,6 @@
 version: 1
 name: supplier-onboarding
-description: 供应商准入测试流程（参数合规 → 溯源 → 价格 → 并发 → 注册 profile）
+description: 供应商准入测试流程（参数合规 → 溯源 → 价格 → 并发 → MPDB 审核）
 entry: acquire_key
 nodes:
   acquire_key:
@@ -8,9 +8,9 @@ nodes:
     kind: human_gate
     prompt: >-
       请提供该供应商的 base_url、API key、待测模型清单。拿到后我会协助写入数据目录的
-      .env 与 providers.local.yaml（写入前会展示内容并征得你同意）。若该模型尚未在
-      model_capability_profiles 注册，需先用 scripts/register_model.py 登记未验证
-      profile（同样先展示提案、经你批准才写入），否则参数/压测任务会被拒绝启动。
+      .env 与 providers.local.yaml（写入前会展示内容并征得你同意）。若该模型尚无
+      已审核的 MPDB Source/Profile/Interface/Contract/Test Binding，需先提交官方来源与
+      精确接口证据并重建 MPDB 制品；在审核完成前，参数/压测任务会 fail closed。
     next: check_history
   check_history:
     label: "② 以前测试过?"
@@ -85,14 +85,14 @@ nodes:
     prompt: "请与供应商交涉（价格/性能/上游不符）。交涉完成后回到 ① 重新拿 Key 或更新配置。"
     next: acquire_key
   profile_maintenance:
-    label: "人工：参数规格维护（原厂模型变动）"
+    label: "人工：MPDB 参数规格审核（原厂模型变动）"
     kind: human_gate
-    prompt: "原厂发布了参数/模型变动。该模型是否已接入？未接入走参数测试，已接入直接更新注册表。"
+    prompt: "原厂发布了参数/模型变动。该模型是否已接入？未接入走参数测试；已接入则审核 Source/Profile/Interface/Contract/Test Binding 并重建、校验 MPDB 制品。"
     outcomes:
       not_onboarded: param_test
       onboarded: onboard
   onboard:
-    label: "⑫ 注册模型能力 profile"
+    label: "⑫ 完成 MPDB 审核与供应商接入"
     kind: onboard
     next: done
   done:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Iterable
 
 
@@ -14,6 +15,7 @@ def audit_model_identity(
     provider_cfg: dict[str, Any],
     exchange: str,
     request_endpoint: str | None = None,
+    model_profile_database: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     response = getattr(result, "response_json", None)
     response = response if isinstance(response, dict) else {}
@@ -21,6 +23,10 @@ def audit_model_identity(
     headers = headers if isinstance(headers, dict) else {}
     returned_model, returned_source = _returned_model(response, transport)
     allowed = allowed_model_identities(provider_cfg, requested_model)
+    snapshot_models = _snapshot_response_models(
+        provider_cfg, requested_model, transport, request_endpoint, model_profile_database,
+    )
+    allowed = list(dict.fromkeys([*allowed, *snapshot_models]))
     protocol = _protocol_fingerprint(response, transport)
     interfaces = provider_cfg.get("api_interfaces") or {}
     interface = interfaces.get(transport) if isinstance(interfaces, dict) else {}
@@ -36,6 +42,12 @@ def audit_model_identity(
             "resource_path": interface.get("path"),
         }
     ]
+    if snapshot_models:
+        evidence.append({
+            "kind": "immutable_model_profile_identity",
+            "interface_id": model_profile_database["interface_id"],
+            "allowed_response_model_ids": snapshot_models,
+        })
     conflicts: list[str] = []
 
     if returned_model is not None:
@@ -180,6 +192,12 @@ def summarize_model_identity_audits(
     if isinstance(identity_probe, dict):
         exchanges.extend(_identity_exchanges(identity_probe))
     for result in results:
+        # An expected HTTP rejection proves an unsupported parameter boundary,
+        # not response-model identity. Error envelopes intentionally do not
+        # match the success transport shape and must not downgrade otherwise
+        # matching identity evidence to suspicious.
+        if result.get("status") == "expected_rejection":
+            continue
         exchanges.extend(_identity_exchanges(result))
 
     counts = {
@@ -237,6 +255,48 @@ def summarize_model_identity_audits(
             "upstream model when a gateway forges all identity signals."
         ),
     }
+
+
+def _snapshot_response_models(
+    provider_cfg: dict[str, Any], requested_model: str, transport: str,
+    request_endpoint: str | None, snapshot: dict[str, Any] | None,
+) -> list[str]:
+    """Use only supplied immutable MPDB identity data for the exact official route."""
+    if transport != "openai_responses" or not isinstance(snapshot, dict):
+        return []
+    routes = provider_cfg.get("api_interfaces") or {}
+    route = routes.get(transport) if isinstance(routes, dict) else None
+    if not isinstance(route, dict):
+        return []
+    base = route.get("base_url") or provider_cfg.get("base_url")
+    if (provider_cfg.get("reference_source_id") != "openai"
+        or base != "https://api.openai.com/v1" or route.get("path") != "/responses"
+        or route.get("auth") != "bearer"
+        or request_endpoint not in ("/responses", "https://api.openai.com/v1/responses")):
+        return []
+    profile_id = "text/openai/gpt/" + requested_model
+    interface_id = profile_id + "#openai-responses-default"
+    interface = snapshot.get("interface")
+    target = snapshot.get("execution_target")
+    if (snapshot.get("source_id") != "openai" or snapshot.get("api_form") != transport
+        or snapshot.get("profile_id") != profile_id or snapshot.get("interface_id") != interface_id
+        or not isinstance(interface, dict) or interface.get("source_id") != "openai"
+        or interface.get("api_form") != transport or interface.get("interface_id") != interface_id
+        or not isinstance(target, dict) or target.get("request_model_id") != requested_model):
+        return []
+    identity = interface.get("identity")
+    if (not isinstance(identity, dict) or type(identity.get("schema_version")) is not int
+        or identity["schema_version"] != 1 or identity.get("kind") != "documented_snapshot_aliases"
+        or identity.get("source_id") != "openai" or identity.get("api_form") != transport
+        or identity.get("request_model_id") != requested_model):
+        return []
+    allowed = identity.get("allowed_response_model_ids")
+    if not isinstance(allowed, list) or requested_model not in allowed or any(
+        not isinstance(value, str) or (value != requested_model and not re.fullmatch(
+            re.escape(requested_model) + r"-\d{4}-\d{2}-\d{2}", value)) for value in allowed
+    ):
+        return []
+    return list(dict.fromkeys(allowed))
 
 
 def allowed_model_identities(

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import copy
 from pathlib import Path
 from typing import Any
 
+from .job_spec import CURRENT_CACHE_VERDICT_SCHEMA_VERSION
 from .metrics import load_history, load_records, summarize_records, write_json
 
 
@@ -50,6 +52,8 @@ def check_cache(
     require_usage_fields = bool(thresholds.get("require_usage_fields", True))
 
     summary = cache_result.get("summary", {})
+    scenario_policy = summary.get("cache_evaluation_policy") == "scenario_expectations_v1"
+    scenario_failed = scenario_policy and summary.get("cache_expectations_pass") is not True
     hit_rate = summary.get("cached_input_token_ratio", summary.get("cache_hit_rate"))
     measurement_coverage = summary.get("cache_measurement_coverage")
     usage_fields_seen = int(summary.get("cache_usage_fields_seen") or 0)
@@ -65,6 +69,9 @@ def check_cache(
                 "details": summary.get("cache_usage_accuracy_failures") or [],
             }
         )
+
+    if scenario_failed:
+        failures.append({"metric": "cache_hit_expectations", "actual": summary.get("cache_expectation_status"), "expected": "observed warm hit and cold/negative misses; missing telemetry stays unverified"})
 
     if require_usage_fields and hit_rate is None:
         failures.append(
@@ -88,8 +95,11 @@ def check_cache(
         (control_metrics.get("negative_unique_prefix") or {}).get("cached_input_token_ratio"),
         "max",
     )
+    if scenario_policy:
+        explicit_checks.pop("positive_control_cached_ratio_min")
+        explicit_checks.pop("negative_control_cached_ratio_max")
     gate_mode = mode in {"gate", "hard_fail"}
-    if gate_mode:
+    if gate_mode and not scenario_policy:
         missing = [name for name in explicit_checks if name not in thresholds]
         if missing:
             failures.append(
@@ -123,13 +133,22 @@ def check_cache(
             }
         )
 
+    completed = not bool(cache_result.get("aborted_reason"))
     threshold_pass = not failures
     hard_fail = gate_mode
     accuracy_failed = cache_usage_accuracy_pass is False
     verdict = {
-        "pass": False if accuracy_failed else threshold_pass if hard_fail else True,
+        "schema_version": CURRENT_CACHE_VERDICT_SCHEMA_VERSION,
+        "pass": (
+            False
+            if not completed or accuracy_failed or scenario_failed
+            else threshold_pass
+            if hard_fail
+            else True
+        ),
         "threshold_pass": threshold_pass,
         "stage": "cache",
+        "completed": completed,
         "mode": mode,
         "summary": summary,
         "latency_speedup_ratio": speedup_ratio,
@@ -137,6 +156,26 @@ def check_cache(
         "official_usage_required_for_hit_rate": True,
         "failures": failures,
     }
+    if cache_result.get("aborted_reason"):
+        verdict["aborted_reason"] = cache_result["aborted_reason"]
+    for field in (
+        "provider",
+        "model",
+        "model_family",
+        "api_form",
+        "route_profile",
+        "transport",
+        "source_id",
+        "profile_id",
+        "interface_id",
+        "test_binding_id",
+        "catalog_version",
+        "catalog_digest",
+        "test_extension_digest",
+        "model_profile_database",
+    ):
+        if cache_result.get(field) is not None:
+            verdict[field] = copy.deepcopy(cache_result[field])
     write_json(Path(output_dir) / "verdict.json", verdict)
     return verdict
 

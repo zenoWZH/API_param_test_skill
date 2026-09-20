@@ -2,8 +2,15 @@ from __future__ import annotations
 
 import copy
 import unittest
+from unittest.mock import Mock, patch
 
-from lib.config import SUPPORTED_API_FORMS, SUPPORTED_MODEL_FAMILIES, load_config
+from lib.config import (
+    SUPPORTED_API_FORMS,
+    SUPPORTED_IMAGE_FAMILIES,
+    SUPPORTED_MODEL_FAMILIES,
+    load_config,
+    transport_for_api_form,
+)
 from lib.deepseek_params import build_request
 from lib.reference_specs import (
     default_reference_source_for_family,
@@ -13,12 +20,26 @@ from lib.reference_specs import (
     list_reference_sources,
     load_model_capability_profile,
     load_model_capability_profiles,
+    load_reference_specs,
+    pressure_profiles_for_model,
     reference_param_rows,
     test_profiles_for_reference as reference_test_profiles,
 )
 
 
 class ReferenceSpecTest(unittest.TestCase):
+    def test_exact_contract_lookup_does_not_scan_unrelated_contracts_or_share_mutable_rows(self):
+        from lib.model_profile_catalog import get_model_profile_catalog
+        catalog = get_model_profile_catalog()
+        with patch.object(catalog, "list_contracts", Mock(side_effect=AssertionError("scanned all Contracts"))), patch(
+            "lib.reference_specs.load_reference_specs", side_effect=AssertionError("copied all reference matrices")
+        ):
+            first = get_reference_source("deepseek_v4_pro_0813_chat")
+            self.assertEqual(first["source_id"], "deepseek")
+            first["params"]["frequency_penalty"]["effect_support"] = "mutated"
+            second = get_reference_source("deepseek_v4_pro_0813_chat")
+            self.assertEqual(second["params"]["frequency_penalty"]["effect_support"], "none")
+
     @staticmethod
     def _inject_provider(
         config: dict,
@@ -94,19 +115,11 @@ class ReferenceSpecTest(unittest.TestCase):
             },
         )
 
-    def test_route_wrapper_inherits_contract_without_inheriting_route_identity(
-        self,
-    ) -> None:
+    def test_runtime_routes_reuse_official_contract_without_supplier_wrapper(self) -> None:
         direct = get_reference_source("kimi_k3_openai_compat")
-        dynamic = get_reference_source("kimi_k3_dynamic_aggregator")
-        self.assertEqual(dynamic["params"], direct["params"])
-        self.assertEqual(dynamic["test_profiles"], direct["test_profiles"])
-        self.assertEqual(dynamic["model_family"], "kimi")
-        self.assertEqual(dynamic["api_form"], "openai_chat_completions")
-        self.assertEqual(dynamic["route_profile"], "dynamic_aggregator")
-        self.assertEqual(dynamic["contract_reference_source"], "kimi_k3_openai_compat")
-        self.assertEqual(dynamic["certification_scope"], "adapter_only")
-        self.assertTrue(dynamic["route_stability_required"])
+        self.assertEqual(direct["route_profile"], "vendor_direct")
+        with self.assertRaises(KeyError):
+            get_reference_source("kimi_k3_dynamic_aggregator")
 
         capability = load_model_capability_profile(
             "text",
@@ -116,16 +129,64 @@ class ReferenceSpecTest(unittest.TestCase):
             api_form="openai_chat_completions",
         )
         self.assertEqual(capability["profile_status"], "registered")
+        self.assertEqual(
+            capability["allowed_reference_sources"],
+            ["kimi_k3_openai_compat"],
+        )
         self.assertEqual(capability["certification_scope"], "adapter_only")
         self.assertTrue(capability["route_stability_required"])
 
     def test_every_reference_source_declares_exact_family_form_and_route(self) -> None:
+        supported_families = SUPPORTED_MODEL_FAMILIES | {
+            "banana",
+            "gpt-image-2",
+            "grok-imagine",
+        }
+        official_routes = {
+            "vendor_direct",
+            "vendor_compat",
+            "aws_bedrock",
+            "azure_openai",
+            "azure_foundry",
+            "google_ai_studio",
+            "google_vertex",
+            "aliyun_maas",
+        }
         for source in list_reference_sources():
             with self.subTest(source=source["id"]):
-                self.assertIn(source["model_family"], SUPPORTED_MODEL_FAMILIES)
+                self.assertIn(source["model_family"], supported_families)
                 self.assertNotIn(source["model_family"], {"openai", "aliyun"})
                 self.assertIn(source["api_form"], SUPPORTED_API_FORMS)
-                self.assertTrue(source["route_profile"])
+                self.assertIn(source["route_profile"], official_routes)
+                self.assertTrue(source["official_sources"])
+
+    def test_only_approved_pro_prefix_fixed_suite_enables_app_transport(self) -> None:
+        contracts = load_reference_specs()["reference_sources"]
+        for contract_id in (
+            "deepseek_v4_flash_0731_chat_prefix_beta",
+            "deepseek_v4_pro_0813_chat_prefix_beta",
+        ):
+            with self.subTest(contract_id=contract_id):
+                source = get_reference_source(contract_id)
+                pro = contract_id == "deepseek_v4_pro_0813_chat_prefix_beta"
+                self.assertEqual(source["api_form"], "deepseek_beta_chat_prefix")
+                self.assertEqual(source["executable"], pro)
+                contract = contracts[contract_id]
+                self.assertTrue(contract["catalog_eligible"])
+                self.assertTrue(contract["profile_eligible"])
+                self.assertTrue(contract["enabled"])
+                self.assertTrue(source["catalog_execution_flags"]["executable"])
+                self.assertTrue(source["catalog_execution_flags"]["parameter_test_enabled"])
+                self.assertEqual(source["app_transport_available"], pro)
+                for gate in ("executable", "parameter_test_enabled"):
+                    self.assertEqual(contract[gate], pro, gate)
+                self.assertFalse(contract["pressure_test_enabled"])
+                self.assertEqual(transport_for_api_form(source["api_form"]), "deepseek-beta-chat-prefix")
+                if pro:
+                    from lib.deepseek_beta_reference import CASE_IDS
+                    self.assertEqual(source["test_profiles"], list(CASE_IDS))
+                    self.assertTrue(source["fixed_case_suite"])
+                    self.assertEqual(source["param_test_runs"], 1)
 
     def test_capability_reference_sources_match_family_route_and_form(self) -> None:
         payload = load_model_capability_profiles()
@@ -207,11 +268,6 @@ class ReferenceSpecTest(unittest.TestCase):
                 "aliyun_preserve_thinking",
                 "aliyun_tools",
             },
-            "aliyun_deepseek_v3_2_openai_compat": {
-                "aliyun_enable_thinking",
-                "aliyun_disable_thinking",
-                "aliyun_tools",
-            },
             "aliyun_deepseek_v4_openai_compat": {
                 "aliyun_reasoning_high",
                 "aliyun_reasoning_max",
@@ -222,7 +278,6 @@ class ReferenceSpecTest(unittest.TestCase):
             "aliyun_glm5_openai_compat": "glm",
             "aliyun_kimi_k2_6_openai_compat": "kimi",
             "aliyun_kimi_k2_7_code_openai_compat": "kimi",
-            "aliyun_deepseek_v3_2_openai_compat": "deepseek",
             "aliyun_deepseek_v4_openai_compat": "deepseek",
         }
 
@@ -255,25 +310,24 @@ class ReferenceSpecTest(unittest.TestCase):
         )
         self.assertNotIn("aliyun_disable_thinking", kimi_code_profiles)
         self.assertNotIn("aliyun_top_k", kimi_code_profiles)
-        deepseek_v3_profiles = reference_test_profiles(
-            "aliyun_deepseek_v3_2_openai_compat"
-        )
-        self.assertNotIn("aliyun_reasoning_high", deepseek_v3_profiles)
-        self.assertNotIn("aliyun_json_object", deepseek_v3_profiles)
-
         kimi_rows = {
             row["parameter"]: row
             for row in reference_param_rows("aliyun_kimi_k2_6_openai_compat")
         }
-        deepseek_rows = {
-            row["parameter"]: row
-            for row in reference_param_rows("aliyun_deepseek_v3_2_openai_compat")
-        }
         self.assertEqual(kimi_rows["top_k"]["official"], "unsupported")
         self.assertEqual(kimi_rows["n"]["official"], "unsupported")
         self.assertEqual(kimi_rows["response_format"]["official"], "unsupported")
-        self.assertEqual(deepseek_rows["top_k"]["official"], "unsupported")
-        self.assertEqual(deepseek_rows["response_format"]["official"], "unsupported")
+        for retired_source in (
+            "aliyun_deepseek_v3_openai_compat",
+            "aliyun_deepseek_v3_1_openai_compat",
+            "aliyun_deepseek_v3_2_openai_compat",
+        ):
+            with self.subTest(retired_source=retired_source):
+                try:
+                    retired_profiles = reference_test_profiles(retired_source)
+                except KeyError:
+                    continue
+                self.assertEqual(retired_profiles, [])
 
     def test_gpt_chat_source_is_independent_from_glm_extensions(self) -> None:
         self.assertEqual(default_reference_source_for_family("gpt"), "openai_chat_base")
@@ -356,6 +410,78 @@ class ReferenceSpecTest(unittest.TestCase):
         self.assertTrue(tool.metadata["pass_reasoning_content"])
         self.assertTrue(tool.metadata["multi_turn"])
 
+    def test_glm_5_3_and_flash_use_zhipu_origin_contracts(self) -> None:
+        glm53 = get_reference_source("zhipu_glm_5_3_openai_compat")
+        self.assertEqual(glm53["source_id"], "zhipu")
+        self.assertEqual(len(reference_test_profiles(glm53["id"])), 23)
+        glm53_capability = load_model_capability_profile(
+            "text",
+            "glm",
+            "glm-5.3",
+            route_profile="vendor_direct",
+            api_form="openai_chat_completions",
+        )
+        self.assertEqual(
+            glm53_capability["default_reference_source"],
+            "zhipu_glm_5_3_openai_compat",
+        )
+        self.assertTrue(glm53_capability["pressure_test_enabled"])
+
+        flash = get_reference_source("zhipu_glm_5_3_flash_openai_compat")
+        self.assertEqual(flash["source_id"], "zhipu")
+        flash_profiles = reference_test_profiles(flash["id"])
+        self.assertEqual(len(flash_profiles), 30)
+        self.assertIn("glm53_flash_image_base64", flash_profiles)
+        self.assertIn("glm53_flash_video_url", flash_profiles)
+        self.assertIn("glm53_flash_file_data", flash_profiles)
+        text_row = {
+            row["parameter"]: row
+            for row in reference_param_rows(flash["id"])
+        }["messages[].content[].text"]
+        self.assertEqual(
+            text_row["test_profiles"],
+            [
+                "glm53_flash_image_url",
+                "glm53_flash_image_base64",
+                "glm53_flash_multi_image",
+                "glm53_flash_video_url",
+                "glm53_flash_file_url",
+                "glm53_flash_file_data",
+                "glm53_flash_file_image_mixed",
+            ],
+        )
+        flash_capability = load_model_capability_profile(
+            "text",
+            "glm",
+            "glm-5.3-flash",
+            route_profile="vendor_direct",
+            api_form="openai_chat_completions",
+        )
+        self.assertEqual(
+            flash_capability["default_reference_source"],
+            "zhipu_glm_5_3_flash_openai_compat",
+        )
+        self.assertTrue(flash_capability["pressure_test_enabled"])
+        self.assertEqual(
+            pressure_profiles_for_model(
+                "glm",
+                "glm-5.3-flash",
+                "zhipu_glm_5_3_flash_openai_compat",
+                route_profile="vendor_direct",
+                api_form="openai_chat_completions",
+            ),
+            [
+                "glm53_stream",
+                "glm53_thinking_enabled",
+                "glm53_reasoning_low",
+                "glm53_reasoning_high",
+                "glm53_reasoning_max",
+                "glm53_do_sample",
+                "glm53_temperature",
+                "glm53_max_tokens",
+            ],
+        )
+
     def test_kimi_k3_uses_dedicated_official_reference_source(self) -> None:
         config = load_config()
         self._inject_moonshot_official_k3(config)
@@ -434,11 +560,27 @@ class ReferenceSpecTest(unittest.TestCase):
             overrides={"model": "kimi-k3"},
             model_family_override="kimi",
             enforce_model_capabilities=False,
+            parameter_test=True,
         )
         self.assertEqual(
             preserved.body["messages"][1]["reasoning_content"],
             "I'll start by listing five numbers: 473, 921, 235, 215, 222, and I'll tell you the first three.",
         )
+        self.assertEqual(
+            preserved.body["messages"][2]["content"],
+            "What are the other two numbers you have in mind?",
+        )
+        self.assertNotIn(
+            "Reply with only those two numbers.",
+            preserved.body["messages"][2]["content"],
+        )
+        self.assertEqual(
+            config["compatibility_profiles"]["kimi_k3_preserved_thinking"].get(
+                "run_success_mode"
+            ),
+            "any",
+        )
+        self.assertNotIn("run_success_mode", preserved.body)
 
         dynamic = build_request(
             config,
@@ -487,16 +629,11 @@ class ReferenceSpecTest(unittest.TestCase):
             ],
         )
 
-    def test_deepseek_v4_flash_0731_uses_independent_xinyun_profile(self) -> None:
-        source = get_reference_source("deepseek_xinyunai_v4_flash_0731_openai_compat")
-        self.assertEqual(source["model_family"], "deepseek")
-        self.assertEqual(source["route_profile"], "dynamic_aggregator")
-        self.assertEqual(source["api_form"], "openai_chat_completions")
-        self.assertEqual(source["contract_reference_source"], "deepseek_chat")
-        self.assertEqual(source["certification_scope"], "adapter_only")
-        self.assertIn("thinking_low", source["test_profiles"])
-        self.assertIn("deepseek_json_output_256", source["test_profiles"])
-        self.assertNotIn("json_output", source["test_profiles"])
+    def test_deepseek_v4_flash_0731_uses_origin_standard_not_supplier_contract(self) -> None:
+        with self.assertRaises(KeyError):
+            get_reference_source(
+                "deepseek_xinyunai_v4_flash_0731_openai_compat"
+            )
 
         base = load_model_capability_profile(
             "text",
@@ -513,35 +650,48 @@ class ReferenceSpecTest(unittest.TestCase):
             api_form="openai_chat_completions",
         )
         self.assertEqual(base["profile_status"], "registered")
-        self.assertEqual(base["profile_id"], "deepseek-v4-flash")
+        self.assertEqual(
+            base["profile_id"],
+            "text/deepseek/deepseek/deepseek-v4-flash-0731",
+        )
         self.assertEqual(
             base["model_api_profile_id"],
-            "deepseek/deepseek-v4-flash@dynamic_aggregator/openai_chat_completions",
+            "text/deepseek/deepseek/deepseek-v4-flash-0731#openai-chat-default",
         )
         self.assertEqual(
             base["allowed_reference_sources"],
-            ["deepseek_dynamic_aggregator"],
+            ["deepseek_chat"],
         )
         self.assertEqual(capability["profile_status"], "registered")
-        self.assertEqual(capability["profile_id"], "deepseek-v4-flash-0731")
+        self.assertEqual(
+            capability["profile_id"],
+            "text/deepseek/deepseek/deepseek-v4-flash-0731",
+        )
         self.assertEqual(
             capability["model_api_profile_id"],
-            "deepseek/deepseek-v4-flash-0731@dynamic_aggregator/openai_chat_completions",
+            "text/deepseek/deepseek/deepseek-v4-flash-0731#openai-chat-default",
         )
         self.assertEqual(
             capability["allowed_reference_sources"],
-            ["deepseek_xinyunai_v4_flash_0731_openai_compat"],
+            ["deepseek_chat"],
         )
         self.assertEqual(
             capability["default_reference_source"],
-            "deepseek_xinyunai_v4_flash_0731_openai_compat",
+            "deepseek_chat",
         )
         self.assertEqual(
             capability["comparison_reference_source"],
-            "deepseek_xinyunai_v4_flash_0731_openai_compat",
+            "deepseek_chat",
         )
-        self.assertNotEqual(
+        self.assertEqual(
             base["model_api_profile_id"], capability["model_api_profile_id"]
+        )
+        self.assertEqual(
+            base["execution_target"]["request_model_id"], "deepseek-v4-flash"
+        )
+        self.assertEqual(
+            capability["execution_target"]["request_model_id"],
+            "deepseek-v4-flash-0731",
         )
 
         direct = load_model_capability_profile(
@@ -551,8 +701,9 @@ class ReferenceSpecTest(unittest.TestCase):
             route_profile="vendor_direct",
             api_form="openai_chat_completions",
         )
-        self.assertEqual(direct["profile_status"], "unregistered_model_profile")
-        with self.assertRaisesRegex(ValueError, "not allowed"):
+        self.assertEqual(direct["profile_status"], "registered")
+        self.assertEqual(direct["profile_id"], base["profile_id"])
+        with self.assertRaises((KeyError, ValueError)):
             load_model_capability_profile(
                 "text",
                 "deepseek",
@@ -561,6 +712,78 @@ class ReferenceSpecTest(unittest.TestCase):
                 api_form="openai_chat_completions",
                 reference_source="deepseek_xinyunai_v4_flash_0731_openai_compat",
             )
+
+    def test_deepseek_chat_sources_use_json_output_256(self) -> None:
+        origin_source = get_reference_source("deepseek_chat")
+        self.assertEqual(origin_source["route_profile"], "vendor_direct")
+        self.assertEqual(origin_source["certification_scope"], "raw_route_contract")
+        for removed_alias in (
+            "deepseek_dynamic_aggregator",
+            "deepseek_xinyunai_v4_flash_0731_openai_compat",
+        ):
+            with self.subTest(removed_alias=removed_alias), self.assertRaises(KeyError):
+                get_reference_source(removed_alias)
+        self.assertIn(
+            "deepseek_json_output_256",
+            origin_source["params"]["response_format"]["coverage"],
+        )
+        self.assertIn("deepseek_json_output_256", origin_source["test_profiles"])
+        self.assertNotIn("json_output", origin_source["test_profiles"])
+        self.assertIn("tool_calls", origin_source["test_profiles"])
+        self.assertIn(
+            "https://api-docs.deepseek.com/guides/json_mode/",
+            origin_source["official_sources"],
+        )
+        origin_json_coverage = origin_source["params"]["response_format"][
+            "coverage"
+        ]
+        self.assertIn("project probe budget max_tokens=256", origin_json_coverage)
+        self.assertIn("not an official model limit", origin_json_coverage)
+
+        adapter = load_model_capability_profile(
+            "text",
+            "deepseek",
+            "deepseek-v4-flash",
+            route_profile="dynamic_aggregator",
+            api_form="openai_chat_completions",
+        )
+        self.assertEqual(adapter["reference_source"], "deepseek_chat")
+        self.assertEqual(adapter["certification_scope"], "adapter_only")
+        self.assertTrue(adapter["route_stability_required"])
+        inherited_aggregator_pressure = pressure_profiles_for_model(
+            "deepseek",
+            "deepseek-v4-flash",
+            "deepseek_chat",
+            api_form="openai_chat_completions",
+            route_profile="dynamic_aggregator",
+        )
+        self.assertIn(
+            "deepseek_json_output_256", inherited_aggregator_pressure
+        )
+        self.assertNotIn("json_output", inherited_aggregator_pressure)
+        self.assertIn("tool_calls", inherited_aggregator_pressure)
+
+        config = load_config()
+        deepseek_json = build_request(
+            config,
+            "compatibility_profiles",
+            "deepseek_json_output_256",
+            overrides={"model": "deepseek-v4-pro"},
+            model_family_override="deepseek",
+            enforce_model_capabilities=False,
+        )
+        self.assertEqual(deepseek_json.body["response_format"]["type"], "json_object")
+        self.assertEqual(deepseek_json.body["max_tokens"], 256)
+        generic_json = build_request(
+            config,
+            "compatibility_profiles",
+            "json_output",
+            overrides={"model": "deepseek-v4-pro"},
+            model_family_override="deepseek",
+            enforce_model_capabilities=False,
+        )
+        self.assertEqual(generic_json.body["response_format"]["type"], "json_object")
+        self.assertEqual(generic_json.body["max_tokens"], 128)
 
     def test_deepseek_v4_effort_levels_follow_current_model_contract(self) -> None:
         config = load_config()
@@ -726,11 +949,20 @@ class ReferenceSpecTest(unittest.TestCase):
 
         self.assertEqual(
             rows["tools"]["test_profiles"],
-            ["claude_native_tools", "claude_native_tool_choice_auto"],
+            [
+                "claude_native_tools",
+                "claude_native_tool_choice_auto",
+                "claude_native_manual_tool_choice_any",
+                "claude_native_adaptive_tool_choice_any",
+            ],
         )
         self.assertEqual(
             rows["tool_choice"]["test_profiles"],
-            ["claude_native_tool_choice_auto"],
+            [
+                "claude_native_tool_choice_auto",
+                "claude_native_manual_tool_choice_any",
+                "claude_native_adaptive_tool_choice_any",
+            ],
         )
         self.assertIn("claude_native_thinking_adaptive", profiles)
         self.assertIn("claude_native_stream", profiles)
@@ -740,6 +972,13 @@ class ReferenceSpecTest(unittest.TestCase):
             "claude_native_effort_high",
             "claude_native_effort_xhigh",
             "claude_native_effort_max",
+            "claude_native_effort_only_low",
+            "claude_native_effort_only_medium",
+            "claude_native_effort_only_high",
+            "claude_native_effort_only_xhigh",
+            "claude_native_effort_only_max",
+            "claude_native_disabled_effort_xhigh",
+            "claude_native_disabled_effort_max",
         ]
         self.assertEqual(
             rows["output_config.effort"]["test_profiles"],
@@ -758,7 +997,7 @@ class ReferenceSpecTest(unittest.TestCase):
                 self.assertEqual(request.metadata["request_endpoint"], "/messages")
                 self.assertIn("messages", request.body)
         for profile, effort in zip(
-            effort_profiles,
+            effort_profiles[:5],
             ("low", "medium", "high", "xhigh", "max"),
             strict=True,
         ):
@@ -769,6 +1008,19 @@ class ReferenceSpecTest(unittest.TestCase):
                 model_family_override="claude",
             )
             self.assertEqual(request.body["thinking"]["type"], "adaptive")
+            self.assertEqual(request.body["output_config"]["effort"], effort)
+        for profile, effort in zip(
+            effort_profiles[5:10],
+            ("low", "medium", "high", "xhigh", "max"),
+            strict=True,
+        ):
+            request = build_request(
+                config,
+                "compatibility_profiles",
+                profile,
+                model_family_override="claude",
+            )
+            self.assertNotIn("thinking", request.body)
             self.assertEqual(request.body["output_config"]["effort"], effort)
 
     def test_claude_fable_native_messages_is_default_and_profiles_resolve(self) -> None:
@@ -787,18 +1039,29 @@ class ReferenceSpecTest(unittest.TestCase):
         profiles = reference_test_profiles("claude_fable_native_messages")
         config = load_config()
 
-        self.assertNotIn("claude_native_top_p", profiles)
-        self.assertNotIn("claude_native_thinking_disabled", profiles)
-        self.assertNotIn("claude_native_thinking_budget", profiles)
+        self.assertIn("claude_native_top_p", profiles)
+        self.assertIn("claude_native_top_p_compat", profiles)
+        self.assertIn("claude_native_top_p_nondefault", profiles)
+        self.assertIn("claude_native_thinking_disabled", profiles)
+        self.assertIn("claude_native_thinking_budget", profiles)
         self.assertIn("claude_native_thinking_adaptive", profiles)
-        self.assertEqual(rows["top_p"]["coverage_mode"], "not_tested")
-        self.assertEqual(rows["thinking.budget_tokens"]["coverage_mode"], "not_tested")
+        self.assertEqual(rows["top_p"]["coverage_mode"], "profiles")
+        self.assertEqual(rows["thinking.budget_tokens"]["coverage_mode"], "profiles")
         self.assertEqual(
             rows["output_config.effort"]["test_profiles"],
             [
                 "claude_fable_thinking_effort_low",
                 "claude_fable_thinking_effort_medium",
                 "claude_fable_thinking_effort_high",
+                "claude_fable_thinking_effort_xhigh",
+                "claude_fable_thinking_effort_max",
+                "claude_native_effort_only_low",
+                "claude_native_effort_only_medium",
+                "claude_native_effort_only_high",
+                "claude_native_effort_only_xhigh",
+                "claude_native_effort_only_max",
+                "claude_native_disabled_effort_xhigh",
+                "claude_native_disabled_effort_max",
             ],
         )
         for profile in profiles:
@@ -810,15 +1073,37 @@ class ReferenceSpecTest(unittest.TestCase):
                     model_family_override="claude_fable",
                 )
                 self.assertEqual(request.metadata["transport"], "claude_messages")
-                self.assertNotIn("top_p", request.body)
-                thinking = request.body.get("thinking")
-                if isinstance(thinking, dict):
-                    self.assertEqual(thinking.get("type"), "adaptive")
-                    self.assertNotIn("budget_tokens", thinking)
                 if profile.startswith("claude_fable_thinking_effort_"):
                     effort = profile.rsplit("_", 1)[-1]
                     self.assertEqual(request.body["output_config"]["effort"], effort)
                     self.assertEqual(request.body["thinking"]["type"], "adaptive")
+                if profile.startswith("claude_native_effort_only_"):
+                    # These are wire-level effort isolation probes. Fable still
+                    # uses mandatory adaptive thinking server-side, but the
+                    # request must not duplicate the explicit adaptive bundle.
+                    self.assertNotIn("thinking", request.body)
+
+        top_p = build_request(
+            config,
+            "compatibility_profiles",
+            "claude_native_top_p",
+            model_family_override="claude_fable",
+        )
+        self.assertEqual(top_p.body["top_p"], 1)
+        disabled = build_request(
+            config,
+            "compatibility_profiles",
+            "claude_native_thinking_disabled",
+            model_family_override="claude_fable",
+        )
+        self.assertEqual(disabled.body["thinking"]["type"], "disabled")
+        budget = build_request(
+            config,
+            "compatibility_profiles",
+            "claude_native_thinking_budget",
+            model_family_override="claude_fable",
+        )
+        self.assertEqual(budget.body["thinking"]["type"], "enabled")
 
     def test_claude_openai_compat_profiles_resolve_as_optional_source(self) -> None:
         self.assertEqual(
@@ -1109,13 +1394,17 @@ class ReferenceSpecTest(unittest.TestCase):
         self.assertEqual(family_for_reference("openai_gpt5_chat"), "gpt")
         profiles = reference_test_profiles("openai_gpt5_chat")
         self.assertIn("gpt5_chat_tools", profiles)
+        self.assertIn("gpt5_chat_reasoning_max", profiles)
+        self.assertIn("gpt5_chat_reasoning_minimal", profiles)
+        self.assertIn("gpt5_chat_reject_temperature", profiles)
+        self.assertIn("gpt5_chat_reject_stop", profiles)
         self.assertNotIn("stop_sequences", profiles)
-        rows = {
-            row["parameter"]: row for row in reference_param_rows("openai_gpt5_chat")
-        }
+        rows = {row["parameter"]: row for row in reference_param_rows("openai_gpt5_chat")}
         self.assertIn("max_completion_tokens", rows)
         self.assertIn("reasoning_effort", rows)
-        self.assertNotIn("stop", rows)
+        self.assertEqual(rows["temperature"]["official"], "unsupported")
+        self.assertEqual(rows["stop"]["official"], "unsupported")
+        self.assertIn("original GPT-5 uses minimal", rows["reasoning_effort"]["coverage"])
 
         config = load_config()
         tools = build_request(

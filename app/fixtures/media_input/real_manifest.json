@@ -1,0 +1,423 @@
+{
+  "schema_version": 1,
+  "sources": {
+    "nasa_earth_apollo17": {
+      "file": "sources/earth_original.jpg",
+      "url": "https://science.nasa.gov/wp-content/uploads/2024/03/blue-marble-apollo-17-16x9-1.jpg",
+      "page_url": "https://science.nasa.gov/earth/earth-observatory/history-of-the-blue-marble/",
+      "title": "Apollo 17 Blue Marble photograph of Earth",
+      "credit": "NASA; Apollo 17 crew; image AS17-148-22727",
+      "sha256": "c9edb8f844b76c0cd5ca4486df95277e5eff1f8fd7d650d7e50b4370f46c4f32",
+      "byte_length": 138049,
+      "retrieved_at": "2026-09-20",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "license": "NASA media usage guidelines: factual educational/informational use with source acknowledgement; no endorsement implied.",
+      "retrieval": {
+        "method": "GET",
+        "authentication": "none",
+        "final_url": "https://science.nasa.gov/wp-content/uploads/2024/03/blue-marble-apollo-17-16x9-1.jpg"
+      }
+    },
+    "nasa_moon_galileo": {
+      "file": "sources/moon_original.jpg",
+      "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia00/pia00405/PIA00405.jpg?w=768&h=768&fit=clip",
+      "page_url": "https://science.nasa.gov/photojournal/earths-moon/",
+      "title": "Earth's Moon, photographed by Galileo on December 7, 1992",
+      "credit": "NASA/JPL; Galileo; image PIA00405",
+      "sha256": "0e863f60f4f747c602e65e7f54081f6f7aaff0ea0f9e9a32fa779f76e9247cf8",
+      "byte_length": 102031,
+      "retrieved_at": "2026-09-20",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "license": "NASA media usage guidelines: factual educational/informational use with source acknowledgement; no endorsement implied.",
+      "retrieval": {
+        "method": "GET",
+        "authentication": "none",
+        "final_url": "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia00/pia00405/PIA00405.jpg?w=768&h=768&fit=clip"
+      }
+    },
+    "nasa_eagle_landed": {
+      "file": "sources/eagle_original.mp3",
+      "url": "https://www.nasa.gov/wp-content/uploads/2015/01/569462main_eagle_has_landed.mp3",
+      "page_url": "https://www.nasa.gov/historical-sounds/",
+      "title": "Apollo 11: Eagle Has Landed",
+      "credit": "NASA; Apollo 11 air-to-ground voice recording",
+      "sha256": "c2cf9c2754ec3c2f7315acd4fcdd7d892fb2027919c1a80adf90a49f63c0316c",
+      "byte_length": 26388,
+      "transcript_url": "https://www.nasa.gov/missions/apollo/apollo-11/wide-awake-on-the-sea-of-tranquillity/",
+      "transcript_basis": "NASA's published Armstrong quotation; punctuation is editorial. The short source clip is preserved in full. No local speech-recognition result is claimed.",
+      "retrieved_at": "2026-09-20",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "license": "NASA media usage guidelines: factual educational/informational use with source acknowledgement; no endorsement implied.",
+      "retrieval": {
+        "method": "GET",
+        "authentication": "none",
+        "final_url": "https://www.nasa.gov/wp-content/uploads/2015/01/569462main_eagle_has_landed.mp3"
+      }
+    }
+  },
+  "provenance": {
+    "type": "derived_from_public_nasa_media",
+    "generator": "fixtures/media_input/generate_real_fixtures.py",
+    "regenerate_command": "python fixtures/media_input/generate_real_fixtures.py",
+    "command_working_directory": "fixtures/media_input",
+    "ffmpeg_version": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+    "pillow_version": "12.3.0",
+    "runtime_tools_required": [],
+    "video_scope": "A real MP4 encoding of ordered spacecraft photographs. This tests visual temporal order, not natural scene motion or live action.",
+    "source_attribution": "NASA source material is included as fixture input. Model outputs are attributable to the tested model, not NASA."
+  },
+  "total_asset_bytes": 613552,
+  "fixtures": {
+    "photo_earth": {
+      "kind": "image",
+      "default_format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "content_origin": "spacecraft_photograph",
+      "formats": {
+        "jpeg": {
+          "file": "photo_earth.jpeg",
+          "mime_type": "image/jpeg",
+          "sha256": "1bc60c43926f1723700167a7bffb176b998b6dab4e56d58df0ca555607323cc6",
+          "byte_length": 77543,
+          "expected_text": "earth",
+          "expected_semantic": {
+            "object": "earth"
+          },
+          "source_ids": [
+            "nasa_earth_apollo17"
+          ],
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "input": "sources/earth_original.jpg",
+              "operation": "ImageOps.fit(image.convert('RGB'), (512, 512), method=LANCZOS).save",
+              "output": "photo_earth.jpeg",
+              "save_options": {
+                "format": "JPEG",
+                "quality": 88,
+                "subsampling": 0,
+                "optimize": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    "photo_moon": {
+      "kind": "image",
+      "default_format": "jpeg",
+      "width": 512,
+      "height": 512,
+      "content_origin": "spacecraft_photograph",
+      "formats": {
+        "jpeg": {
+          "file": "photo_moon.jpeg",
+          "mime_type": "image/jpeg",
+          "sha256": "efe2cbccd7439c0d70aa4e3bbd9f5c5f0a73e43be280fac9627cbb601ca427ad",
+          "byte_length": 75719,
+          "expected_text": "moon",
+          "expected_semantic": {
+            "object": "moon"
+          },
+          "source_ids": [
+            "nasa_moon_galileo"
+          ],
+          "generation_commands": [
+            {
+              "tool": "Pillow",
+              "input": "sources/moon_original.jpg",
+              "operation": "ImageOps.fit(image.convert('RGB'), (512, 512), method=LANCZOS).save",
+              "output": "photo_moon.jpeg",
+              "save_options": {
+                "format": "JPEG",
+                "quality": 88,
+                "subsampling": 0,
+                "optimize": true
+              }
+            }
+          ]
+        }
+      }
+    },
+    "video_earth_moon": {
+      "kind": "video",
+      "default_format": "mp4",
+      "width": 512,
+      "height": 512,
+      "duration_seconds": 4.0,
+      "content_origin": "ordered_real_photographs",
+      "formats": {
+        "mp4": {
+          "file": "video_earth_moon.mp4",
+          "mime_type": "video/mp4",
+          "sha256": "38e129b31d463860b5feb2ced14f9b00e6c529d425ef324ae835af74d64d0f4b",
+          "byte_length": 134270,
+          "expected_text": "earth,moon",
+          "expected_semantic": {
+            "object_order": [
+              "earth",
+              "moon"
+            ],
+            "segments": [
+              {
+                "start_seconds": 0,
+                "end_seconds": 2,
+                "object": "earth"
+              },
+              {
+                "start_seconds": 2,
+                "end_seconds": 4,
+                "object": "moon"
+              }
+            ]
+          },
+          "source_ids": [
+            "nasa_earth_apollo17",
+            "nasa_moon_galileo"
+          ],
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-loop",
+              "1",
+              "-framerate",
+              "4",
+              "-t",
+              "2",
+              "-i",
+              "photo_earth.jpeg",
+              "-loop",
+              "1",
+              "-framerate",
+              "4",
+              "-t",
+              "2",
+              "-i",
+              "photo_moon.jpeg",
+              "-filter_complex",
+              "[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p[v]",
+              "-map",
+              "[v]",
+              "-c:v",
+              "libx264",
+              "-preset",
+              "slow",
+              "-crf",
+              "23",
+              "-r",
+              "4",
+              "-t",
+              "4",
+              "-an",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:v",
+              "+bitexact",
+              "-movflags",
+              "+faststart",
+              "video_earth_moon.mp4"
+            ]
+          ],
+          "codec": "h264",
+          "pixel_format": "yuv420p",
+          "fps": 4,
+          "has_audio": false,
+          "duration_seconds": 4.0
+        }
+      }
+    },
+    "video_moon_earth": {
+      "kind": "video",
+      "default_format": "mp4",
+      "width": 512,
+      "height": 512,
+      "duration_seconds": 4.0,
+      "content_origin": "ordered_real_photographs",
+      "formats": {
+        "mp4": {
+          "file": "video_moon_earth.mp4",
+          "mime_type": "video/mp4",
+          "sha256": "fe72561303cf8ab525cf094519a5ca0d40a41bcdb1b020033fff23a3ebe0d39d",
+          "byte_length": 133642,
+          "expected_text": "moon,earth",
+          "expected_semantic": {
+            "object_order": [
+              "moon",
+              "earth"
+            ],
+            "segments": [
+              {
+                "start_seconds": 0,
+                "end_seconds": 2,
+                "object": "moon"
+              },
+              {
+                "start_seconds": 2,
+                "end_seconds": 4,
+                "object": "earth"
+              }
+            ]
+          },
+          "source_ids": [
+            "nasa_earth_apollo17",
+            "nasa_moon_galileo"
+          ],
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-loop",
+              "1",
+              "-framerate",
+              "4",
+              "-t",
+              "2",
+              "-i",
+              "photo_moon.jpeg",
+              "-loop",
+              "1",
+              "-framerate",
+              "4",
+              "-t",
+              "2",
+              "-i",
+              "photo_earth.jpeg",
+              "-filter_complex",
+              "[0:v][1:v]concat=n=2:v=1:a=0,format=yuv420p[v]",
+              "-map",
+              "[v]",
+              "-c:v",
+              "libx264",
+              "-preset",
+              "slow",
+              "-crf",
+              "23",
+              "-r",
+              "4",
+              "-t",
+              "4",
+              "-an",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:v",
+              "+bitexact",
+              "-movflags",
+              "+faststart",
+              "video_moon_earth.mp4"
+            ]
+          ],
+          "codec": "h264",
+          "pixel_format": "yuv420p",
+          "fps": 4,
+          "has_audio": false,
+          "duration_seconds": 4.0
+        }
+      }
+    },
+    "nasa_eagle": {
+      "kind": "audio",
+      "default_format": "wav",
+      "content_origin": "human_historical_recording",
+      "formats": {
+        "wav": {
+          "file": "nasa_eagle.wav",
+          "mime_type": "audio/wav",
+          "sha256": "aa780cf8cf4ce8e86cedd2d6a20a02062560a35b97544cdf89e2cfb70884a403",
+          "byte_length": 170634,
+          "expected_text": "Houston, Tranquility Base here. The Eagle has landed.",
+          "expected_semantic": {
+            "transcript": "Houston, Tranquility Base here. The Eagle has landed.",
+            "speech_origin": "human_historical_recording"
+          },
+          "source_ids": [
+            "nasa_eagle_landed"
+          ],
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "sources/eagle_original.mp3",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "pcm_s16le",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "nasa_eagle.wav"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        },
+        "mp3": {
+          "file": "nasa_eagle.mp3",
+          "mime_type": "audio/mpeg",
+          "sha256": "35c13253ac4f9246f18ebfba38e29245e8753d22efa0613a43e160bcad3e3640",
+          "byte_length": 21744,
+          "expected_text": "Houston, Tranquility Base here. The Eagle has landed.",
+          "expected_semantic": {
+            "transcript": "Houston, Tranquility Base here. The Eagle has landed.",
+            "speech_origin": "human_historical_recording"
+          },
+          "source_ids": [
+            "nasa_eagle_landed"
+          ],
+          "generation_commands": [
+            [
+              "ffmpeg",
+              "-hide_banner",
+              "-loglevel",
+              "error",
+              "-y",
+              "-i",
+              "sources/eagle_original.mp3",
+              "-ar",
+              "16000",
+              "-ac",
+              "1",
+              "-c:a",
+              "libmp3lame",
+              "-b:a",
+              "32k",
+              "-write_xing",
+              "0",
+              "-id3v2_version",
+              "0",
+              "-map_metadata",
+              "-1",
+              "-fflags",
+              "+bitexact",
+              "-flags:a",
+              "+bitexact",
+              "nasa_eagle.mp3"
+            ]
+          ],
+          "sample_rate_hz": 16000,
+          "channels": 1
+        }
+      }
+    }
+  }
+}

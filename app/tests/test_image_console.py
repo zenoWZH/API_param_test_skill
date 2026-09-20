@@ -4,7 +4,10 @@ import base64
 import copy
 import json
 import os
+import shutil
+import ssl
 import struct
+import subprocess
 import tempfile
 import threading
 import time
@@ -14,6 +17,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from unittest.mock import patch
 
+import yaml
+
 from lib.config import (
     get_image_auth_mode,
     get_image_endpoint,
@@ -22,6 +27,7 @@ from lib.config import (
     validate_provider_config,
 )
 from lib.job_spec import resolve_image_plan
+from lib.token_audit import TOKEN_AUDIT_SCHEMA_VERSION
 import scripts.web_console as web_console
 from scripts.web_console import Job, JobManager, _image_command_for_job
 
@@ -148,8 +154,8 @@ class _FakeImageHandler(BaseHTTPRequestHandler):
                 ],
                 "usage": {
                     "input_tokens": 10,
-                    "output_tokens": 272,
-                    "total_tokens": 282,
+                    "output_tokens": 196,
+                    "total_tokens": 206,
                 },
             },
         )
@@ -167,6 +173,47 @@ class _FakeImageHandler(BaseHTTPRequestHandler):
 
 
 class ImageProviderConfigTest(unittest.TestCase):
+    def test_text_capability_projection_isolates_invalid_sibling_form(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp_dir, patch(
+            "lib.config.LOCAL_PROVIDERS_PATH",
+            Path(tmp_dir) / "providers.local.yaml",
+        ):
+            config = web_console.load_config()
+        provider = copy.deepcopy(config["providers"]["gemini"])
+        provider["models"]["default"] = "gemini-2.5-flash"
+        provider["models"]["candidates"] = ["gemini-2.5-flash"]
+        provider.pop("image", None)
+        config["providers"] = {"gemini": provider}
+
+        original_resolver = web_console.resolve_runtime_parameter_config
+        def forced_parameter_config(*args: object, **kwargs: object) -> dict:
+            if (kwargs.get("api_form") or args[5]) == "gemini_generate_content":
+                raise ValueError("forced bad form")
+            return original_resolver(*args, **kwargs)
+        with patch.object(
+            web_console,
+            "resolve_runtime_parameter_config",
+            side_effect=forced_parameter_config,
+        ):
+            registry = web_console._capability_registry_payload(config)
+
+        model = registry["text"]["gemini"]["gemini-2.5-flash"]
+        forms = model["routes"]["google_ai_studio"]["api_forms"]
+        self.assertEqual(
+            set(forms),
+            {"openai_chat_completions", "gemini_generate_content"},
+        )
+        self.assertEqual(
+            forms["openai_chat_completions"]["profile_status"], "registered"
+        )
+        self.assertTrue(
+            forms["openai_chat_completions"]["pressure_test_runnable"]
+        )
+        rejected = forms["gemini_generate_content"]
+        self.assertEqual(rejected["profile_status"], "invalid")
+        self.assertFalse(rejected["pressure_test_runnable"])
+        self.assertIn("forced bad form", rejected["error"])
+
     def test_chat_provider_can_add_image_capability_without_changing_public_chat_shape(self) -> None:
         config = _image_config()
         validate_provider_config(config)
@@ -318,6 +365,65 @@ class ImagePlanTest(unittest.TestCase):
                 90,
             )
 
+    def test_image_parameter_plan_rejects_pressure_shaped_fields(self) -> None:
+        config = _image_config()
+        top_level_fields = (
+            "workload",
+            "request_mode",
+            "concurrency",
+            "users",
+            "spawn_rate",
+            "duration",
+            "rate",
+            "rpm",
+            "tpm",
+            "target_rpm",
+            "target_tpm",
+            "cache_measured_requests",
+            "staircase_plan",
+            "cache_plan",
+            "soak_plan",
+        )
+        for field in top_level_fields:
+            with self.subTest(field=field), self.assertRaisesRegex(
+                ValueError,
+                "do not accept pressure-test fields",
+            ):
+                resolve_image_plan(
+                    config,
+                    {"image_plan": {"suite": "smoke"}, field: None},
+                    "fake",
+                    "gpt-image-2",
+                    90,
+                )
+
+        nested_fields = (
+            "concurrency",
+            "users",
+            "spawn_rate",
+            "duration",
+            "rate",
+            "rpm",
+            "tpm",
+            "target_rpm",
+            "target_tpm",
+            "staircase_plan",
+            "cache_plan",
+            "soak_plan",
+        )
+        for field in nested_fields:
+            with self.subTest(nested_field=field), self.assertRaisesRegex(
+                ValueError,
+                f"image_plan.{field}",
+            ):
+                resolve_image_plan(
+                    config,
+                    {"image_plan": {"suite": "smoke", field: None}},
+                    "fake",
+                    "gpt-image-2",
+                    90,
+                )
+
     def test_gpt_plan_validates_billing_cases_and_command_contract(self) -> None:
         config = _image_config()
         with self.assertRaisesRegex(ValueError, "image_plan must be an object"):
@@ -331,7 +437,7 @@ class ImagePlanTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "requires include_4k"):
             resolve_image_plan(
                 config,
-                {"image_plan": {"suite": "full"}},
+                {"image_plan": {"suite": "full", "include_4k": False}},
                 "fake",
                 "gpt-image-2",
                 90,
@@ -424,7 +530,7 @@ class ImagePlanTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "include_2k"):
             resolve_image_plan(
                 config,
-                {"image_plan": {"suite": "full"}},
+                {"image_plan": {"suite": "full", "include_2k": False}},
                 "fake",
                 "grok-imagine-image",
                 90,
@@ -466,11 +572,11 @@ class ImagePlanTest(unittest.TestCase):
         self.assertNotIn("--quality", command)
         self.assertNotIn("--output-format", command)
 
-    def test_banana_fixed_model_requires_cross_control_skip_and_normalizes_chat_options(self) -> None:
+    def test_banana_fixed_model_requires_cross_control_skip_and_normalizes_options(self) -> None:
         config = _image_config(
-            image_model="gemini-3-pro-image",
+            image_model="gemini-3.1-flash-image",
             family="banana",
-            transport="chat-completions",
+            transport="gemini-interactions",
         )
         validate_provider_config(config)
         with self.assertRaisesRegex(ValueError, "fixed Banana model"):
@@ -478,7 +584,7 @@ class ImagePlanTest(unittest.TestCase):
                 config,
                 {"image_plan": {"suite": "resolution"}},
                 "fake",
-                "gemini-3-pro-image",
+                "gemini-3.1-flash-image",
                 60,
             )
 
@@ -493,12 +599,12 @@ class ImagePlanTest(unittest.TestCase):
                 }
             },
             "fake",
-            "gemini-3-pro-image",
+            "gemini-3.1-flash-image",
             60,
         )
         self.assertIsNone(plan["quality"])
         self.assertIsNone(plan["output_format"])
-        self.assertEqual(plan["estimated_case_count"], 2)
+        self.assertEqual(plan["estimated_case_count"], 6)
         command = _image_command_for_job(Path("/tmp/banana-report"), plan)
         self.assertNotIn("--quality", command)
         self.assertNotIn("--output-format", command)
@@ -667,7 +773,10 @@ class ImageConsoleJobTest(unittest.TestCase):
             manager._lock = threading.Lock()
             manager._jobs = {job.id: job}
 
-            with patch.object(web_console, "REPORTS_ROOT", reports_root):
+            with (
+                patch.object(web_console, "REPORTS_ROOT", reports_root),
+                patch.object(manager, "_discover_external_jobs"),
+            ):
                 detail = manager.public(job, include_detail=True)
                 listing = manager.list()[0]
 
@@ -781,25 +890,65 @@ class ImageConsoleJobTest(unittest.TestCase):
             self.assertEqual(restored["progress"]["completed_cases"], 1)
 
     def test_flask_job_runs_fake_api_and_recovers_completed_result(self) -> None:
+        if not shutil.which("openssl"):
+            self.skipTest("openssl is required for the local TLS fake-provider fixture")
+        tls_directory = tempfile.TemporaryDirectory()
+        self.addCleanup(tls_directory.cleanup)
+        certificate = Path(tls_directory.name) / "localhost.pem"
+        private_key = Path(tls_directory.name) / "localhost.key"
+        subprocess.run([
+            "openssl", "req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1",
+            "-subj", "/CN=localhost", "-addext", "subjectAltName=IP:127.0.0.1",
+            "-keyout", str(private_key), "-out", str(certificate),
+        ], check=True, capture_output=True)
         _FakeImageHandler.authorizations = []
         server = ThreadingHTTPServer(("127.0.0.1", 0), _FakeImageHandler)
+        tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        tls_context.load_cert_chain(certificate, private_key)
+        server.socket = tls_context.wrap_socket(server.socket, server_side=True)
         server_thread = threading.Thread(target=server.serve_forever, daemon=True)
         server_thread.start()
-        config = _image_config(f"http://127.0.0.1:{server.server_port}/v1")
+        fake_config = _image_config(f"https://127.0.0.1:{server.server_port}/v1")
+        original_popen = subprocess.Popen
+        def tls_popen(command, *args, **kwargs):
+            if len(command) > 1 and Path(command[1]).name == "image_param_test.py":
+                # Production still verifies HTTPS. Only this child fixture trusts
+                # this temporary CA, even though the dispatcher ignores proxy env.
+                bootstrap = (
+                    "import requests,runpy,sys;\n"
+                    "original_session=requests.Session\n"
+                    "class LocalTestSession(original_session):\n"
+                    " def __init__(self):\n"
+                    "  super().__init__()\n"
+                    f"  self.verify={str(certificate)!r}\n"
+                    "requests.Session=LocalTestSession\n"
+                    "script=sys.argv.pop(1);sys.argv[0]=script\n"
+                    "runpy.run_path(script,run_name='__main__')\n"
+                )
+                command = [command[0], "-c", bootstrap, *command[1:]]
+            return original_popen(command, *args, **kwargs)
 
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 reports_root = Path(temp_dir)
                 jobs_root = reports_root / "jobs"
                 jobs_root.mkdir()
+                overlay = reports_root / "providers.local.yaml"
+                overlay.write_text(yaml.safe_dump({"providers": fake_config["providers"]}))
+                with patch.dict(os.environ, {"LLM_API_TEST_PROVIDERS_LOCAL": str(overlay)}), patch(
+                    "lib.config.LOCAL_PROVIDERS_PATH", overlay
+                ):
+                    config = web_console.load_config()
                 with patch.dict(
-                    os.environ, {FAKE_KEY_ENV: FAKE_KEY}
+                    os.environ, {FAKE_KEY_ENV: FAKE_KEY, "LLM_API_TEST_PROVIDERS_LOCAL": str(overlay)}
                 ), patch.object(
                     web_console, "REPORTS_ROOT", reports_root
                 ), patch.object(
                     web_console, "JOBS_ROOT", jobs_root
                 ), patch.object(
                     web_console, "load_config", return_value=config
+                ), patch.object(
+                    web_console.subprocess, "Popen", side_effect=tls_popen
                 ):
                     manager = JobManager()
                     with patch.object(web_console, "JOB_MANAGER", manager):
@@ -811,7 +960,7 @@ class ImageConsoleJobTest(unittest.TestCase):
                                 "type": "image_param_test",
                                 "provider": "fake",
                                 "model": "gpt-image-2",
-                                "image_plan": {"suite": "full"},
+                                "image_plan": {"suite": "full", "include_4k": False},
                             },
                         )
                         self.assertEqual(rejected.status_code, 400)
@@ -832,7 +981,14 @@ class ImageConsoleJobTest(unittest.TestCase):
                             },
                         )
                         self.assertEqual(created.status_code, 201, created.get_data(as_text=True))
-                        job_id = created.get_json()["id"]
+                        created_payload = created.get_json()
+                        job_id = created_payload["id"]
+                        self.assertEqual(
+                            created_payload["job_spec"]["result_contract"][
+                                "token_audit_schema_version"
+                            ],
+                            TOKEN_AUDIT_SCHEMA_VERSION,
+                        )
 
                         deadline = time.time() + 15
                         detail = None
@@ -848,6 +1004,10 @@ class ImageConsoleJobTest(unittest.TestCase):
                         assert detail is not None
                         self.assertEqual(detail["status"], "completed", detail.get("log_tail"))
                         self.assertTrue(detail["image_summary"]["pass"])
+                        self.assertEqual(
+                            detail["result_validation"]["status"],
+                            "current_pass",
+                        )
                         self.assertEqual(detail["progress"]["percent"], 100)
                         self.assertEqual(detail["progress"]["completed_cases"], 1)
                         artifact_url = detail["image_results"][0]["artifact_urls"][0]
@@ -875,7 +1035,7 @@ class ImageConsoleJobTest(unittest.TestCase):
                         "gpt-image-2",
                         "dynamic_aggregator",
                         "openai_images_generations",
-                        "gpt-image-2/gpt-image-2@dynamic_aggregator/openai_images_generations",
+                        "image/openai/gpt-image-2/gpt-image-2#openai-images-default",
                     )
                     self.assertIsNotNone(restored)
                     self.assertIsNone(
@@ -963,6 +1123,14 @@ class ImageConsoleFrontendContractTest(unittest.TestCase):
             "openai_images_generations",
             image_capability["routes"]["dynamic_aggregator"]["api_forms"],
         )
+        image_form_capability = image_capability["routes"]["dynamic_aggregator"][
+            "api_forms"
+        ]["openai_images_generations"]
+        self.assertFalse(image_form_capability["pressure_test_enabled"])
+        self.assertFalse(
+            image_form_capability["test_policy_pressure_test_enabled"]
+        )
+        self.assertFalse(image_form_capability["pressure_test_runnable"])
         self.assertNotIn(FAKE_KEY, json.dumps(payload))
 
         script = (web_console.PROJECT_ROOT / "scripts/static/web_console.js").read_text(
@@ -974,9 +1142,17 @@ class ImageConsoleFrontendContractTest(unittest.TestCase):
         self.assertIn('"globalStop", "stopParam", "stopImage"', script)
         self.assertIn("|| !imageProvider", script)
         self.assertIn("|| !imageProvider.has_key", script)
-        self.assertIn('model.family === "grok-imagine"', script)
+        self.assertIn(
+            "loadCapability.pressure_test_runnable !== true",
+            script,
+        )
+        self.assertIn(
+            "cacheCapability.pressure_test_runnable !== true",
+            script,
+        )
+        self.assertTrue('.suite === "grok_imagine"' in script, "Grok controls must follow the selected MPDB suite")
         self.assertIn('form.outputFormat = "jpeg"', script)
-        self.assertIn("form.noNegative ? 8 : 13", script)
+        self.assertIn('fetch("/api/image-plan/preview"', script)
         self.assertIn('$("imageNoNegativeWrap").hidden = !model;', script)
 
 

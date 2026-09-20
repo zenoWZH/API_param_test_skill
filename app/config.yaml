@@ -53,6 +53,82 @@ providers:
       identity_aliases: {}
       # Optional per-model exact counters; see README token audit section.
       token_counters: {}
+  deepseek_official:
+    label: "DeepSeek official"
+    reference_source_id: deepseek
+    base_url: "https://api.deepseek.com"
+    backend: openai_compatible
+    default_transport: fim_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+      openai_responses:
+        path: /responses
+        auth: bearer
+      claude_messages:
+        base_url: "https://api.deepseek.com/anthropic"
+        path: /v1/messages
+        auth: anthropic
+      fim_completions:
+        base_url: "https://api.deepseek.com/beta"
+        path: /completions
+        auth: bearer
+      deepseek-beta-chat-prefix:
+        path: /beta/chat/completions
+        auth: bearer
+    api_key_env: "DEEPSEEK_API_KEY"
+    models:
+      default: "deepseek-v4-pro"
+      candidates:
+        - "deepseek-v4-pro"
+        - "deepseek-flash"
+      families:
+        deepseek-flash: deepseek
+        deepseek-v4-pro: deepseek
+      routes:
+        deepseek-flash:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                reference_contract_id: deepseek_v4_1_flash_chat
+              openai_responses:
+                reference_contract_id: deepseek_v4_1_flash_responses
+              anthropic_messages:
+                reference_contract_id: deepseek_v4_1_flash_anthropic
+              deepseek_beta_chat_prefix:
+                reference_contract_id: deepseek_v4_1_flash_chat_prefix_beta
+              openai_fim_completions_beta:
+                reference_contract_id: deepseek_v4_1_flash_fim_beta
+        deepseek-v4-pro:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions:
+                reference_contract_id: deepseek_v4_pro_0813_chat
+              openai_responses:
+                reference_contract_id: deepseek_v4_pro_0813_responses
+              anthropic_messages:
+                reference_contract_id: deepseek_v4_pro_0813_anthropic
+              openai_fim_completions_beta:
+                reference_contract_id: deepseek_v4_pro_0813_fim_beta
+              deepseek_beta_chat_prefix:
+                reference_contract_id: deepseek_v4_pro_0813_chat_prefix_beta
+      default_routes:
+        deepseek-flash: vendor_direct
+        deepseek-v4-pro: vendor_direct
+      default_api_forms:
+        deepseek-flash:
+          vendor_direct: openai_chat_completions
+        deepseek-v4-pro:
+          vendor_direct: openai_fim_completions_beta
+      reference_source_ids:
+        deepseek-flash: deepseek
+        deepseek-v4-pro: deepseek
+      reference_model_ids:
+        deepseek-flash: deepseek-flash
+        deepseek-v4-pro: deepseek-v4-pro
+      identity_aliases: {}
+      token_counters: {}
   gemini:
     label: "Google Gemini Direct (needs GEMINI_API_KEY)"
     base_url: "https://generativelanguage.googleapis.com/v1beta/openai"
@@ -63,18 +139,35 @@ providers:
         path: /chat/completions
         auth: bearer
       gemini_generate_content:
-        base_url: https://generativelanguage.googleapis.com/v1beta
-        path: /models/{model}:generateContent
+        base_url: https://generativelanguage.googleapis.com
+        path: /v1beta/models/{model}:generateContent
         auth: google_api_key
+        default_api_version: v1beta
+        api_versions:
+          v1beta: {stability: beta, path: "/v1beta/models/{model}:generateContent"}
       gemini_interactions:
         base_url: https://generativelanguage.googleapis.com
         path: /v1beta/interactions
         auth: google_api_key
+        default_api_version: v1beta
+        api_versions:
+          v1beta: {stability: beta, path: /v1beta/interactions}
+      token_count:
+        base_url: https://generativelanguage.googleapis.com
+        path: /v1beta/models/{model}:countTokens
+        auth: google_api_key
+        transports: [gemini_generate_content]
+        request_wrapper: generateContentRequest
+        request_model_field: model
+        response_field: totalTokens
     api_key_env: "GEMINI_API_KEY"
     models:
       default: "gemini-2.5-flash"
       candidates:
+        - "gemini-3.7-flash"
+        - "gemini-3.6-flash"
         - "gemini-3.5-flash"
+        - "gemini-3.5-flash-lite"
         - "gemini-3-flash-preview"
         - "gemini-3.1-pro-preview"
         - "gemini-3.1-pro-preview-customtools"
@@ -83,7 +176,10 @@ providers:
         - "gemini-2.5-pro"
         - "gemini-2.5-flash-lite"
       families:
+        gemini-3.7-flash: gemini
+        gemini-3.6-flash: gemini
         gemini-3.5-flash: gemini
+        gemini-3.5-flash-lite: gemini
         gemini-3-flash-preview: gemini
         gemini-3.1-pro-preview: gemini
         gemini-3.1-pro-preview-customtools: gemini
@@ -92,6 +188,21 @@ providers:
         gemini-2.5-pro: gemini
         gemini-2.5-flash-lite: gemini
       routes:
+        gemini-3.7-flash:
+          google_ai_studio:
+            api_forms:
+              gemini_generate_content:
+                reference_contract_id: gemini_3_7_flash_generate_content
+              gemini_interactions:
+                reference_contract_id: gemini_3_7_flash_interactions
+        # Public source mappings needed by the optional media workflows. Only
+        # the registered Chat interface is imported; native gates stay intact.
+        gemini-3.6-flash: &gemini_media_chat_route
+          google_ai_studio:
+            api_forms:
+              openai_chat_completions:
+                reference_contract_id: gemini_openai_compat
+        gemini-3.5-flash-lite: *gemini_media_chat_route
         gemini-3.5-flash: &gemini_text_routes
           google_ai_studio:
             api_forms:
@@ -105,7 +216,10 @@ providers:
         gemini-2.5-pro: *gemini_text_routes
         gemini-2.5-flash-lite: *gemini_text_routes
       default_routes:
+        gemini-3.7-flash: google_ai_studio
+        gemini-3.6-flash: google_ai_studio
         gemini-3.5-flash: google_ai_studio
+        gemini-3.5-flash-lite: google_ai_studio
         gemini-3-flash-preview: google_ai_studio
         gemini-3.1-pro-preview: google_ai_studio
         gemini-3.1-pro-preview-customtools: google_ai_studio
@@ -114,8 +228,12 @@ providers:
         gemini-2.5-pro: google_ai_studio
         gemini-2.5-flash-lite: google_ai_studio
       default_api_forms:
+        gemini-3.7-flash:
+          google_ai_studio: gemini_generate_content
         gemini-3.5-flash: &gemini_text_default_forms
           google_ai_studio: openai_chat_completions
+        gemini-3.6-flash: *gemini_text_default_forms
+        gemini-3.5-flash-lite: *gemini_text_default_forms
         gemini-3-flash-preview: *gemini_text_default_forms
         gemini-3.1-pro-preview: *gemini_text_default_forms
         gemini-3.1-pro-preview-customtools: *gemini_text_default_forms
@@ -131,14 +249,1025 @@ providers:
       models:
         - id: gemini-3.1-flash-image
           family: banana
+          routes: &banana_aistudio_interactions
+            google_ai_studio:
+              api_forms:
+                gemini_interactions:
+                  transport: gemini-interactions
+                gemini_generate_content:
+                  transport: gemini-generate-content
+          default_route_profile: google_ai_studio
+          default_api_forms: &banana_aistudio_default_forms
+            google_ai_studio: gemini_interactions
+        - id: gemini-3.1-flash-lite-image
+          family: banana
           routes:
             google_ai_studio:
               api_forms:
                 gemini_interactions:
                   transport: gemini-interactions
+                gemini_generate_content:
+                  transport: gemini-generate-content
           default_route_profile: google_ai_studio
           default_api_forms:
-            google_ai_studio: gemini_interactions
+            google_ai_studio: gemini_generate_content
+        - id: gemini-3-pro-image
+          family: banana
+          routes: *banana_aistudio_interactions
+          default_route_profile: google_ai_studio
+          default_api_forms: *banana_aistudio_default_forms
+        - id: gemini-2.5-flash-image
+          family: banana
+          routes: *banana_aistudio_interactions
+          default_route_profile: google_ai_studio
+          default_api_forms: *banana_aistudio_default_forms
+
+  openai_official:
+    label: OpenAI official
+    reference_source_id: openai
+    base_url: https://api.openai.com/v1
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+      openai_responses:
+        path: /responses
+        auth: bearer
+      images_generations:
+        path: /images/generations
+        auth: bearer
+      images_edits:
+        path: /images/edits
+        auth: bearer
+    api_key_env: OPENAI_API_KEY
+    models:
+      default: gpt-5.6-luna
+      candidates:
+      - gpt-4o
+      - gpt-4o-mini
+      - gpt-5
+      - gpt-5-mini
+      - gpt-5-nano
+      - gpt-5.1
+      - gpt-5.2
+      - gpt-5.4
+      - gpt-5.4-mini
+      - gpt-5.4-nano
+      - gpt-5.5
+      - gpt-5.6-luna
+      - gpt-5.6-sol
+      - gpt-5.6-terra
+      - gpt-6-astra
+      - gpt-5-pro
+      - gpt-5.3-codex
+      - gpt-5.5-pro
+      families:
+        gpt-4o: gpt
+        gpt-4o-mini: gpt
+        gpt-5: gpt
+        gpt-5-mini: gpt
+        gpt-5-nano: gpt
+        gpt-5.1: gpt
+        gpt-5.2: gpt
+        gpt-5.4: gpt
+        gpt-5.4-mini: gpt
+        gpt-5.4-nano: gpt
+        gpt-5.5: gpt
+        gpt-5.6-luna: gpt
+        gpt-5.6-sol: gpt
+        gpt-5.6-terra: gpt
+        gpt-6-astra: gpt
+        gpt-5-pro: gpt
+        gpt-5.3-codex: gpt
+        gpt-5.5-pro: gpt
+      transports:
+        gpt-5-pro: openai_responses
+        gpt-5.3-codex: openai_responses
+        gpt-5.5-pro: openai_responses
+      routes:
+        gpt-4o:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-4o-mini:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5-mini:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5-nano:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.1:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.2:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.4:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.4-mini:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.4-nano:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.6-luna:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.6-sol:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5.6-terra:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-6-astra:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        gpt-5-pro:
+          vendor_direct:
+            api_forms:
+              openai_responses: {}
+        gpt-5.3-codex:
+          vendor_direct:
+            api_forms:
+              openai_responses: {}
+        gpt-5.5-pro:
+          vendor_direct:
+            api_forms:
+              openai_responses: {}
+      default_routes:
+        gpt-4o: vendor_direct
+        gpt-4o-mini: vendor_direct
+        gpt-5: vendor_direct
+        gpt-5-mini: vendor_direct
+        gpt-5-nano: vendor_direct
+        gpt-5.1: vendor_direct
+        gpt-5.2: vendor_direct
+        gpt-5.4: vendor_direct
+        gpt-5.4-mini: vendor_direct
+        gpt-5.4-nano: vendor_direct
+        gpt-5.5: vendor_direct
+        gpt-5.6-luna: vendor_direct
+        gpt-5.6-sol: vendor_direct
+        gpt-5.6-terra: vendor_direct
+        gpt-6-astra: vendor_direct
+        gpt-5-pro: vendor_direct
+        gpt-5.3-codex: vendor_direct
+        gpt-5.5-pro: vendor_direct
+      default_api_forms:
+        gpt-4o:
+          vendor_direct: openai_chat_completions
+        gpt-4o-mini:
+          vendor_direct: openai_chat_completions
+        gpt-5:
+          vendor_direct: openai_chat_completions
+        gpt-5-mini:
+          vendor_direct: openai_chat_completions
+        gpt-5-nano:
+          vendor_direct: openai_chat_completions
+        gpt-5.1:
+          vendor_direct: openai_chat_completions
+        gpt-5.2:
+          vendor_direct: openai_chat_completions
+        gpt-5.4:
+          vendor_direct: openai_chat_completions
+        gpt-5.4-mini:
+          vendor_direct: openai_chat_completions
+        gpt-5.4-nano:
+          vendor_direct: openai_chat_completions
+        gpt-5.5:
+          vendor_direct: openai_chat_completions
+        gpt-5.6-luna:
+          vendor_direct: openai_chat_completions
+        gpt-5.6-sol:
+          vendor_direct: openai_chat_completions
+        gpt-5.6-terra:
+          vendor_direct: openai_chat_completions
+        gpt-6-astra:
+          vendor_direct: openai_chat_completions
+        gpt-5-pro:
+          vendor_direct: openai_responses
+        gpt-5.3-codex:
+          vendor_direct: openai_responses
+        gpt-5.5-pro:
+          vendor_direct: openai_responses
+      reference_source_ids:
+        gpt-4o: openai
+        gpt-4o-mini: openai
+        gpt-5: openai
+        gpt-5-mini: openai
+        gpt-5-nano: openai
+        gpt-5.1: openai
+        gpt-5.2: openai
+        gpt-5.4: openai
+        gpt-5.4-mini: openai
+        gpt-5.4-nano: openai
+        gpt-5.5: openai
+        gpt-5.6-luna: openai
+        gpt-5.6-sol: openai
+        gpt-5.6-terra: openai
+        gpt-6-astra: openai
+        gpt-5-pro: openai
+        gpt-5.3-codex: openai
+        gpt-5.5-pro: openai
+      reference_model_ids:
+        gpt-4o: gpt-4o
+        gpt-4o-mini: gpt-4o-mini
+        gpt-5: gpt-5
+        gpt-5-mini: gpt-5-mini
+        gpt-5-nano: gpt-5-nano
+        gpt-5.1: gpt-5.1
+        gpt-5.2: gpt-5.2
+        gpt-5.4: gpt-5.4
+        gpt-5.4-mini: gpt-5.4-mini
+        gpt-5.4-nano: gpt-5.4-nano
+        gpt-5.5: gpt-5.5
+        gpt-5.6-luna: gpt-5.6-luna
+        gpt-5.6-sol: gpt-5.6-sol
+        gpt-5.6-terra: gpt-5.6-terra
+        gpt-6-astra: gpt-6-astra
+        gpt-5-pro: gpt-5-pro
+        gpt-5.3-codex: gpt-5.3-codex
+        gpt-5.5-pro: gpt-5.5-pro
+      identity_aliases:
+        gpt-5.6-sol:
+        - gpt-5.6-sol
+        - gpt-5.6
+    image:
+      enabled: true
+      default: gpt-image-1.5
+      models:
+      - id: gpt-image-1
+        family: gpt-image-2
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+      - id: gpt-image-1-mini
+        family: gpt-image-2
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+      - id: gpt-image-1.5
+        family: gpt-image-2
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+      - id: gpt-image-2
+        family: gpt-image-2
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+      - id: gpt-image-2.5-sunburst
+        family: gpt-image-2
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+              openai_images_edits:
+                transport: images-edits
+              openai_responses:
+                transport: openai-responses-image
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+      - id: gpt-image-2.5-flare
+        family: gpt-image-2
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+              openai_images_edits:
+                transport: images-edits
+              openai_responses:
+                transport: openai-responses-image
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+  anthropic_official:
+    label: Anthropic official
+    reference_source_id: anthropic
+    base_url: https://api.anthropic.com/v1
+    backend: anthropic
+    default_transport: claude_messages
+    api_interfaces:
+      claude_messages:
+        path: /messages
+        auth: anthropic
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+    api_key_env: ANTHROPIC_API_KEY
+    models:
+      default: claude-sonnet-5
+      candidates:
+      - claude-haiku-4-5-20251001
+      - claude-opus-4-5-20251101
+      - claude-opus-4-6
+      - claude-opus-4-7
+      - claude-opus-4-8
+      - claude-opus-5
+      - claude-sonnet-4-5-20250929
+      - claude-sonnet-4-6
+      - claude-sonnet-5
+      - claude-fable-5
+      - claude-fable-5-1
+      families:
+        claude-haiku-4-5-20251001: claude
+        claude-opus-4-5-20251101: claude
+        claude-opus-4-6: claude
+        claude-opus-4-7: claude
+        claude-opus-4-8: claude
+        claude-opus-5: claude
+        claude-sonnet-4-5-20250929: claude
+        claude-sonnet-4-6: claude
+        claude-sonnet-5: claude
+        claude-fable-5: claude_fable
+        claude-fable-5-1: claude_fable
+      transports:
+        claude-haiku-4-5-20251001: claude_messages
+        claude-opus-4-5-20251101: claude_messages
+        claude-opus-4-6: claude_messages
+        claude-opus-4-7: claude_messages
+        claude-opus-4-8: claude_messages
+        claude-opus-5: claude_messages
+        claude-sonnet-4-5-20250929: claude_messages
+        claude-sonnet-4-6: claude_messages
+        claude-sonnet-5: claude_messages
+        claude-fable-5: claude_messages
+        claude-fable-5-1: claude_messages
+      routes:
+        claude-haiku-4-5-20251001:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-opus-4-5-20251101:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-opus-4-6:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-opus-4-7:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-opus-4-8:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-opus-5:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-sonnet-4-5-20250929:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-sonnet-4-6:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-sonnet-5:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-fable-5:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+          vendor_compat:
+            api_forms:
+              openai_chat_completions: {}
+        claude-fable-5-1:
+          vendor_direct:
+            api_forms:
+              anthropic_messages: {}
+      default_routes:
+        claude-haiku-4-5-20251001: vendor_direct
+        claude-opus-4-5-20251101: vendor_direct
+        claude-opus-4-6: vendor_direct
+        claude-opus-4-7: vendor_direct
+        claude-opus-4-8: vendor_direct
+        claude-opus-5: vendor_direct
+        claude-sonnet-4-5-20250929: vendor_direct
+        claude-sonnet-4-6: vendor_direct
+        claude-sonnet-5: vendor_direct
+        claude-fable-5: vendor_direct
+        claude-fable-5-1: vendor_direct
+      default_api_forms:
+        claude-haiku-4-5-20251001:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-opus-4-5-20251101:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-opus-4-6:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-opus-4-7:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-opus-4-8:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-opus-5:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-sonnet-4-5-20250929:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-sonnet-4-6:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-sonnet-5:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-fable-5:
+          vendor_direct: anthropic_messages
+          vendor_compat: openai_chat_completions
+        claude-fable-5-1:
+          vendor_direct: anthropic_messages
+      reference_source_ids:
+        claude-haiku-4-5-20251001: anthropic
+        claude-opus-4-5-20251101: anthropic
+        claude-opus-4-6: anthropic
+        claude-opus-4-7: anthropic
+        claude-opus-4-8: anthropic
+        claude-opus-5: anthropic
+        claude-sonnet-4-5-20250929: anthropic
+        claude-sonnet-4-6: anthropic
+        claude-sonnet-5: anthropic
+        claude-fable-5: anthropic
+        claude-fable-5-1: anthropic
+      reference_model_ids:
+        claude-haiku-4-5-20251001: claude-haiku-4-5-20251001
+        claude-opus-4-5-20251101: claude-opus-4-5-20251101
+        claude-opus-4-6: claude-opus-4-6
+        claude-opus-4-7: claude-opus-4-7
+        claude-opus-4-8: claude-opus-4-8
+        claude-opus-5: claude-opus-5
+        claude-sonnet-4-5-20250929: claude-sonnet-4-5-20250929
+        claude-sonnet-4-6: claude-sonnet-4-6
+        claude-sonnet-5: claude-sonnet-5
+        claude-fable-5: claude-fable-5
+        claude-fable-5-1: claude-fable-5-1
+      identity_aliases:
+        claude-haiku-4-5-20251001:
+        - claude-haiku-4-5-20251001
+        - claude-haiku-4-5
+        claude-opus-4-5-20251101:
+        - claude-opus-4-5-20251101
+        - claude-opus-4-5
+        claude-sonnet-4-5-20250929:
+        - claude-sonnet-4-5-20250929
+        - claude-sonnet-4-5
+  xai_official:
+    label: xAI official
+    reference_source_id: xai
+    base_url: https://api.x.ai/v1
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+      openai_responses:
+        path: /responses
+        auth: bearer
+      images_generations:
+        path: /images/generations
+        auth: bearer
+    api_key_env: XAI_API_KEY
+    models:
+      default: grok-4.5
+      candidates:
+      - grok-4.20-0309-non-reasoning
+      - grok-4.20-0309-reasoning
+      - grok-4.3
+      - grok-4.5
+      - grok-4.20-multi-agent-0309
+      families:
+        grok-4.20-0309-non-reasoning: grok
+        grok-4.20-0309-reasoning: grok
+        grok-4.3: grok
+        grok-4.5: grok
+        grok-4.20-multi-agent-0309: grok
+      transports:
+        grok-4.20-multi-agent-0309: openai_responses
+      routes:
+        grok-4.20-0309-non-reasoning:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        grok-4.20-0309-reasoning:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        grok-4.3:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        grok-4.5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+              openai_responses: {}
+        grok-4.20-multi-agent-0309:
+          vendor_direct:
+            api_forms:
+              openai_responses: {}
+      default_routes:
+        grok-4.20-0309-non-reasoning: vendor_direct
+        grok-4.20-0309-reasoning: vendor_direct
+        grok-4.3: vendor_direct
+        grok-4.5: vendor_direct
+        grok-4.20-multi-agent-0309: vendor_direct
+      default_api_forms:
+        grok-4.20-0309-non-reasoning:
+          vendor_direct: openai_chat_completions
+        grok-4.20-0309-reasoning:
+          vendor_direct: openai_chat_completions
+        grok-4.3:
+          vendor_direct: openai_chat_completions
+        grok-4.5:
+          vendor_direct: openai_chat_completions
+        grok-4.20-multi-agent-0309:
+          vendor_direct: openai_responses
+      reference_source_ids:
+        grok-4.20-0309-non-reasoning: xai
+        grok-4.20-0309-reasoning: xai
+        grok-4.3: xai
+        grok-4.5: xai
+        grok-4.20-multi-agent-0309: xai
+      reference_model_ids:
+        grok-4.20-0309-non-reasoning: grok-4.20-0309-non-reasoning
+        grok-4.20-0309-reasoning: grok-4.20-0309-reasoning
+        grok-4.3: grok-4.3
+        grok-4.5: grok-4.5
+        grok-4.20-multi-agent-0309: grok-4.20-multi-agent-0309
+    image:
+      enabled: true
+      default: grok-imagine-image
+      models:
+      - id: grok-imagine-image
+        family: grok-imagine
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+      - id: grok-imagine-image-quality
+        family: grok-imagine
+        routes:
+          vendor_direct:
+            api_forms:
+              openai_images_generations:
+                transport: images-generations
+        default_route_profile: vendor_direct
+        default_api_forms:
+          vendor_direct: openai_images_generations
+  zhipu_official:
+    label: Zhipu / Z.AI official (Coding Plan)
+    reference_source_id: zhipu
+    base_url: https://api.z.ai/api/coding/paas/v4
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+    api_key_env: ZHIPU_API_KEY
+    models:
+      default: glm-5.3
+      candidates:
+      - glm-5.3
+      - glm-5.3-flash
+      - glm-5.2
+      - glm-5.1
+      - glm-5
+      - glm-4.7
+      - glm-4.6
+      - glm-4.5
+      families:
+        glm-5.3: glm
+        glm-5.3-flash: glm
+        glm-5.2: glm
+        glm-5.1: glm
+        glm-5: glm
+        glm-4.7: glm
+        glm-4.6: glm
+        glm-4.5: glm
+      routes:
+        glm-5.3:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-5.3-flash:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-5.2:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-5.1:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-4.7:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-4.6:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        glm-4.5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+      default_routes:
+        glm-5.3: vendor_direct
+        glm-5.3-flash: vendor_direct
+        glm-5.2: vendor_direct
+        glm-5.1: vendor_direct
+        glm-5: vendor_direct
+        glm-4.7: vendor_direct
+        glm-4.6: vendor_direct
+        glm-4.5: vendor_direct
+      default_api_forms:
+        glm-5.3:
+          vendor_direct: openai_chat_completions
+        glm-5.3-flash:
+          vendor_direct: openai_chat_completions
+        glm-5.2:
+          vendor_direct: openai_chat_completions
+        glm-5.1:
+          vendor_direct: openai_chat_completions
+        glm-5:
+          vendor_direct: openai_chat_completions
+        glm-4.7:
+          vendor_direct: openai_chat_completions
+        glm-4.6:
+          vendor_direct: openai_chat_completions
+        glm-4.5:
+          vendor_direct: openai_chat_completions
+      reference_source_ids:
+        glm-5.3: zhipu
+        glm-5.3-flash: zhipu
+        glm-5.2: zhipu
+        glm-5.1: zhipu
+        glm-5: zhipu
+        glm-4.7: zhipu
+        glm-4.6: zhipu
+        glm-4.5: zhipu
+      reference_model_ids:
+        glm-5.3: glm-5.3
+        glm-5.3-flash: glm-5.3-flash
+        glm-5.2: glm-5.2
+        glm-5.1: glm-5.1
+        glm-5: glm-5
+        glm-4.7: glm-4.7
+        glm-4.6: glm-4.6
+        glm-4.5: glm-4.5
+  kimi_official:
+    label: Moonshot / Kimi official
+    reference_source_id: moonshot
+    base_url: https://api.moonshot.ai/v1
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+    api_key_env: KIMI_API_KEY
+    models:
+      default: kimi-k3
+      candidates:
+      - kimi-k3
+      - kimi-k2.7-code
+      - kimi-k2.6
+      - kimi-k2.5
+      families:
+        kimi-k3: kimi
+        kimi-k2.7-code: kimi
+        kimi-k2.6: kimi
+        kimi-k2.5: kimi
+      routes:
+        kimi-k3:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        kimi-k2.7-code:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        kimi-k2.6:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        kimi-k2.5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+      default_routes:
+        kimi-k3: vendor_direct
+        kimi-k2.7-code: vendor_direct
+        kimi-k2.6: vendor_direct
+        kimi-k2.5: vendor_direct
+      default_api_forms:
+        kimi-k3:
+          vendor_direct: openai_chat_completions
+        kimi-k2.7-code:
+          vendor_direct: openai_chat_completions
+        kimi-k2.6:
+          vendor_direct: openai_chat_completions
+        kimi-k2.5:
+          vendor_direct: openai_chat_completions
+      reference_source_ids:
+        kimi-k3: moonshot
+        kimi-k2.7-code: moonshot
+        kimi-k2.6: moonshot
+        kimi-k2.5: moonshot
+      reference_model_ids:
+        kimi-k3: kimi-k3
+        kimi-k2.7-code: kimi-k2.7-code
+        kimi-k2.6: kimi-k2.6
+        kimi-k2.5: kimi-k2.5
+  minimax_official:
+    label: MiniMax official
+    reference_source_id: minimax
+    base_url: https://api.minimax.io/v1
+    backend: openai_compatible
+    default_transport: chat_completions
+    api_interfaces:
+      chat_completions:
+        path: /chat/completions
+        auth: bearer
+    api_key_env: MINIMAX_API_KEY
+    models:
+      default: MiniMax-M3
+      candidates:
+      - MiniMax-M3
+      - MiniMax-M2.7
+      - MiniMax-M2.5
+      families:
+        MiniMax-M3: minimax
+        MiniMax-M2.7: minimax
+        MiniMax-M2.5: minimax
+      routes:
+        MiniMax-M3:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        MiniMax-M2.7:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+        MiniMax-M2.5:
+          vendor_direct:
+            api_forms:
+              openai_chat_completions: {}
+      default_routes:
+        MiniMax-M3: vendor_direct
+        MiniMax-M2.7: vendor_direct
+        MiniMax-M2.5: vendor_direct
+      default_api_forms:
+        MiniMax-M3:
+          vendor_direct: openai_chat_completions
+        MiniMax-M2.7:
+          vendor_direct: openai_chat_completions
+        MiniMax-M2.5:
+          vendor_direct: openai_chat_completions
+      reference_source_ids:
+        MiniMax-M3: minimax
+        MiniMax-M2.7: minimax
+        MiniMax-M2.5: minimax
+      reference_model_ids:
+        MiniMax-M3: MiniMax-M3
+        MiniMax-M2.7: MiniMax-M2.7
+        MiniMax-M2.5: MiniMax-M2.5
+      identity_aliases:
+        MiniMax-M3:
+        - MiniMax-M3
+        - minimax-m3
+        MiniMax-M2.7:
+        - MiniMax-M2.7
+        - minimax-m2.7
+        MiniMax-M2.5:
+        - MiniMax-M2.5
+        - minimax-m2.5
+
+  bedrock_mantle:
+    label: AWS Bedrock Mantle (Anthropic only)
+    reference_source_id: aws_bedrock
+    base_url: https://bedrock-mantle.us-east-1.api.aws/anthropic/v1
+    backend: anthropic
+    default_transport: claude_messages
+    api_interfaces:
+      claude_messages:
+        path: /messages
+        auth: bearer
+        anthropic_version: "2023-06-01"
+    api_key_env: BEDROCK_API_KEY
+    models:
+      default: anthropic.claude-sonnet-5
+      candidates:
+      - anthropic.claude-haiku-4-5
+      - anthropic.claude-sonnet-4-6
+      - anthropic.claude-sonnet-5
+      - anthropic.claude-opus-4-7
+      - anthropic.claude-opus-4-8
+      - anthropic.claude-opus-5
+      - anthropic.claude-fable-5
+      families:
+        anthropic.claude-haiku-4-5: claude
+        anthropic.claude-sonnet-4-6: claude
+        anthropic.claude-sonnet-5: claude
+        anthropic.claude-opus-4-7: claude
+        anthropic.claude-opus-4-8: claude
+        anthropic.claude-opus-5: claude
+        anthropic.claude-fable-5: claude_fable
+      transports:
+        anthropic.claude-haiku-4-5: claude_messages
+        anthropic.claude-sonnet-4-6: claude_messages
+        anthropic.claude-sonnet-5: claude_messages
+        anthropic.claude-opus-4-7: claude_messages
+        anthropic.claude-opus-4-8: claude_messages
+        anthropic.claude-opus-5: claude_messages
+        anthropic.claude-fable-5: claude_messages
+      routes:
+        anthropic.claude-haiku-4-5: &bedrock_mantle_claude_route
+          aws_bedrock:
+            api_forms:
+              anthropic_messages: {}
+        anthropic.claude-sonnet-4-6: *bedrock_mantle_claude_route
+        anthropic.claude-sonnet-5: *bedrock_mantle_claude_route
+        anthropic.claude-opus-4-7: *bedrock_mantle_claude_route
+        anthropic.claude-opus-4-8: *bedrock_mantle_claude_route
+        anthropic.claude-opus-5: *bedrock_mantle_claude_route
+        anthropic.claude-fable-5: *bedrock_mantle_claude_route
+      default_routes:
+        anthropic.claude-haiku-4-5: aws_bedrock
+        anthropic.claude-sonnet-4-6: aws_bedrock
+        anthropic.claude-sonnet-5: aws_bedrock
+        anthropic.claude-opus-4-7: aws_bedrock
+        anthropic.claude-opus-4-8: aws_bedrock
+        anthropic.claude-opus-5: aws_bedrock
+        anthropic.claude-fable-5: aws_bedrock
+      default_api_forms:
+        anthropic.claude-haiku-4-5:
+          aws_bedrock: anthropic_messages
+        anthropic.claude-sonnet-4-6:
+          aws_bedrock: anthropic_messages
+        anthropic.claude-sonnet-5:
+          aws_bedrock: anthropic_messages
+        anthropic.claude-opus-4-7:
+          aws_bedrock: anthropic_messages
+        anthropic.claude-opus-4-8:
+          aws_bedrock: anthropic_messages
+        anthropic.claude-opus-5:
+          aws_bedrock: anthropic_messages
+        anthropic.claude-fable-5:
+          aws_bedrock: anthropic_messages
+      reference_source_ids:
+        anthropic.claude-haiku-4-5: aws_bedrock
+        anthropic.claude-sonnet-4-6: aws_bedrock
+        anthropic.claude-sonnet-5: aws_bedrock
+        anthropic.claude-opus-4-7: aws_bedrock
+        anthropic.claude-opus-4-8: aws_bedrock
+        anthropic.claude-opus-5: aws_bedrock
+        anthropic.claude-fable-5: aws_bedrock
+      reference_model_ids:
+        anthropic.claude-haiku-4-5: claude-haiku-4-5-20251001
+        anthropic.claude-sonnet-4-6: claude-sonnet-4-6
+        anthropic.claude-sonnet-5: claude-sonnet-5
+        anthropic.claude-opus-4-7: claude-opus-4-7
+        anthropic.claude-opus-4-8: claude-opus-4-8
+        anthropic.claude-opus-5: claude-opus-5
+        anthropic.claude-fable-5: claude-fable-5
+      identity_aliases:
+        anthropic.claude-haiku-4-5:
+        - anthropic.claude-haiku-4-5
+        - claude-haiku-4-5
+        - claude-haiku-4-5-20251001
+        anthropic.claude-sonnet-4-6:
+        - anthropic.claude-sonnet-4-6
+        - claude-sonnet-4-6
+        anthropic.claude-sonnet-5:
+        - anthropic.claude-sonnet-5
+        - claude-sonnet-5
+        anthropic.claude-opus-4-7:
+        - anthropic.claude-opus-4-7
+        - claude-opus-4-7
+        anthropic.claude-opus-4-8:
+        - anthropic.claude-opus-4-8
+        - claude-opus-4-8
+        anthropic.claude-opus-5:
+        - anthropic.claude-opus-5
+        - claude-opus-5
+        anthropic.claude-fable-5:
+        - anthropic.claude-fable-5
+        - claude-fable-5
 
 models:
   default: "deepseek-v4-pro"
@@ -147,6 +1276,14 @@ models:
 prompts:
   short: "用一句话介绍你自己。"
   medium: "列出 3 个 Python 性能优化技巧，每条不超过 20 字。"
+  pressure_standard_short: "社区图书馆为附近居民提供安静的阅读空间。工作人员每天整理书架、回答检索问题，并定期举办儿童故事会和读书分享活动。读者可以现场借阅纸质图书，也可以通过网站续借。馆内还设有自习座位和无障碍阅读区域。请只用一句不超过三十字的话概括这段说明。"
+  pressure_standard_medium: "一家小型社区服务中心准备改善预约体验。团队先收集居民反馈，再梳理电话、网站和现场登记三个入口，统一开放时间与取消规则。工作人员希望缩短等待时间，同时让老年人和不熟悉网络的居民仍能方便办理。请只给出三条简洁、可执行的改进建议，每条不超过二十字。"
+  pressure_standard_extract: "某社区活动室周一至周五九点开放，周末十点开放；每晚八点关闭。居民可现场登记，也可提前一天电话预约。每人每次最多使用两小时，离场前需要归还钥匙并整理桌椅。请提取开放时间、预约方式和使用限制三类信息，每类只写一句。"
+  pressure_standard_rewrite: "物业计划下周二上午检修小区供水设备，预计九点开始、十一点结束。检修期间高层住户水压可能降低，工作人员建议大家提前准备适量生活用水。若工程提前完成，将通过公告栏和短信通知。请将这段内容改写成一则正式、清晰、不超过八十字的通知。"
+  pressure_standard_translate: "一间独立书店准备在春季延长营业时间，并增加本地作者分享会。店员希望新安排既方便下班后的读者，也不会明显增加能源消耗。活动席位有限，需要提前预约。请把这段说明翻译成自然、简洁的英文，并保留所有事实，不要添加解释。"
+  pressure_standard_classify: "服务中心收到三条反馈：第一条称工作人员耐心解答问题；第二条表示预约页面步骤太多；第三条建议增加周末开放时段。请把每条反馈分别归类为表扬、问题或建议，并为每条给出不超过十五字的理由。只输出三行，保持原有顺序。"
+  pressure_standard_arithmetic: "仓库周一收到四十八箱文具，周二收到三十六箱。两天共发出五十七箱，其中有三箱因包装破损退回仓库。记录员确认这些数字均为整箱数量，期间没有其他入库或出库。请计算当前净库存箱数，并用两句话说明加减顺序和最终结果。不要引入题目之外的假设。"
+  pressure_standard_plan: "一个五人团队要在周五前完成社区简报。现有任务包括核对数据、撰写初稿、检查错字、确认图片授权和发布网页。数据核对必须先于初稿，图片授权可并行处理，发布前必须完成其余工作。请给出简洁的执行顺序，并指出可以并行的任务。"
   streaming_latency_api: "请用约一百个汉字说明如何观测流式大模型 API 的性能，分成四个长度相近的要点，不要使用表格。"
   streaming_latency_load: "请用约一百个汉字说明如何定位大模型 API 的压测瓶颈，分成四个长度相近的要点，不要使用表格。"
   streaming_latency_cache: "请用约一百个汉字说明如何评估大模型上下文缓存效果，分成四个长度相近的要点，不要使用表格。"
@@ -186,15 +1323,28 @@ param_test_inputs:
       prompt: "请调用 get_weather 查询杭州当前天气，单位使用 celsius。"
 
 test_cases:
-  # Short chat/native prompts receive deterministic numeric context so every
-  # generated test request has at least this many input tokens.
+  # Workload prompt padding only. Parameter tests preserve authored input.
   minimum_prompt_tokens: 100
+  # Every outbound parameter-test request is raised to at least this output
+  # allowance without changing throughput or cache workloads.
+  minimum_output_tokens: 256
+  output_token_budgets:
+    structured: 1024
+    reasoning: 4096
+    image: 8192
   token_accuracy:
     enabled: true
     evidence_policy: exact_only
     relative_tolerance: 0.50
     input_absolute_tolerance: 16
     output_absolute_tolerance: 8
+    # Bounded quantity checks allow tokenizer/template variance, while
+    # unexplained context and incomplete output cannot pass validation.
+    gross_input_ratio: 2
+    gross_output_ratio: 2
+    gross_input_absolute_tolerance: 32
+    gross_output_absolute_tolerance: 16
+    gross_output_limit_multiplier: 1
     counters: {}
 
 thresholds:
@@ -219,6 +1369,7 @@ thresholds:
     rpm_drift_max_ratio: 0.20
   cache:
     mode: observe
+    control_evaluation: hit_expectations
     require_usage_fields: true
     positive_control_cached_ratio_min: 0.50
     negative_control_cached_ratio_max: 0.05
@@ -239,8 +1390,8 @@ metrics:
   cache_min_prompt_tokens: 4000
   failure_finish_reasons:
     - "insufficient_system_resource"
-  warn_finish_reasons:
     - "content_filter"
+    - "refusal"
 
 adaptive_load:
   # Enabled automatically when both target RPM and target TPM are positive.
@@ -248,7 +1399,6 @@ adaptive_load:
   filter_context_unsafe_profiles: true
   corpus_fixtures:
     - "fixtures/long_context.txt"
-    - "fixtures/half_million_context.txt"
   fallback_context_window_tokens: 131072
   context_safety_ratio: 0.95
   minimum_user_prompt_tokens: 100
@@ -290,6 +1440,7 @@ soak:
   spawn_rate: 5
 
 cache_test:
+  exclude_pro: true
   mode: "cache_suite"
   scenario: "progressive_customer_session"
   stable_system: "你是企业客服助手。回答应准确、简洁；需要外部信息时调用提供的工具，不要编造工具结果。"
@@ -412,6 +1563,64 @@ throughput_profiles:
       type: disabled
     prompt_key: medium
     max_tokens: 128
+  standard_short:
+    stream: false
+    thinking:
+      type: disabled
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_short
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_medium:
+    stream: false
+    thinking:
+      type: disabled
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_medium
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_extract:
+    stream: false
+    thinking: {type: disabled}
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_extract
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_rewrite:
+    stream: false
+    thinking: {type: disabled}
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_rewrite
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_translate:
+    stream: false
+    thinking: {type: disabled}
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_translate
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_classify:
+    stream: false
+    thinking: {type: disabled}
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_classify
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_arithmetic:
+    stream: false
+    thinking: {type: disabled}
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_arithmetic
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_plan:
+    stream: false
+    thinking: {type: disabled}
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_plan
+    skip_minimum_prompt: true
+    max_tokens: 128
   long_context:
     stream: false
     thinking:
@@ -423,23 +1632,24 @@ throughput_profiles:
     stream: false
     thinking:
       type: disabled
-    fixture: fixtures/half_million_context.txt
-    fixture_chars: 131072
+    fixture: fixtures/long_context.txt
+    fixture_repeat_to_chars: 131072
     user_id: loadtest_context_128k_chars_user
     max_tokens: 128
   context_512k_chars:
     stream: false
     thinking:
       type: disabled
-    fixture: fixtures/half_million_context.txt
-    fixture_chars: 524288
+    fixture: fixtures/long_context.txt
+    fixture_repeat_to_chars: 524288
     user_id: loadtest_context_512k_chars_user
     max_tokens: 128
   half_million_context:
     stream: false
     thinking:
       type: disabled
-    fixture: fixtures/half_million_context.txt
+    fixture: fixtures/long_context.txt
+    fixture_repeat_to_chars: 1850000
     user_id: loadtest_half_million_user
     max_tokens: 128
   streaming_latency_api:
@@ -473,6 +1683,8 @@ throughput_profiles:
 compatibility_profiles:
   basic_stream:
     stream: true
+    stream_options:
+      include_usage: true
     thinking:
       type: disabled
   stream_with_usage:
@@ -486,16 +1698,19 @@ compatibility_profiles:
     thinking:
       type: enabled
     reasoning_effort: high
+    max_tokens: 256
   thinking_low:
     stream: false
     thinking:
       type: enabled
     reasoning_effort: low
+    max_tokens: 256
   thinking_max:
     stream: false
     thinking:
       type: enabled
     reasoning_effort: max
+    max_tokens: 256
   thinking_disabled:
     stream: false
     thinking:
@@ -619,6 +1834,195 @@ compatibility_profiles:
   glm_user_id:
     stream: false
     user_id: loadtest_glm_user
+  # GLM-5.3 native PAAS contract. Thinking is always on; json/stream/stop must
+  # not send thinking.disabled. Unlisted effort values and disabled thinking are
+  # negative probes (400/1210 on origin PAAS). Coding Plan may map those aliases.
+  glm53_defaults:
+    stream: false
+    thinking:
+      type: enabled
+    reasoning_effort: low
+  glm53_stream:
+    extends: glm53_defaults
+    stream: true
+  glm53_thinking_enabled:
+    extends: glm53_defaults
+  glm53_thinking_disabled:
+    extends: glm53_defaults
+    preserve_rejected_params: true
+    thinking:
+      type: disabled
+  glm53_clear_thinking:
+    extends: glm53_defaults
+    thinking:
+      type: enabled
+      clear_thinking: false
+  glm53_reasoning_none:
+    extends: glm53_defaults
+    preserve_rejected_params: true
+    reasoning_effort: none
+  glm53_reasoning_minimal:
+    extends: glm53_defaults
+    preserve_rejected_params: true
+    reasoning_effort: minimal
+  glm53_reasoning_low:
+    extends: glm53_defaults
+    reasoning_effort: low
+  glm53_reasoning_medium:
+    extends: glm53_defaults
+    preserve_rejected_params: true
+    reasoning_effort: medium
+  glm53_reasoning_high:
+    extends: glm53_defaults
+    reasoning_effort: high
+  glm53_reasoning_xhigh:
+    extends: glm53_defaults
+    preserve_rejected_params: true
+    reasoning_effort: xhigh
+  glm53_reasoning_max:
+    extends: glm53_defaults
+    reasoning_effort: max
+  glm53_do_sample:
+    extends: glm53_defaults
+    do_sample: false
+  glm53_temperature:
+    extends: glm53_defaults
+    temperature: 0.7
+  glm53_top_p:
+    extends: glm53_defaults
+    top_p: 0.9
+  glm53_max_tokens:
+    extends: glm53_defaults
+    max_tokens: 128
+  glm53_tool_stream:
+    extends: glm53_defaults
+    stream: true
+    tool_stream: true
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+  glm53_tools:
+    extends: glm53_defaults
+    tools_fixture: fixtures/tools_weather.json
+    multi_turn: true
+  glm53_tool_choice_auto:
+    extends: glm53_tools
+    tool_choice: auto
+  glm53_tool_calls_thinking:
+    extends: glm53_defaults
+    thinking:
+      type: enabled
+      clear_thinking: false
+    reasoning_effort: max
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+    multi_turn: true
+    pass_reasoning_content: true
+  glm53_json_output:
+    extends: glm53_defaults
+    response_format:
+      type: json_object
+    prompt_fixture: fixtures/json_mode_prompt.txt
+  glm53_stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
+    extends: glm53_defaults
+    stop: ["END"]
+  glm53_request_id:
+    extends: glm53_defaults
+    request_id: loadtest-glm53-request
+  glm53_user_id:
+    extends: glm53_defaults
+    user_id: loadtest_glm53_user
+  # GLM-5.3-Flash multimodal Chat Completions content blocks. URL fixtures are
+  # the examples published in the Z.ai OpenAPI; Base64 fixtures are tiny and
+  # self-contained so the request builder can be tested without network I/O.
+  glm53_flash_image_url:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    messages:
+    - role: user
+      content:
+      - type: image_url
+        image_url:
+          url: https://cdn.bigmodel.cn/static/logo/register.png
+      - type: text
+        text: Briefly describe this image.
+  glm53_flash_image_base64:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    messages:
+    - role: user
+      content:
+      - type: image_url
+        image_url:
+          url: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKElEQVR4nO3NMQEAAAjDMMC/ZzDBvlRA01vZJvwHAAAAAAAAAAAAbx2jxAE/i2AjOgAAAABJRU5ErkJggg==
+      - type: text
+        text: What is the dominant color? Reply with the color name only.
+  glm53_flash_multi_image:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    messages:
+    - role: user
+      content:
+      - type: image_url
+        image_url:
+          url: https://cdn.bigmodel.cn/static/logo/register.png
+      - type: image_url
+        image_url:
+          url: https://cdn.bigmodel.cn/static/logo/api-key.png
+      - type: text
+        text: Compare these two images briefly.
+  glm53_flash_video_url:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    max_tokens: 512
+    messages:
+    - role: user
+      content:
+      - type: video_url
+        video_url:
+          url: https://cdn.bigmodel.cn/agent-demos/lark/113123.mov
+      - type: text
+        text: Summarize the video briefly.
+  glm53_flash_file_url:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    messages:
+    - role: user
+      content:
+      - type: file
+        file:
+          file_url: https://cdn.bigmodel.cn/static/demo/demo2.txt
+      - type: text
+        text: Summarize this file briefly.
+  glm53_flash_file_data:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    max_tokens: 256
+    messages:
+    - role: user
+      content:
+      - type: file
+        file:
+          file_data: data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA3NCA+PgpzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoWi5BSSBHTE0tNS4zLUZsYXNoIHBhcmFtZXRlciBwcm9maWxlLikgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQxIDAwMDAwIG4gCjAwMDAwMDAzNTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MjkKJSVFT0YK
+          filename: mpdb-profile.pdf
+      - type: text
+        text: Return the file text exactly.
+  glm53_flash_file_image_mixed:
+    extends: glm53_defaults
+    skip_minimum_prompt: true
+    preserve_rejected_params: true
+    messages:
+    - role: user
+      content:
+      - type: file
+        file:
+          file_data: data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA1IDAgUiA+PiA+PiAvQ29udGVudHMgNCAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA3NCA+PgpzdHJlYW0KQlQgL0YxIDEyIFRmIDcyIDcyMCBUZCAoWi5BSSBHTE0tNS4zLUZsYXNoIHBhcmFtZXRlciBwcm9maWxlLikgVGogRVQKZW5kc3RyZWFtCmVuZG9iago1IDAgb2JqCjw8IC9UeXBlIC9Gb250IC9TdWJ0eXBlIC9UeXBlMSAvQmFzZUZvbnQgL0hlbHZldGljYSA+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDAwNTggMDAwMDAgbiAKMDAwMDAwMDExNSAwMDAwMCBuIAowMDAwMDAwMjQxIDAwMDAwIG4gCjAwMDAwMDAzNTkgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0MjkKJSVFT0YK
+          filename: mpdb-profile.pdf
+      - type: image_url
+        image_url:
+          url: data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAAKElEQVR4nO3NMQEAAAjDMMC/ZzDBvlRA01vZJvwHAAAAAAAAAAAAbx2jxAE/i2AjOgAAAABJRU5ErkJggg==
+      - type: text
+        text: Describe both inputs.
   qwen_thinking_enabled:
     omit_params: [max_tokens]
     stream: true
@@ -792,6 +2196,7 @@ compatibility_profiles:
     presence_penalty: 0.2
     max_completion_tokens: 128
   aliyun_stop:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
     stream: false
     stop: ["END"]
     max_completion_tokens: 128
@@ -857,6 +2262,7 @@ compatibility_profiles:
     generationConfig:
       maxOutputTokens: 128
   gemini_chat_stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
     stream: false
     generationConfig:
       stopSequences: ["END"]
@@ -961,6 +2367,7 @@ compatibility_profiles:
     native_generation_config:
       maxOutputTokens: 128
   gemini_native_stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
     transport: gemini_generate_content
     native_generation_config:
       stopSequences: ["END"]
@@ -1100,6 +2507,109 @@ compatibility_profiles:
     native_safety_settings:
       - category: HARM_CATEGORY_HARASSMENT
         threshold: BLOCK_ONLY_HIGH
+  # Gemini 3.7 Flash Interactions v1: stateless, text-only, low-cost probes.
+  # The runtime builder always sends store=false and rejects background,
+  # previous_interaction_id, safety_settings, non-function tools, and non-text
+  # response formats for this matrix.
+  gemini_3_7_flash_interactions_basic:
+    transport: gemini_interactions
+    interaction_store: false
+    interaction_generation_config:
+      # The official 512-token basic probe was incomplete; its same-input
+      # 2048-token counterpart completed. Keep the separate limit probe unchanged.
+      max_output_tokens: 2048
+  gemini_3_7_flash_interactions_system_instruction:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_system_instruction: "You are a concise API compatibility test assistant."
+  gemini_3_7_flash_interactions_response_format_json:
+    extends: gemini_3_7_flash_interactions_basic
+    prompt_fixture: fixtures/json_mode_prompt.txt
+    interaction_response_format:
+      type: text
+      mime_type: application/json
+      schema:
+        type: object
+        properties:
+          summary: {type: string}
+          items:
+            type: array
+            items: {type: string}
+        required: [summary, items]
+        additionalProperties: false
+  gemini_3_7_flash_interactions_stream:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_stream: true
+  gemini_3_7_flash_interactions_store_false:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_store: false
+  gemini_3_7_flash_interactions_max_output_tokens:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      max_output_tokens: 768
+  gemini_3_7_flash_interactions_seed:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      seed: 123456789
+  gemini_3_7_flash_interactions_stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      stop_sequences: [END]
+  gemini_3_7_flash_interactions_reject_thinking_minimal:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      thinking_level: minimal
+  gemini_3_7_flash_interactions_thinking_low:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      thinking_level: low
+  gemini_3_7_flash_interactions_thinking_medium:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      thinking_level: medium
+      max_output_tokens: 1024
+  gemini_3_7_flash_interactions_thinking_high:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      thinking_level: high
+      max_output_tokens: 1024
+  gemini_3_7_flash_interactions_thinking_summaries_auto:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_generation_config:
+      thinking_level: high
+      thinking_summaries: auto
+      max_output_tokens: 1536
+  gemini_3_7_flash_interactions_tools_auto: &gemini_37_interactions_tool_profile
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_tools:
+      - type: function
+        name: get_weather
+        description: Get current weather for a city.
+        parameters:
+          type: object
+          properties:
+            city: {type: string}
+          required: [city]
+    interaction_generation_config:
+      tool_choice: auto
+  gemini_3_7_flash_interactions_tools_any:
+    <<: *gemini_37_interactions_tool_profile
+    interaction_generation_config:
+      tool_choice: any
+  gemini_3_7_flash_interactions_tools_none:
+    <<: *gemini_37_interactions_tool_profile
+    interaction_generation_config:
+      tool_choice: none
+  gemini_3_7_flash_interactions_tools_validated:
+    <<: *gemini_37_interactions_tool_profile
+    interaction_generation_config:
+      tool_choice: validated
+  gemini_3_7_flash_interactions_labels:
+    extends: gemini_3_7_flash_interactions_basic
+    interaction_labels:
+      suite: gemini-3-7-flash-text
+      probe: parameter-compatibility
+
   # NSFW probe (Gemini native generateContent only — do not use OpenAI chat).
   # Pass = request accepted and model returns non-empty adult text (not SAFETY block).
   gemini_native_safety_block_none_nsfw:
@@ -1158,6 +2668,9 @@ compatibility_profiles:
     response_format:
       type: json_object
     prompt_fixture: fixtures/json_mode_prompt.txt
+  # DeepSeek requires a reasonable output budget for complete JSON. 256 is the
+  # harness probe budget selected from direct truncation evidence, not a model
+  # output-token limit; the generic json_output fixture remains unchanged.
   deepseek_json_output_256:
     stream: false
     thinking:
@@ -1192,8 +2705,12 @@ compatibility_profiles:
   kimi_k3_reasoning_max:
     extends: kimi_k3_defaults
     reasoning_effort: max
+  # Official K3 README preserved-thinking example. This profile accepts
+  # one token-valid semantic success among repeats; request/protocol errors
+  # remain failures and each original run outcome is retained.
   kimi_k3_preserved_thinking:
     extends: kimi_k3_defaults
+    run_success_mode: any
     messages:
       - role: user
         content: "Tell me three random numbers."
@@ -1201,7 +2718,7 @@ compatibility_profiles:
         reasoning_content: "I'll start by listing five numbers: 473, 921, 235, 215, 222, and I'll tell you the first three."
         content: "473, 921, 235"
       - role: user
-        content: "What are the other two numbers you have in mind? Reply with only those two numbers."
+        content: "What are the other two numbers you have in mind?"
   kimi_k3_prompt_cache_key:
     extends: kimi_k3_defaults
     prompt_cache_key: "loadtest-kimi-k3-session-v1"
@@ -1303,6 +2820,7 @@ compatibility_profiles:
     preserve_rejected_params: true
     temperature: 0.7
   gpt5_chat_reject_stop:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
     stream: false
     max_completion_tokens: 64
     reasoning_effort: low
@@ -1311,6 +2829,94 @@ compatibility_profiles:
   # xAI Grok Chat Completions (grok_chat_completions reference).
   # Reasoning models reject stop / presence_penalty / frequency_penalty.
   # Prefer max_completion_tokens + reasoning_effort low|medium|high.
+  gpt6_chat_reasoning_low:
+    stream: false
+    max_completion_tokens: 128
+    reasoning_effort: low
+  gpt6_chat_stream:
+    extends: gpt6_chat_reasoning_low
+    stream: true
+  gpt6_chat_stream_usage:
+    extends: gpt6_chat_stream
+    stream_options:
+      include_usage: true
+  gpt6_chat_max_completion_tokens:
+    extends: gpt6_chat_reasoning_low
+    max_completion_tokens: 256
+  gpt6_chat_reasoning_medium:
+    extends: gpt6_chat_reasoning_low
+    max_completion_tokens: 256
+    reasoning_effort: medium
+  gpt6_chat_reasoning_high:
+    extends: gpt6_chat_reasoning_low
+    max_completion_tokens: 256
+    reasoning_effort: high
+  gpt6_chat_reasoning_xhigh:
+    extends: gpt6_chat_reasoning_low
+    max_completion_tokens: 384
+    reasoning_effort: xhigh
+  gpt6_chat_reject_reasoning_max:
+    extends: gpt6_chat_reasoning_low
+    max_completion_tokens: 512
+    preserve_rejected_params: true
+    reasoning_effort: max
+  gpt6_chat_verbosity_low:
+    extends: gpt6_chat_reasoning_low
+    verbosity: low
+  gpt6_chat_json_schema:
+    extends: gpt6_chat_reasoning_low
+    max_completion_tokens: 256
+    prompt: 'Return only the JSON object {"summary":"ok"}, without Markdown or additional fields.'
+    response_format:
+      type: json_schema
+      json_schema:
+        name: compatibility_result
+        strict: true
+        schema:
+          type: object
+          properties:
+            summary: {type: string}
+          required: [summary]
+          additionalProperties: false
+  gpt6_chat_prompt_cache_30m:
+    extends: gpt6_chat_reasoning_low
+    prompt_cache_key: param-test-gpt6-astra-chat
+    prompt_cache_options:
+      ttl: 30m
+  gpt6_chat_reject_reasoning_none:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    reasoning_effort: none
+  gpt6_chat_reject_reasoning_minimal:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    reasoning_effort: minimal
+  gpt6_chat_reject_temperature:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    temperature: 0.7
+  gpt6_chat_reject_top_p:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    top_p: 0.8
+  gpt6_chat_reject_logprobs:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    logprobs: true
+  gpt6_chat_reject_top_logprobs:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    logprobs: true
+    top_logprobs: 5
+  gpt6_chat_reject_tools:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    tools_fixture: fixtures/tools_weather_strict.json
+    tool_choice: required
+  gpt6_chat_reject_max_completion_tokens_128001:
+    extends: gpt6_chat_reasoning_low
+    preserve_rejected_params: true
+    max_completion_tokens: 128001
   grok_stream:
     stream: true
     max_completion_tokens: 128
@@ -1355,6 +2961,7 @@ compatibility_profiles:
     max_completion_tokens: 64
     reasoning_effort: none
   grok_reject_stop:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
     stream: false
     max_completion_tokens: 64
     reasoning_effort: low
@@ -1590,6 +3197,7 @@ compatibility_profiles:
     tool_choice: required
     multi_turn: true
   stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OK\n\nTOKEN_AUDIT_TAIL"
     stream: false
     thinking:
       type: disabled
@@ -1617,6 +3225,7 @@ compatibility_profiles:
     tools_fixture: fixtures/tools_weather.json
     multi_turn: true
     pass_reasoning_content: true
+    max_tokens: 256
   deepseek_tool_strict:
     stream: false
     thinking:
@@ -1648,6 +3257,7 @@ compatibility_profiles:
     top_p: 1
     max_tokens: 64
   claude_native_stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
     transport: claude_messages
     stream: false
     stop_sequences: ["END"]
@@ -1753,6 +3363,18 @@ compatibility_profiles:
   claude_max_tokens:
     stream: false
     max_tokens: 64
+  claude_temperature:
+    stream: false
+    temperature: 1
+    omit_params: [top_p]
+    preserve_rejected_params: true
+    max_tokens: 64
+  claude_top_p:
+    stream: false
+    top_p: 1
+    omit_params: [temperature]
+    preserve_rejected_params: true
+    max_tokens: 64
   claude_sampling:
     stream: false
     temperature: 1
@@ -1777,13 +3399,10 @@ compatibility_profiles:
     max_tokens: 128
   claude_thinking_disabled:
     stream: false
-    # Keep thinking.disabled in the profile so the probe is explicit; Claude
-    # normalize drops top-level disabled thinking for load safety, so send via
-    # extra_body for this compatibility probe.
-    omit_params: [thinking]
-    extra_body:
-      thinking:
-        type: disabled
+    # HTTP requests carry thinking at the top level; extra_body is an SDK option.
+    preserve_rejected_params: true
+    thinking:
+      type: disabled
     max_tokens: 64
   claude_thinking_budget:
     stream: false
@@ -1791,6 +3410,618 @@ compatibility_profiles:
       type: enabled
       budget_tokens: 1024
     max_tokens: 1025
+
+  gpt6_responses_basic:
+    transport: openai_responses
+    stream: false
+    store: false
+    max_output_tokens: 128
+    reasoning:
+      effort: low
+  gpt6_responses_instructions:
+    extends: gpt6_responses_basic
+    instructions: "You are a concise assistant for GPT-6 Astra API compatibility testing. Reply briefly."
+  gpt6_responses_stream:
+    extends: gpt6_responses_basic
+    stream: true
+  gpt6_responses_reasoning_low:
+    extends: gpt6_responses_basic
+    max_output_tokens: 256
+  gpt6_responses_reasoning_medium:
+    extends: gpt6_responses_basic
+    max_output_tokens: 256
+    reasoning:
+      effort: medium
+  gpt6_responses_reasoning_high:
+    extends: gpt6_responses_basic
+    max_output_tokens: 256
+    reasoning:
+      effort: high
+  gpt6_responses_reasoning_xhigh:
+    extends: gpt6_responses_basic
+    max_output_tokens: 384
+    reasoning:
+      effort: xhigh
+  gpt6_responses_reasoning_max:
+    extends: gpt6_responses_basic
+    max_output_tokens: 512
+    reasoning:
+      effort: max
+  gpt6_responses_reasoning_summary_auto:
+    extends: gpt6_responses_basic
+    reasoning:
+      effort: low
+      summary: auto
+  gpt6_responses_reasoning_context_current_turn:
+    extends: gpt6_responses_basic
+    reasoning:
+      effort: low
+      context: current_turn
+  gpt6_responses_pro_medium:
+    extends: gpt6_responses_basic
+    max_output_tokens: 256
+    reasoning:
+      effort: medium
+      mode: pro
+  gpt6_responses_verbosity_low:
+    extends: gpt6_responses_basic
+    text:
+      verbosity: low
+  gpt6_responses_verbosity_medium:
+    extends: gpt6_responses_basic
+    text:
+      verbosity: medium
+  gpt6_responses_verbosity_high:
+    extends: gpt6_responses_basic
+    text:
+      verbosity: high
+  gpt6_responses_json_schema:
+    extends: gpt6_responses_basic
+    max_output_tokens: 256
+    prompt: 'Return only the JSON object {"summary":"ok"}, without Markdown or additional fields.'
+    text:
+      format:
+        type: json_schema
+        name: compatibility_result
+        strict: true
+        schema:
+          type: object
+          properties:
+            summary: {type: string}
+          required: [summary]
+          additionalProperties: false
+  gpt6_responses_prompt_cache_30m:
+    extends: gpt6_responses_basic
+    prompt_cache_key: param-test-gpt6-astra-responses
+    prompt_cache_options:
+      ttl: 30m
+  gpt6_responses_store_false:
+    extends: gpt6_responses_basic
+    store: false
+  gpt6_responses_include_encrypted_reasoning:
+    extends: gpt6_responses_basic
+    include: [reasoning.encrypted_content]
+  gpt6_responses_tools_strict:
+    extends: gpt6_responses_basic
+    max_output_tokens: 256
+    tools_fixture: fixtures/tools_weather_strict.json
+    tool_choice: required
+    multi_turn: true
+  gpt6_responses_parallel_tool_calls:
+    extends: gpt6_responses_tools_strict
+    parallel_tool_calls: true
+  gpt6_responses_reject_reasoning_none:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    reasoning:
+      effort: none
+  gpt6_responses_reject_reasoning_minimal:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    reasoning:
+      effort: minimal
+  gpt6_responses_reject_temperature:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    temperature: 0.7
+  gpt6_responses_reject_top_p:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    top_p: 0.8
+  gpt6_responses_reject_top_logprobs:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    top_logprobs: 5
+  gpt6_responses_reject_output_logprobs:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    include: [message.output_text.logprobs]
+  gpt6_responses_reject_cache_ttl:
+    extends: gpt6_responses_basic
+    preserve_rejected_params: true
+    prompt_cache_options:
+      ttl: 1h
+  gpt6_responses_max_output_tokens_128000:
+    extends: gpt6_responses_basic
+    max_output_tokens: 128000
+  deepseek0813_responses_basic:
+    transport: openai_responses
+    stream: false
+    max_output_tokens: 32
+  deepseek0813_responses_instructions:
+    extends: deepseek0813_responses_basic
+    instructions: You are a concise DeepSeek Responses API compatibility test assistant.
+  deepseek0813_responses_stream:
+    extends: deepseek0813_responses_basic
+    stream: true
+  deepseek0813_responses_reasoning_low:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 96
+    reasoning:
+      effort: low
+  deepseek0813_responses_reasoning_none:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 64
+    reasoning:
+      effort: none
+  deepseek0813_responses_reasoning_minimal:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 96
+    reasoning:
+      effort: minimal
+  deepseek0813_responses_reasoning_medium:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 96
+    reasoning:
+      effort: medium
+  deepseek0813_responses_reasoning_high:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 96
+    reasoning:
+      effort: high
+  deepseek0813_responses_reasoning_xhigh:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 96
+    reasoning:
+      effort: xhigh
+  deepseek0813_responses_reasoning_max:
+    extends: deepseek0813_responses_basic
+    max_output_tokens: 96
+    reasoning:
+      effort: max
+  deepseek0813_responses_temperature:
+    extends: deepseek0813_responses_reasoning_none
+    temperature: 2
+  deepseek0813_responses_temperature_thinking_accepted_ignored:
+    extends: deepseek0813_responses_reasoning_high
+    temperature: 2
+  deepseek0813_responses_top_p:
+    extends: deepseek0813_responses_reasoning_none
+    top_p: 1
+  deepseek0813_responses_top_p_thinking_accepted_ignored:
+    extends: deepseek0813_responses_reasoning_high
+    top_p: 1
+  deepseek0813_responses_top_logprobs:
+    extends: deepseek0813_responses_reasoning_none
+    top_logprobs: 5
+  deepseek0813_responses_text_json:
+    extends: deepseek0813_responses_reasoning_none
+    max_output_tokens: 192
+    text:
+      format:
+        type: json_object
+  deepseek0813_responses_text_verbosity_accepted_ignored:
+    extends: deepseek0813_responses_reasoning_none
+    text:
+      verbosity: low
+  deepseek0813_responses_user:
+    extends: deepseek0813_responses_basic
+    user: loadtest_deepseek_responses_user
+  deepseek0813_responses_parallel_tool_calls_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    parallel_tool_calls: false
+  deepseek0813_responses_max_tool_calls_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    max_tool_calls: 1
+  deepseek0813_responses_reasoning_summary_accepted_ignored:
+    extends: deepseek0813_responses_reasoning_high
+    reasoning:
+      effort: high
+      summary: auto
+  deepseek0813_responses_store_false:
+    extends: deepseek0813_responses_basic
+    store: false
+  deepseek0813_responses_store_false_accepted_ignored:
+    extends: deepseek0813_responses_store_false
+  deepseek0813_responses_store_true_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    store: true
+  deepseek0813_responses_previous_response_id_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    previous_response_id: resp_deepseek_ignored_previous
+  deepseek0813_responses_conversation_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    conversation:
+      id: conv_deepseek_ignored
+  deepseek0813_responses_background_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    background: true
+  deepseek0813_responses_metadata_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    metadata:
+      compatibility_probe: ignored
+  deepseek0813_responses_include_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    include:
+    - reasoning.encrypted_content
+  deepseek0813_responses_prompt_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    responses_prompt:
+      id: pmpt_deepseek_ignored
+      version: '1'
+  deepseek0813_responses_truncation_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    truncation: auto
+  deepseek0813_responses_service_tier_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    service_tier: auto
+  deepseek0813_responses_safety_identifier_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    safety_identifier: deepseek-responses-probe
+  deepseek0813_responses_prompt_cache_key_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    prompt_cache_key: deepseek-responses-ignored-cache-key
+  deepseek0813_responses_prompt_cache_retention_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    prompt_cache_retention: 24h
+  deepseek0813_responses_context_management_accepted_ignored:
+    extends: deepseek0813_responses_basic
+    context_management:
+    - type: compaction
+      compact_threshold: 1000
+  deepseek0813_responses_stream_options_accepted_ignored:
+    extends: deepseek0813_responses_stream
+    stream_options:
+      include_obfuscation: false
+  deepseek0813_responses_tools:
+    extends: deepseek0813_responses_reasoning_none
+    max_output_tokens: 96
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: required
+    multi_turn: true
+  deepseek0813_responses_tools_auto:
+    extends: deepseek0813_responses_reasoning_none
+    max_output_tokens: 96
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+    multi_turn: false
+  deepseek0813_responses_tools_named:
+    extends: deepseek0813_responses_reasoning_none
+    max_output_tokens: 96
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice:
+      type: function
+      name: get_weather
+    multi_turn: true
+  deepseek0813_responses_tool_choice_none:
+    extends: deepseek0813_responses_reasoning_none
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: none
+    multi_turn: false
+  deepseek0813_responses_tools_required_thinking_reject:
+    extends: deepseek0813_responses_reasoning_high
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: required
+    multi_turn: false
+  deepseek0813_anthropic_basic:
+    transport: claude_messages
+    stream: false
+    max_tokens: 32
+  deepseek0813_anthropic_stream:
+    extends: deepseek0813_anthropic_basic
+    stream: true
+  deepseek0813_anthropic_system:
+    extends: deepseek0813_anthropic_basic
+    system: You are a concise DeepSeek Anthropic API compatibility test assistant.
+  deepseek0813_anthropic_stop_sequences:
+    prompt: "Repeat exactly this text with no explanation: TOKEN_AUDIT_OKENDTOKEN_AUDIT_TAIL"
+    extends: deepseek0813_anthropic_basic
+    stop_sequences:
+    - END
+  deepseek0813_anthropic_temperature:
+    extends: deepseek0813_anthropic_basic
+    temperature: 2
+  deepseek0813_anthropic_reject_temperature:
+    extends: deepseek0813_anthropic_basic
+    preserve_rejected_params: true
+    temperature: 2.1
+  deepseek0813_anthropic_top_p:
+    extends: deepseek0813_anthropic_basic
+    top_p: 1
+  deepseek0813_anthropic_thinking_budget_ignored:
+    extends: deepseek0813_anthropic_basic
+    thinking:
+      type: enabled
+      budget_tokens: 64
+  deepseek0813_anthropic_effort_high:
+    extends: deepseek0813_anthropic_basic
+    max_tokens: 64
+    thinking:
+      type: enabled
+    output_config:
+      effort: high
+  deepseek0813_anthropic_effort_max:
+    extends: deepseek0813_anthropic_basic
+    max_tokens: 64
+    thinking:
+      type: enabled
+    output_config:
+      effort: max
+  deepseek0813_anthropic_tools_auto:
+    extends: deepseek0813_anthropic_basic
+    max_tokens: 64
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice: auto
+    multi_turn: true
+  deepseek0813_anthropic_tools_any:
+    extends: deepseek0813_anthropic_tools_auto
+    tool_choice: any
+  deepseek0813_anthropic_tools_named:
+    extends: deepseek0813_anthropic_tools_auto
+    tool_choice: get_weather
+  deepseek0813_anthropic_tool_choice_none:
+    extends: deepseek0813_anthropic_tools_auto
+    tool_choice: none
+    multi_turn: false
+  deepseek0813_anthropic_metadata_user_id:
+    extends: deepseek0813_anthropic_basic
+    metadata:
+      user_id: loadtest_deepseek_anthropic_user
+  deepseek0813_anthropic_container_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    container: deepseek-anthropic-ignored-container
+  deepseek0813_anthropic_mcp_servers_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    mcp_servers: []
+  deepseek0813_anthropic_metadata_other_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    metadata:
+      compatibility_probe: ignored
+  deepseek0813_anthropic_service_tier_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    service_tier: auto
+  deepseek0813_anthropic_top_k_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    top_k: 40
+  deepseek0813_anthropic_output_config_other_accepted_ignored:
+    extends: deepseek0813_anthropic_effort_high
+    output_config:
+      effort: high
+      verbosity: low
+  deepseek0813_anthropic_tools_cache_control_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    tools:
+    - name: get_weather
+      description: Get the current weather for a city.
+      input_schema:
+        type: object
+        properties:
+          location:
+            type: string
+        required:
+        - location
+      cache_control:
+        type: ephemeral
+    tool_choice: none
+  deepseek0813_anthropic_disable_parallel_tool_use_accepted_ignored:
+    extends: deepseek0813_anthropic_basic
+    tools_fixture: fixtures/tools_weather.json
+    tool_choice:
+      type: auto
+      disable_parallel_tool_use: true
+  deepseek0813_fim_basic:
+    transport: fim_completions
+    stream: false
+    max_tokens: 16
+  deepseek0813_fim_suffix:
+    extends: deepseek0813_fim_basic
+    suffix: '
+
+      # end'
+  deepseek0813_fim_echo:
+    extends: deepseek0813_fim_basic
+    echo: true
+  deepseek0813_fim_logprobs:
+    extends: deepseek0813_fim_basic
+    logprobs: 20
+  deepseek0813_fim_reject_logprobs:
+    extends: deepseek0813_fim_basic
+    preserve_rejected_params: true
+    logprobs: 21
+  deepseek0813_fim_stop:
+    skip_minimum_prompt: true
+    prompt: "# Complete the quoted value with exactly TOKEN_AUDIT_OK<S01>TOKEN_AUDIT_TAIL.\nvalue = \""
+    suffix: "\"\n"
+    extends: deepseek0813_fim_basic
+    stop:
+    - <S01>
+    - <S02>
+    - <S03>
+    - <S04>
+    - <S05>
+    - <S06>
+    - <S07>
+    - <S08>
+    - <S09>
+    - <S10>
+    - <S11>
+    - <S12>
+    - <S13>
+    - <S14>
+    - <S15>
+    - <S16>
+  deepseek0813_fim_reject_stop_count:
+    skip_minimum_prompt: true
+    prompt: "# Complete the quoted value with exactly TOKEN_AUDIT_OK<S01>TOKEN_AUDIT_TAIL.\nvalue = \""
+    suffix: "\"\n"
+    extends: deepseek0813_fim_basic
+    preserve_rejected_params: true
+    stop:
+    - <S01>
+    - <S02>
+    - <S03>
+    - <S04>
+    - <S05>
+    - <S06>
+    - <S07>
+    - <S08>
+    - <S09>
+    - <S10>
+    - <S11>
+    - <S12>
+    - <S13>
+    - <S14>
+    - <S15>
+    - <S16>
+    - <S17>
+  deepseek0813_fim_temperature:
+    extends: deepseek0813_fim_basic
+    temperature: 2
+  deepseek0813_fim_reject_temperature:
+    extends: deepseek0813_fim_basic
+    preserve_rejected_params: true
+    temperature: 2.1
+  deepseek0813_fim_top_p:
+    extends: deepseek0813_fim_basic
+    top_p: 1
+  deepseek0813_fim_reject_top_p:
+    extends: deepseek0813_fim_basic
+    preserve_rejected_params: true
+    top_p: 1.1
+  deepseek0813_fim_stream:
+    extends: deepseek0813_fim_basic
+    stream: true
+  deepseek0813_fim_stream_usage:
+    extends: deepseek0813_fim_stream
+    stream_options:
+      include_usage: true
+  deepseek0813_fim_frequency_penalty_accepted_ignored:
+    extends: deepseek0813_fim_basic
+    frequency_penalty: 1
+  deepseek0813_fim_presence_penalty_accepted_ignored:
+    extends: deepseek0813_fim_basic
+    presence_penalty: 1
+  claude_native_temperature_nondefault:
+    transport: claude_messages
+    stream: false
+    temperature: 0.5
+    max_tokens: 64
+  claude_native_top_p_compat:
+    transport: claude_messages
+    stream: false
+    top_p: 0.995
+    max_tokens: 64
+  claude_native_top_p_nondefault:
+    transport: claude_messages
+    stream: false
+    top_p: 0.9
+    max_tokens: 64
+  claude_native_top_k_explicit:
+    transport: claude_messages
+    stream: false
+    top_k: 40
+    max_tokens: 64
+  claude_native_effort_only_low:
+    transport: claude_messages
+    stream: false
+    omit_params:
+    - thinking
+    output_config:
+      effort: low
+    max_tokens: 256
+  claude_native_effort_only_medium:
+    transport: claude_messages
+    stream: false
+    omit_params:
+    - thinking
+    output_config:
+      effort: medium
+    max_tokens: 512
+  claude_native_effort_only_high:
+    transport: claude_messages
+    stream: false
+    omit_params:
+    - thinking
+    output_config:
+      effort: high
+    max_tokens: 512
+  claude_native_effort_only_xhigh:
+    transport: claude_messages
+    stream: false
+    omit_params:
+    - thinking
+    output_config:
+      effort: xhigh
+    max_tokens: 1024
+  claude_native_effort_only_max:
+    transport: claude_messages
+    stream: false
+    omit_params:
+    - thinking
+    output_config:
+      effort: max
+    max_tokens: 1024
+  claude_native_disabled_effort_xhigh:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: disabled
+    output_config:
+      effort: xhigh
+    max_tokens: 1024
+  claude_native_disabled_effort_max:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: disabled
+    output_config:
+      effort: max
+    max_tokens: 1024
+  claude_native_manual_tool_choice_any:
+    extends: claude_native_tools
+    thinking:
+      type: enabled
+      budget_tokens: 1024
+    tool_choice: any
+    max_tokens: 1025
+  claude_native_adaptive_tool_choice_any:
+    extends: claude_native_tools
+    thinking:
+      type: adaptive
+    tool_choice: any
+    max_tokens: 1024
+  claude_fable_thinking_effort_xhigh:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: xhigh
+    max_tokens: 1024
+  claude_fable_thinking_effort_max:
+    transport: claude_messages
+    stream: false
+    thinking:
+      type: adaptive
+    output_config:
+      effort: max
+    max_tokens: 1024
+
+  gpt5_chat_reasoning_minimal:
+    stream: false
+    max_completion_tokens: 128
+    preserve_rejected_params: true
+    reasoning_effort: minimal
 
 cache_profiles:
   cache_long_context:
@@ -1821,6 +4052,62 @@ qwen_throughput_profiles:
     enable_thinking: false
     prompt_key: medium
     max_tokens: 128
+  standard_short:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_short
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_medium:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_medium
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_extract:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_extract
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_rewrite:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_rewrite
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_translate:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_translate
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_classify:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_classify
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_arithmetic:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_arithmetic
+    skip_minimum_prompt: true
+    max_tokens: 128
+  standard_plan:
+    stream: false
+    enable_thinking: false
+    system: "你是一名简洁的文字助手，请严格按照用户要求作答。"
+    prompt_key: pressure_standard_plan
+    skip_minimum_prompt: true
+    max_tokens: 128
   long_context:
     stream: false
     enable_thinking: false
@@ -1829,19 +4116,20 @@ qwen_throughput_profiles:
   context_128k_chars:
     stream: false
     enable_thinking: false
-    fixture: fixtures/half_million_context.txt
-    fixture_chars: 131072
+    fixture: fixtures/long_context.txt
+    fixture_repeat_to_chars: 131072
     max_tokens: 128
   context_512k_chars:
     stream: false
     enable_thinking: false
-    fixture: fixtures/half_million_context.txt
-    fixture_chars: 524288
+    fixture: fixtures/long_context.txt
+    fixture_repeat_to_chars: 524288
     max_tokens: 128
   half_million_context:
     stream: false
     enable_thinking: false
-    fixture: fixtures/half_million_context.txt
+    fixture: fixtures/long_context.txt
+    fixture_repeat_to_chars: 1850000
     max_tokens: 128
   streaming_latency_api:
     stream: true
@@ -1884,8 +4172,14 @@ profile_weights:
     long_context: 5
     half_million_context: 1
   throughput_rpm:
-    baseline_short: 85
-    baseline_medium: 15
+    standard_short: 14
+    standard_medium: 14
+    standard_extract: 12
+    standard_rewrite: 12
+    standard_translate: 12
+    standard_classify: 12
+    standard_arithmetic: 12
+    standard_plan: 12
   throughput_balanced:
     baseline_short: 55
     baseline_medium: 20
@@ -1917,6 +4211,17 @@ profile_weights:
     glm_reasoning_max: 5
     glm_tools: 5
     glm_tool_calls_thinking: 5
+    glm53_stream: 5
+    glm53_thinking_enabled: 5
+    glm53_do_sample: 3
+    glm53_json_output: 5
+    glm53_reasoning_low: 5
+    glm53_reasoning_high: 5
+    glm53_reasoning_max: 5
+    glm53_temperature: 3
+    glm53_max_tokens: 3
+    glm53_tools: 5
+    glm53_tool_calls_thinking: 5
     qwen_thinking_disabled: 5
     qwen_thinking_enabled: 5
     qwen_thinking_budget: 5

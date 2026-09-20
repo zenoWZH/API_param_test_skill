@@ -1,0 +1,4 @@
+# Optional exact local counters used by the evidence-tier token audit.
+# The core suite remains usable without them and reports N/A instead of PASS.
+tiktoken>=0.7.0
+tokenizers>=0.20.0

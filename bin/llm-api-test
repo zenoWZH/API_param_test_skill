@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SKILL_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+usage() {
+  cat <<'EOF'
+Usage: llm-api-test <command> [args]
+
+Commands:
+  setup       Install/update the isolated runtime
+  doctor      Run an offline, read-only installation audit
+  providers   List configured providers and models
+  run         Launch a parameter/cache/media/pressure/trace test
+  matrix      List matrices, preview frozen plans, execute or recover them
+  deepseek-v41  Prepare or execute the dedicated official research matrix
+  sweep       Plan or run a fixed-rate multi-model pressure sweep
+  jobs        List or stop jobs
+  result      Read a condensed job result
+  workflow    Manage supplier onboarding evidence
+  mpdb        Query or verify the bundled model-profile database
+  console     Manage the optional local web console
+EOF
+}
+
+command_name="${1:-help}"
+[[ $# -eq 0 ]] || shift
+case "$command_name" in
+  help|-h|--help) usage ;;
+  setup) exec bash "$SKILL_ROOT/scripts/setup.sh" "$@" ;;
+  doctor) exec "${PYTHON:-python3}" "$SKILL_ROOT/scripts/doctor.py" "$@" ;;
+  providers) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/run_test.py" --list-providers "$@" ;;
+  run) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/run_test.py" "$@" ;;
+  matrix) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/matrix.py" "$@" ;;
+  deepseek-v41) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/research_deepseek.py" "$@" ;;
+  sweep) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/model_sweep.py" "$@" ;;
+  jobs) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/jobs.py" "$@" ;;
+  result) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/result.py" "$@" ;;
+  workflow) exec bash "$SKILL_ROOT/scripts/python.sh" "$SKILL_ROOT/scripts/workflow.py" "$@" ;;
+  mpdb) exec bash "$SKILL_ROOT/scripts/python.sh" -m model_profile_db.cli "$@" ;;
+  console) exec bash "$SKILL_ROOT/scripts/console.sh" "$@" ;;
+  *) echo "error: unknown command: $command_name" >&2; usage >&2; exit 2 ;;
+esac

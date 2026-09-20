@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 import sys
 import time
@@ -10,8 +9,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import skill_env
+from result_validation import classify_result
 
-DATA_DIR = skill_env.ensure_skill_env()
+DATA_DIR = skill_env.configure_skill_env()
 sys.path.insert(0, str(skill_env.APP_ROOT))
 
 import yaml  # noqa: E402
@@ -39,8 +39,10 @@ def _load_instance(provider: str, model: str) -> dict | None:
 def _save_instance(instance: dict) -> None:
     WORKFLOWS_DIR.mkdir(parents=True, exist_ok=True)
     instance["updated_at"] = time.time()
-    _instance_path(instance["provider"], instance["model"]).write_text(
-        json.dumps(instance, ensure_ascii=False, indent=2), encoding="utf-8"
+    path = _instance_path(instance["provider"], instance["model"])
+    skill_env.atomic_write_private_text(
+        path,
+        json.dumps(instance, ensure_ascii=False, indent=2),
     )
 
 
@@ -60,7 +62,32 @@ def _jobs_root() -> Path:
 
 
 def _verdict_for_job(job_id: str) -> dict:
-    return _read_json(_jobs_root() / job_id / "verdict.json") or {}
+    try:
+        report_dir = skill_env.resolve_job_dir(_jobs_root(), job_id)
+    except ValueError:
+        return {}
+    spec = _read_json(report_dir / "job_spec.json") or {}
+    return _qualification_verdict(spec, _read_json(report_dir / "verdict.json") or {})
+
+
+def _qualification_verdict(spec: dict, verdict: dict) -> dict:
+    validation = classify_result(spec, verdict)
+    if validation is None:
+        return verdict
+    result = {**verdict, "reported_pass": verdict.get("pass"), "result_validation": validation}
+    if not validation.get("current"):
+        result["pass"] = None
+        result["qualification_gap"] = "historical_or_incomplete_parameter_evidence"
+    elif (
+        ("test_workflow_snapshot" in spec and verdict.get("full_parameter_certification") is not True)
+        or verdict.get("full_parameter_matrix_verified") is False
+        or (spec.get("execution_plan") or {}).get("definition", {}).get("factory", {}).get("factory_id") == "source_fixed_parameter"
+    ):
+        result["pass"] = None
+        result["qualification_gap"] = "bounded_workflow_is_not_full_parameter_certification"
+    else:
+        result["pass"] = validation["pass"]
+    return result
 
 
 def _history_tested(provider: str, model: str) -> bool:
@@ -96,6 +123,8 @@ def _auto_outcome(node: dict, instance: dict) -> str | None:
     if not verdict:
         return None
     if auto == "verdict_pass":
+        if not isinstance(verdict.get("pass"), bool):
+            return None
         return "pass" if verdict.get("pass") is True else "fail"
     if auto == "verdict_match":
         passed = verdict.get("pass")
@@ -215,8 +244,9 @@ def _describe_node(wf: dict, instance: dict) -> dict:
         description["hint"] = "可用 advance --auto 自动判定"
     elif kind == "onboard":
         description["hint"] = (
-            "运行 workflow.py onboard-propose 生成注册提案，经用户明确批准后 "
-            "onboard-apply --yes 写入数据目录注册表"
+            "运行 workflow.py onboard-propose 生成 MPDB 审核证据；模型事实经独立审核并"
+            "同步为 bundled MPDB 源码快照后，使用 onboard-apply --yes --review-ref <ref> 验证"
+            "当前 binding 并结束流程。该命令不写模型数据库。"
         )
     return description
 
@@ -265,7 +295,7 @@ def cmd_next(args: argparse.Namespace) -> int:
         description["executed"] = payload
         description["returncode"] = proc.returncode
     print(json.dumps(description, ensure_ascii=False, indent=2))
-    return 0
+    return int(description.get("returncode") or 0)
 
 
 def cmd_advance(args: argparse.Namespace) -> int:
@@ -302,6 +332,17 @@ def cmd_advance(args: argparse.Namespace) -> int:
         )
         return 2
     if args.job_id:
+        try:
+            report_dir = skill_env.resolve_job_dir(_jobs_root(), args.job_id)
+        except ValueError as exc:
+            print(json.dumps({"error": str(exc)}), file=sys.stderr)
+            return 2
+        if not report_dir.is_dir():
+            print(
+                json.dumps({"error": f"job not found: {args.job_id}"}),
+                file=sys.stderr,
+            )
+            return 2
         record_node = (
             node.get("source_node")
             if kind == "decision" and node.get("source_node")
@@ -368,7 +409,115 @@ def cmd_advance(args: argparse.Namespace) -> int:
     return 0
 
 
+class OnboardPrerequisiteError(ValueError):
+    pass
+
+
+def _last_history_entry(instance: dict, node_id: str) -> dict | None:
+    for entry in reversed(instance.get("history") or []):
+        if entry.get("node") == node_id:
+            return entry
+    return None
+
+
+def _job_verdict(instance: dict, node_id: str) -> dict:
+    job_id = (instance.get("job_ids") or {}).get(node_id)
+    if not job_id:
+        raise OnboardPrerequisiteError(f"missing {node_id} job")
+    try:
+        report_dir = skill_env.resolve_job_dir(_jobs_root(), str(job_id))
+    except ValueError as exc:
+        raise OnboardPrerequisiteError(f"invalid {node_id} job id") from exc
+    spec = _read_json(report_dir / "job_spec.json") or {}
+    expected_type = {
+        "param_test": "param_test",
+        "trace_test": "trace_test",
+        "concurrency_test": "staircase",
+    }.get(node_id)
+    if (
+        spec.get("provider") != instance.get("provider")
+        or spec.get("model") != instance.get("model")
+        or spec.get("type") != expected_type
+    ):
+        raise OnboardPrerequisiteError(
+            f"{node_id} job does not match this provider/model/test type"
+        )
+    verdict = _read_json(report_dir / "verdict.json") or {}
+    if not verdict:
+        raise OnboardPrerequisiteError(f"missing {node_id} verdict")
+    verified = _qualification_verdict(spec, verdict)
+    if not isinstance(verified.get("pass"), bool):
+        raise OnboardPrerequisiteError(
+            f"{node_id} evidence cannot qualify this workflow: "
+            + str(verified.get("qualification_gap") or "unverified result")
+        )
+    return verified
+
+
+def _onboard_evidence(instance: dict) -> str:
+    if instance.get("current_node") != "onboard":
+        raise OnboardPrerequisiteError(
+            "onboard proposal/apply is allowed only at the onboard node"
+        )
+
+    history = instance.get("history") or []
+    last_entry = history[-1] if history else {}
+    maintenance = _last_history_entry(instance, "profile_maintenance")
+    maintenance_gate = (instance.get("human_gates") or {}).get(
+        "profile_maintenance"
+    )
+    if (
+        last_entry.get("node") == "profile_maintenance"
+        and maintenance
+        and maintenance.get("outcome") == "onboarded"
+        and maintenance_gate
+        and maintenance_gate.get("outcome") == "onboarded"
+    ):
+        return "profile_maintenance_user_approved"
+
+    concurrency_decision = _last_history_entry(instance, "concurrency_decision")
+    if not concurrency_decision or concurrency_decision.get("outcome") != "pass":
+        raise OnboardPrerequisiteError("concurrency decision has not passed")
+    if _job_verdict(instance, "concurrency_test").get("pass") is not True:
+        raise OnboardPrerequisiteError("concurrency verdict is not pass")
+
+    history_check = _last_history_entry(instance, "check_history")
+    supplier_quote = (instance.get("human_gates") or {}).get("supplier_quote")
+    if history_check and history_check.get("outcome") == "tested":
+        if not supplier_quote or not str(supplier_quote.get("notes") or "").strip():
+            raise OnboardPrerequisiteError(
+                "existing-provider route requires a recorded supplier quote"
+            )
+        return "existing_profile_concurrency_revalidated"
+
+    param_verdict = _job_verdict(instance, "param_test")
+    param_decision = _last_history_entry(instance, "param_decision")
+    if not param_decision:
+        raise OnboardPrerequisiteError("parameter decision is missing")
+    if param_verdict.get("pass") is True:
+        if param_decision.get("outcome") != "pass":
+            raise OnboardPrerequisiteError("parameter decision does not match verdict")
+        evidence = "supplier_onboarding_param_and_concurrency_passed"
+    elif param_verdict.get("pass") is False:
+        if param_decision.get("outcome") != "fail":
+            raise OnboardPrerequisiteError("parameter decision does not match verdict")
+        trace_decision = _last_history_entry(instance, "trace_decision")
+        if not trace_decision or trace_decision.get("outcome") != "match":
+            raise OnboardPrerequisiteError("trace decision has not matched")
+        if _job_verdict(instance, "trace_test").get("pass") is not True:
+            raise OnboardPrerequisiteError("trace verdict is not a match")
+        evidence = "supplier_onboarding_trace_match_and_concurrency_passed"
+    else:
+        raise OnboardPrerequisiteError("parameter verdict has no boolean pass result")
+
+    price_gate = (instance.get("human_gates") or {}).get("price_check")
+    if not price_gate or price_gate.get("outcome") != "pass":
+        raise OnboardPrerequisiteError("price approval has not passed")
+    return evidence
+
+
 def _build_profile_proposal(instance: dict) -> dict:
+    evidence = _onboard_evidence(instance)
     provider = instance["provider"]
     model = instance["model"]
     verdict = {}
@@ -379,59 +528,140 @@ def _build_profile_proposal(instance: dict) -> dict:
             if verdict:
                 break
     capability = verdict.get("model_capability_profile") or {}
-    family = verdict.get("model_family") or capability.get("model_family") or ""
-    if not family:
-        try:
-            from lib.config import get_model_family, load_config
+    try:
+        from lib.config import (
+            get_model_api_form,
+            get_model_family,
+            get_model_route_profile,
+            load_config,
+        )
 
-            family = get_model_family(load_config(), model, provider)
-        except Exception:
-            family = "unknown"
-    api_form = capability.get("api_form") or "openai_chat_completions"
-    route_profile = capability.get("route_profile") or "dynamic_aggregator"
-    reference_source = verdict.get("reference_source")
-    model_profile: dict = {"evidence": "onboarded_tests_passed"}
-    if reference_source:
-        model_profile["reference_sources"] = [reference_source]
-        model_profile["default_reference_source"] = reference_source
+        config = load_config()
+        configured_family = get_model_family(config, model, provider)
+        route_profile = str(
+            capability.get("route_profile")
+            or get_model_route_profile(config, model, provider)
+        )
+        api_form = str(
+            capability.get("api_form")
+            or get_model_api_form(
+                config,
+                model,
+                provider,
+                route_profile=route_profile,
+            )
+        )
+    except Exception as exc:
+        raise OnboardPrerequisiteError(
+            f"configured family/route/API form cannot be resolved: {exc}"
+        ) from exc
+    family = str(
+        verdict.get("model_family")
+        or capability.get("model_family")
+        or configured_family
+    )
+    if not family or family == "unknown":
+        raise OnboardPrerequisiteError("model family cannot be resolved")
+    if family != configured_family:
+        raise OnboardPrerequisiteError(
+            f"evidence family {family!r} conflicts with configured family "
+            f"{configured_family!r}"
+        )
+    reference_contract_id = verdict.get("reference_contract_id") or verdict.get(
+        "reference_source"
+    )
+    existing_binding = None
+    binding_error = None
+    try:
+        existing_binding = _resolve_existing_mpdb_binding(instance)
+    except Exception as exc:
+        binding_error = str(exc)
     return {
-        "schema_version": 4,
-        "modalities": {
-            "text": {
-                "families": {
-                    family: {
-                        "models": {model: {}},
-                        "route_profiles": {
-                            route_profile: {
-                                "api_forms": {
-                                    api_form: {
-                                        "model_profiles": {model: model_profile},
-                                    }
-                                },
-                                "default_api_form": api_form,
-                            }
-                        },
-                    }
-                }
-            }
-        },
-        "_meta": {
+        "schema": "llm-api-test.mpdb-review-proposal.v1",
+        "mutates_database": False,
+        "review_status": "pending_independent_review",
+        "execution_target": {
             "provider": provider,
-            "model": model,
-            "generated_at": time.time(),
-            "based_on_jobs": instance.get("job_ids") or {},
+            "request_model": model,
+            "modality": "text",
+            "family": family,
+            "route_profile": route_profile,
+            "api_form": api_form,
         },
+        "evidence": {
+            "qualification_path": evidence,
+            "reference_contract_id": reference_contract_id,
+            "job_ids": instance.get("job_ids") or {},
+            "generated_at": time.time(),
+        },
+        "existing_mpdb_binding": existing_binding,
+        "existing_mpdb_binding_error": binding_error,
+        "required_catalog_entities": [
+            "Source",
+            "CanonicalModel",
+            "Profile",
+            "Interface",
+            "Contract",
+            "TestBinding",
+        ],
+        "next_action": (
+            "If no exact executable binding exists, review official evidence in the "
+            "api_pressure model-profile workflow, freeze an approved MPDB source snapshot, "
+            "migrate it with its matching consumer into this skill, rerun setup, then "
+            "run onboard-apply with the external review reference."
+        ),
     }
 
 
-def _deep_merge(base: dict, overlay: dict) -> dict:
-    result = dict(base)
-    for key, value in overlay.items():
-        if isinstance(value, dict) and isinstance(result.get(key), dict):
-            result[key] = _deep_merge(result[key], value)
-        else:
-            result[key] = value
-    return result
+def _resolve_existing_mpdb_binding(instance: dict) -> dict:
+    from lib.config import (
+        get_model_api_form,
+        get_model_family,
+        get_model_route_profile,
+        load_config,
+    )
+    from lib.model_profile_catalog import resolve_runtime_parameter_config
+
+    config = load_config()
+    provider = instance["provider"]
+    model = instance["model"]
+    family = get_model_family(config, model, provider)
+    route_profile = get_model_route_profile(config, model, provider)
+    api_form = get_model_api_form(
+        config,
+        model,
+        provider,
+        route_profile=route_profile,
+    )
+    parameter_config = resolve_runtime_parameter_config(
+        config,
+        provider,
+        model,
+        family,
+        route_profile,
+        api_form,
+    )
+    policy = parameter_config["test_binding"]
+    contract = parameter_config["contract"]
+    database = parameter_config.get("model_profile_database") or {}
+    return {
+        "source_id": parameter_config.get("source_id"),
+        "profile_id": parameter_config.get("profile_id"),
+        "interface_id": parameter_config.get("interface_id"),
+        "reference_contract_id": contract.get("contract_id"),
+        "test_binding_id": parameter_config.get("test_binding_id"),
+        "parameter_test_binding_id": (
+            (parameter_config.get("parameter_test_binding") or {}).get(
+                "test_binding_id"
+            )
+        ),
+        "api_form": (parameter_config.get("interface") or {}).get("api_form"),
+        "route_profile": route_profile,
+        "parameter_test_enabled": policy.get("parameter_test_enabled"),
+        "pressure_test_enabled": policy.get("pressure_test_enabled"),
+        "catalog_version": database.get("catalog_version"),
+        "catalog_digest": database.get("catalog_digest"),
+    }
 
 
 def cmd_onboard_propose(args: argparse.Namespace) -> int:
@@ -439,8 +669,12 @@ def cmd_onboard_propose(args: argparse.Namespace) -> int:
     if not instance:
         print(json.dumps({"error": "no instance"}, ensure_ascii=False), file=sys.stderr)
         return 2
-    proposal = _build_profile_proposal(instance)
-    print(yaml.safe_dump(proposal, allow_unicode=True, sort_keys=False))
+    try:
+        proposal = _build_profile_proposal(instance)
+    except OnboardPrerequisiteError as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 2
+    print(json.dumps(proposal, ensure_ascii=False, indent=2))
     return 0
 
 
@@ -460,29 +694,39 @@ def cmd_onboard_apply(args: argparse.Namespace) -> int:
     if not instance:
         print(json.dumps({"error": "no instance"}, ensure_ascii=False), file=sys.stderr)
         return 2
-    target = Path(
-        __import__("os").getenv(
-            "LLM_API_TEST_PROFILES_LOCAL",
-            str(DATA_DIR / "model_capability_profiles.local.yaml"),
+    try:
+        _onboard_evidence(instance)
+        binding = _resolve_existing_mpdb_binding(instance)
+    except OnboardPrerequisiteError as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 2
+    except Exception as exc:
+        print(
+            json.dumps(
+                {
+                    "error": "exact executable MPDB binding is still unavailable",
+                    "detail": str(exc),
+                    "hint": "publish and migrate an independently reviewed MPDB artifact first",
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
         )
-    )
-    existing = {}
-    if target.exists() and target.stat().st_size:
-        existing = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
-    proposal = _build_profile_proposal(instance)
-    proposal.pop("_meta", None)
-    if not existing:
-        existing = {"schema_version": 4, "modalities": {"text": {"families": {}}}}
-    merged = _deep_merge(existing, proposal)
-    if target.exists():
-        shutil.copy2(target, target.with_suffix(target.suffix + ".bak"))
-    target.write_text(
-        yaml.safe_dump(merged, allow_unicode=True, sort_keys=False), encoding="utf-8"
-    )
+        return 2
+    if not str(args.review_ref or "").strip():
+        print(
+            json.dumps(
+                {"error": "--review-ref is required to record the independent MPDB review"},
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
+        return 2
     instance.setdefault("history", []).append(
         {
             "node": "onboard",
-            "outcome": "applied",
+            "outcome": "verified_existing_mpdb_binding",
+            "review_ref": args.review_ref,
             "notes": args.notes,
             "ts": time.time(),
         }
@@ -491,7 +735,14 @@ def cmd_onboard_apply(args: argparse.Namespace) -> int:
     _save_instance(instance)
     print(
         json.dumps(
-            {"applied": True, "registry": str(target), "current_node": "done"},
+            {
+                "applied": False,
+                "database_mutated": False,
+                "verified": True,
+                "review_ref": args.review_ref,
+                "binding": binding,
+                "current_node": "done",
+            },
             ensure_ascii=False,
             indent=2,
         )
@@ -570,10 +821,12 @@ def main() -> int:
     p = sub.add_parser("onboard-apply")
     add_pm(p)
     p.add_argument("--yes", action="store_true")
+    p.add_argument("--review-ref", default=None)
     p.add_argument("--notes", default=None)
     p.set_defaults(func=cmd_onboard_apply)
 
     args = parser.parse_args()
+    skill_env.ensure_skill_env()
     return args.func(args)
 
 

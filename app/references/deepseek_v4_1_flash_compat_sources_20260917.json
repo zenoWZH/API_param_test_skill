@@ -1,0 +1,1272 @@
+{
+  "retrieved_at": "2026-09-17",
+  "model_version": "DeepSeek-V4.1-Flash",
+  "request_model_id": "deepseek-flash",
+  "evidence_kind": "official_documentation_only",
+  "live_api_called": false,
+  "inherits_prior_model_live_evidence": false,
+  "identity": {
+    "preferred_model_id": "deepseek-flash",
+    "temporary_legacy_aliases": [
+      "deepseek-v4-flash",
+      "deepseek-v4-flash-vision-exp"
+    ],
+    "legacy_models_retired": true,
+    "official_sources": [
+      "https://api-docs.deepseek.com/quick_start/pricing/",
+      "https://api-docs.deepseek.com/updates/"
+    ]
+  },
+  "interfaces": {
+    "openai_responses": {
+      "parameters": {
+        "model": {
+          "state": "supported",
+          "constraints": {
+            "required": true,
+            "enum": [
+              "deepseek-flash"
+            ],
+            "model_version": "DeepSeek-V4.1-Flash"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/",
+            "https://api-docs.deepseek.com/quick_start/pricing/",
+            "https://api-docs.deepseek.com/updates/"
+          ]
+        },
+        "input": {
+          "state": "supported",
+          "constraints": {
+            "types": [
+              "string",
+              "array"
+            ],
+            "required_without": "instructions"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "instructions": {
+          "state": "supported",
+          "constraints": {
+            "type": "string",
+            "placement": "first_system_message",
+            "required_without": "input"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].type": {
+          "state": "conditional",
+          "constraints": {
+            "supported_values": [
+              "message",
+              "function_call",
+              "function_call_output",
+              "custom_tool_call",
+              "custom_tool_call_output",
+              "reasoning"
+            ],
+            "other_types": "ignored",
+            "legacy_web_search_call": "restored_into_context"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "input[].role": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "user",
+              "assistant",
+              "system",
+              "developer"
+            ],
+            "role_mapping": {
+              "developer": "user"
+            }
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].content": {
+          "state": "conditional",
+          "constraints": {
+            "types": [
+              "string",
+              "array"
+            ],
+            "message_content_types": [
+              "input_text",
+              "output_text",
+              "input_image"
+            ],
+            "reasoning_content_type": "reasoning_text"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].call_id": {
+          "state": "conditional",
+          "constraints": {
+            "when": [
+              "function_call",
+              "function_call_output",
+              "custom_tool_call",
+              "custom_tool_call_output"
+            ],
+            "non_empty": true,
+            "unique": true,
+            "matching_call_output_required": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/",
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "input[].output": {
+          "state": "conditional",
+          "constraints": {
+            "when": [
+              "function_call_output",
+              "custom_tool_call_output"
+            ],
+            "types": [
+              "string",
+              "array"
+            ],
+            "content_types": [
+              "input_text",
+              "input_image"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].content[].input_image": {
+          "state": "conditional",
+          "constraints": {
+            "allowed_message_roles": [
+              "user",
+              "developer"
+            ],
+            "allowed_tool_outputs": [
+              "function_call_output",
+              "custom_tool_call_output"
+            ],
+            "rejected_message_roles": [
+              "system",
+              "assistant"
+            ],
+            "rejection_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "input[].content[].image_url": {
+          "state": "conditional",
+          "constraints": {
+            "exactly_one_of": [
+              "image_url",
+              "file_id"
+            ],
+            "source_types": [
+              "https_url",
+              "http_url",
+              "base64_data_url"
+            ],
+            "url_max_length": 8192,
+            "formats": [
+              "jpeg",
+              "png",
+              "gif",
+              "webp"
+            ],
+            "invalid_source_count_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].content[].file_id": {
+          "state": "conditional",
+          "constraints": {
+            "exactly_one_of": [
+              "image_url",
+              "file_id"
+            ],
+            "prefix": "file-api-",
+            "content": "uploaded_image",
+            "requires_prior_file_upload": true,
+            "invalid_source_count_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].content[].detail": {
+          "state": "conditional",
+          "constraints": {
+            "enum": [
+              "low",
+              "high",
+              "original",
+              "auto"
+            ],
+            "low_resolution": [
+              512,
+              512
+            ],
+            "equivalent_values": [
+              "high",
+              "original",
+              "auto"
+            ],
+            "ignored_when": "file_id_present"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "input[].content[].input_file": {
+          "state": "unsupported",
+          "constraints": {
+            "image_file_id_is_separate_supported_shape": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "input[].summary": {
+          "state": "unsupported",
+          "constraints": {
+            "when": "reasoning_item"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "input[].encrypted_content": {
+          "state": "unsupported",
+          "constraints": {
+            "when": "reasoning_item"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "reasoning.effort": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "none",
+              "low",
+              "high",
+              "max"
+            ],
+            "default": "high",
+            "none_disables_thinking": true,
+            "compatibility_aliases": {
+              "minimal": "low",
+              "medium": "high",
+              "xhigh": "high"
+            },
+            "general_thinking_guide_additional_alias": {
+              "ultra": "max"
+            },
+            "ultra_not_enumerated_by_response_api_reference": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "reasoning.summary": {
+          "state": "ignored",
+          "constraints": {
+            "summary_generated": false
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "max_output_tokens": {
+          "state": "supported",
+          "constraints": {
+            "type": "integer",
+            "includes_reasoning_tokens": true,
+            "model_max_output_documented": "384K"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/",
+            "https://api-docs.deepseek.com/quick_start/pricing/"
+          ]
+        },
+        "stream": {
+          "state": "supported",
+          "constraints": {
+            "type": "boolean",
+            "transport": "sse"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "temperature": {
+          "state": "conditional",
+          "constraints": {
+            "minimum": 0,
+            "maximum": 2,
+            "default": 1,
+            "effective_when": "thinking_disabled",
+            "thinking_enabled_behavior": "ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "top_p": {
+          "state": "conditional",
+          "constraints": {
+            "maximum": 1,
+            "default": 1,
+            "effective_when": "thinking_enabled",
+            "thinking_effective_minimum": 0.95,
+            "below_thinking_minimum": "clamped_to_0.95",
+            "thinking_disabled_behavior": "ignored_fixed_1.0"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "top_logprobs": {
+          "state": "supported",
+          "constraints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "text.format.type": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "text",
+              "json_object",
+              "json_schema"
+            ],
+            "default": "text"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "text.format.name": {
+          "state": "conditional",
+          "constraints": {
+            "required_when": "text.format.type=json_schema"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "text.format.schema": {
+          "state": "conditional",
+          "constraints": {
+            "type": "object",
+            "required_when": "text.format.type=json_schema"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "text.verbosity": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "tools": {
+          "state": "conditional",
+          "constraints": {
+            "types": [
+              "function",
+              "custom"
+            ],
+            "custom_name_allowlist": [
+              "apply_patch"
+            ],
+            "other_custom_names_status": 400,
+            "built_in_types": "ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "tools[].name": {
+          "state": "conditional",
+          "constraints": {
+            "when": "tools[].type=function",
+            "min_length": 1,
+            "max_length": 128,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "unique": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "tools[].description": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "tools[].parameters": {
+          "state": "supported",
+          "constraints": {
+            "type": "object",
+            "schema_format": "json_schema",
+            "omitted_behavior": "empty_parameter_list"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "tools[].strict": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "not_documented_in_the_responses_parameter_reference_or_compatibility_table"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "tools[].type=custom": {
+          "state": "conditional",
+          "constraints": {
+            "supported_name": "apply_patch",
+            "other_names_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "tools[].type=builtin": {
+          "state": "ignored",
+          "constraints": {
+            "examples": [
+              "web_search",
+              "file_search",
+              "code_interpreter",
+              "computer_use",
+              "mcp"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "tool_choice": {
+          "state": "supported",
+          "constraints": {
+            "string_enum": [
+              "none",
+              "auto",
+              "required"
+            ],
+            "named_shape": {
+              "type": "function",
+              "name": "<tool_name>"
+            },
+            "default": "auto",
+            "thinking_mode_restrictions": "unknown_for_this_api_form"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "parallel_tool_calls": {
+          "state": "ignored",
+          "constraints": {
+            "effective_value": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "max_tool_calls": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "user": {
+          "state": "supported",
+          "constraints": {
+            "type": "string",
+            "max_length": 512,
+            "pattern": "^[a-zA-Z0-9_-]+$"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-response/"
+          ]
+        },
+        "previous_response_id": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored",
+            "response_value": null
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "conversation": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "store": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored",
+            "response_value": false
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "background": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "metadata": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "include": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "prompt": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "truncation": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored",
+            "context_overflow_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "service_tier": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "safety_identifier": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "prompt_cache_key": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored",
+            "cache_management": "automatic"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "prompt_cache_retention": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored",
+            "cache_management": "automatic"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "context_management": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        },
+        "stream_options": {
+          "state": "unsupported",
+          "constraints": {
+            "request_behavior": "silently_ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/"
+          ]
+        }
+      },
+      "protocol_constraints": {
+        "base_url": "https://api.deepseek.com",
+        "method": "POST",
+        "path": "/responses",
+        "server_side_state": false,
+        "client_resends_full_history": true,
+        "unsupported_top_level_parameters_are_silently_ignored": true,
+        "response_fixed_values": {
+          "store": false,
+          "previous_response_id": null,
+          "parallel_tool_calls": true
+        },
+        "streaming": {
+          "terminal_events": [
+            "response.completed",
+            "response.incomplete",
+            "response.failed"
+          ],
+          "done_sentinel": false,
+          "sequence_number": "monotonically_increasing"
+        },
+        "usage_fields": [
+          "input_tokens",
+          "input_tokens_details.cached_tokens",
+          "output_tokens",
+          "output_tokens_details.reasoning_tokens",
+          "total_tokens"
+        ],
+        "thinking_tool_choice_cross_form_boundary": {
+          "state": "unknown",
+          "reason": "Responses references support required and named choice without a thinking restriction. Chat Completions alone explicitly documents a thinking-mode 400; that rule is not transplanted here.",
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/responses_api/",
+            "https://api-docs.deepseek.com/api/create-response/",
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "image_limits": {
+          "formats": [
+            "jpeg",
+            "png",
+            "gif",
+            "webp"
+          ],
+          "format_detection": "file_content",
+          "request_body_max_mib": 48,
+          "inline_image_max_mib": 32,
+          "url_image_max_mib": 32,
+          "file_id_image_max_mib": 64,
+          "images_per_request_max": 600,
+          "total_images_max_mib_without_file_id": 64,
+          "total_images_max_mib_with_file_id": 200,
+          "image_dimension_max_px": 8192,
+          "image_dimension_max_px_at_15_or_more_images": 4096,
+          "external_url_max_length": 8192,
+          "external_url_download_timeout_seconds": 60,
+          "max_tokens_per_image": 1024,
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "official_sources": [
+          "https://api-docs.deepseek.com/guides/responses_api/",
+          "https://api-docs.deepseek.com/api/create-response/"
+        ]
+      }
+    },
+    "anthropic_messages": {
+      "parameters": {
+        "model": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "deepseek-flash"
+            ],
+            "model_version": "DeepSeek-V4.1-Flash",
+            "avoid_claude_aliases_for_identity": true,
+            "required": true,
+            "requirement_basis": "Required by the Anthropic Messages format referenced by DeepSeek; missing-field rejection has not been live verified."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/quick_start/pricing/",
+            "https://api-docs.deepseek.com/updates/"
+          ],
+          "supplementary_standard_sources": [
+            "https://platform.claude.com/docs/en/api/http/messages/create"
+          ]
+        },
+        "max_tokens": {
+          "state": "supported",
+          "constraints": {
+            "model_max_output_documented": "384K",
+            "required": true,
+            "requirement_basis": "Required by the Anthropic Messages format referenced by DeepSeek; missing-field rejection has not been live verified."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/quick_start/pricing/"
+          ],
+          "supplementary_standard_sources": [
+            "https://platform.claude.com/docs/en/api/http/messages/create"
+          ]
+        },
+        "messages": {
+          "state": "supported",
+          "constraints": {
+            "required": true,
+            "requirement_basis": "Required by the Anthropic Messages format referenced by DeepSeek; missing-field rejection has not been live verified."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ],
+          "supplementary_standard_sources": [
+            "https://platform.claude.com/docs/en/api/http/messages/create"
+          ]
+        },
+        "system": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "stop_sequences": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "stream": {
+          "state": "supported",
+          "constraints": {
+            "type": "boolean"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "temperature": {
+          "state": "conditional",
+          "constraints": {
+            "minimum": 0,
+            "maximum": 2,
+            "effective_when": "thinking_disabled",
+            "thinking_enabled_behavior": "ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "top_p": {
+          "state": "conditional",
+          "constraints": {
+            "effective_when": "thinking_enabled",
+            "thinking_effective_minimum": 0.95,
+            "below_thinking_minimum": "clamped_to_0.95",
+            "thinking_disabled_behavior": "ignored_fixed_1.0"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "thinking.type": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "enabled",
+              "disabled"
+            ],
+            "default": "enabled"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "thinking.budget_tokens": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "output_config.effort": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "low",
+              "high",
+              "max"
+            ],
+            "default": "high",
+            "compatibility_aliases": {
+              "minimal": "low",
+              "medium": "high",
+              "xhigh": "high",
+              "ultra": "max"
+            }
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "output_config.format": {
+          "state": "unsupported",
+          "constraints": {
+            "reason": "compatibility_table_supports_only_output_config.effort",
+            "request_behavior": "not_specified"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "container": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "mcp_servers": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "service_tier": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "top_k": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "metadata.user_id": {
+          "state": "supported",
+          "constraints": {
+            "purpose": [
+              "caller_isolation",
+              "scheduling_isolation"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "metadata.*": {
+          "state": "ignored",
+          "constraints": {
+            "except": [
+              "user_id"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "tools[].name": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "tools[].input_schema": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "tools[].description": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "tools[].cache_control": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "tool_choice.type": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "none",
+              "auto",
+              "any",
+              "tool"
+            ],
+            "thinking_mode_restrictions": "unknown_for_this_api_form"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "tool_choice.disable_parallel_tool_use": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content": {
+          "state": "supported",
+          "constraints": {
+            "types": [
+              "string",
+              "array"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].text": {
+          "state": "supported",
+          "constraints": {
+            "when": "type=text"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].cache_control": {
+          "state": "ignored",
+          "constraints": {
+            "documented_block_types": [
+              "text",
+              "tool_use",
+              "tool_result"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].citations": {
+          "state": "ignored",
+          "constraints": {
+            "when": "type=text"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=image": {
+          "state": "conditional",
+          "constraints": {
+            "allowed_message_roles": [
+              "user"
+            ],
+            "rejected_message_roles": [
+              "system",
+              "assistant"
+            ],
+            "rejection_status": 400,
+            "source_types": [
+              "base64",
+              "url",
+              "file"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "messages[].content[].source.type=base64": {
+          "state": "supported",
+          "constraints": {
+            "media_type_required": true,
+            "media_types": [
+              "image/jpeg",
+              "image/png",
+              "image/gif",
+              "image/webp"
+            ],
+            "data": "base64_encoded_image"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "messages[].content[].source.type=url": {
+          "state": "supported",
+          "constraints": {
+            "url_max_length": 8192
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "messages[].content[].source.type=file": {
+          "state": "conditional",
+          "constraints": {
+            "required_header": {
+              "anthropic-beta": "files-api-2025-04-14"
+            },
+            "requires_prior_file_upload": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "messages[].content[].type=thinking": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=tool_use": {
+          "state": "supported",
+          "constraints": {
+            "supported_fields": [
+              "id",
+              "input",
+              "name"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=tool_result": {
+          "state": "supported",
+          "constraints": {
+            "supported_fields": [
+              "tool_use_id",
+              "content"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].is_error": {
+          "state": "ignored",
+          "constraints": {
+            "when": "type=tool_result"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=server_tool_use": {
+          "state": "supported",
+          "constraints": {
+            "input_history_support_only": true,
+            "server_tool_execution_not_established": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=web_search_tool_result": {
+          "state": "supported",
+          "constraints": {
+            "input_history_support_only": true,
+            "server_tool_execution_not_established": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=document": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=search_result": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=redacted_thinking": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=code_execution_tool_result": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=mcp_tool_use": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=mcp_tool_result": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "messages[].content[].type=container_upload": {
+          "state": "unsupported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "headers.x-api-key": {
+          "state": "supported",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "headers.anthropic-version": {
+          "state": "ignored",
+          "constraints": {},
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/"
+          ]
+        },
+        "headers.anthropic-beta": {
+          "state": "conditional",
+          "constraints": {
+            "messages_general_behavior": "ignored",
+            "image_file_source_required_value": "files-api-2025-04-14"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        }
+      },
+      "protocol_constraints": {
+        "base_url": "https://api.deepseek.com/anthropic",
+        "api_operation": "messages.create",
+        "model_alias_mapping": {
+          "claude_opus_prefix": "deepseek-v4-pro",
+          "claude_haiku_prefix": "deepseek-flash",
+          "claude_sonnet_prefix": "deepseek-flash",
+          "unsupported_model_names": "deepseek-flash"
+        },
+        "thinking_tool_choice_cross_form_boundary": {
+          "state": "unknown",
+          "reason": "The DeepSeek Anthropic table supports any and tool but gives no thinking-mode condition. Chat Completions restrictions are not assumed for this interface.",
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/anthropic_api/",
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "server_side_conversation_state": {
+          "state": "unknown",
+          "reason": "No stored-conversation API is established by this compatibility guide."
+        },
+        "image_limits": {
+          "formats": [
+            "jpeg",
+            "png",
+            "gif",
+            "webp"
+          ],
+          "format_detection": "file_content",
+          "request_body_max_mib": 48,
+          "inline_image_max_mib": 32,
+          "url_image_max_mib": 32,
+          "file_id_image_max_mib": 64,
+          "images_per_request_max": 600,
+          "total_images_max_mib_without_file_id": 64,
+          "total_images_max_mib_with_file_id": 200,
+          "image_dimension_max_px": 8192,
+          "image_dimension_max_px_at_15_or_more_images": 4096,
+          "external_url_max_length": 8192,
+          "external_url_download_timeout_seconds": 60,
+          "max_tokens_per_image": 1024,
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "official_sources": [
+          "https://api-docs.deepseek.com/guides/anthropic_api/",
+          "https://api-docs.deepseek.com/guides/thinking_mode/",
+          "https://api-docs.deepseek.com/guides/vision/"
+        ]
+      }
+    }
+  }
+}

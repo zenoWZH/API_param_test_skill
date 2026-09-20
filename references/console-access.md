@@ -1,54 +1,78 @@
-# 控制台访问与公网发布指南
+# 控制台访问与网络暴露边界
 
-Web 控制台默认监听 `0.0.0.0:8090` 并启用登录认证。本文档说明密码管理与两种公网发布方式。
-`{baseDir}` = skill 根目录；`$DATA` = 数据目录（默认 `~/.config/llm-api-test/`）。
+Web 控制台是可选人工界面，CLI 测试不依赖它。默认监听 `127.0.0.1:8090` 并启用认证；启动控制台、显示密码、监听非 loopback 和创建公网隧道都是彼此独立的显式操作。
 
-## 1. 登录密码
+下文 `<skill-root>` 是包含 `SKILL.md` 的目录。数据默认位于 `${XDG_CONFIG_HOME:-$HOME/.config}/llm-api-test`，可用 `LLM_API_TEST_DATA_DIR` 覆盖。
 
-- 首次 `console.sh start` 自动生成 `admin` + 随机密码，存于 `$DATA/console_auth.json`（PBKDF2 哈希）。
-- agent 查看并告诉用户：`bash {baseDir}/scripts/console.sh passwd`
-- 用户改密码：`bash {baseDir}/scripts/console.sh passwd --set <新密码>`（立即生效，已有会话保持有效）
-- 重置随机密码：`bash {baseDir}/scripts/console.sh passwd --reset`
-- 密码也可用环境变量固定：`WEB_CONSOLE_USER` / `WEB_CONSOLE_PASSWORD`（此时 `passwd` 会提示去环境变量处改）。
-- 认证是**可选**的：`LLM_API_TEST_DISABLE_AUTH=1 bash {baseDir}/scripts/console.sh start` 关闭（仅限可信网络）。
-
-## 2. 公网方式一：Cloudflare 快速隧道（零配置，推荐先试用）
+## 本地启动
 
 ```bash
-bash {baseDir}/scripts/console.sh tunnel
-# 输出 public url: https://xxxx.trycloudflare.com，把地址 + 密码一起发给用户
+bash <skill-root>/bin/llm-api-test console start
+bash <skill-root>/bin/llm-api-test console status
+bash <skill-root>/bin/llm-api-test console stop
 ```
 
-- 无需 Cloudflare 账号；cloudflared 自动下载到 `~/.local/bin/`。
-- 地址随机、每次重建都会变化；无 SLA；适合临时共享。
-- 停止：`bash {baseDir}/scripts/console.sh tunnel-stop`。
+如需改端口，只为该进程设置 `WEB_CONSOLE_PORT`。不要为了远程访问直接把 `WEB_CONSOLE_HOST=0.0.0.0` 当默认做法；应先明确网络边界、认证和反向代理策略。
 
-## 3. 公网方式二：Cloudflare 账户命名隧道（固定域名，长期使用）
+## 密码管理
 
-前提：用户有 Cloudflare 账户，且有一个域名已接入 Cloudflare DNS。
+- 首次启动会生成 `admin` 的随机密码；哈希与可恢复副本都在私有 data 目录，权限为 `0600`。
+- agent 默认不得读取或打印密码。确有需要时，由人在可信终端本地运行 `console passwd --reveal`。
+- 交互改密：`console passwd --set`。脚本会隐藏输入并二次确认，不接受 argv 中的明文密码。
+- 受控自动化可把密码通过 stdin 传给 `console passwd --password-stdin`，但不得把值写进命令、日志或聊天。
+- `console passwd --reset` 只生成并保存新密码，不在输出中显示；之后仍由人在本地选择是否 `--reveal`。
+- `WEB_CONSOLE_PASSWORD` 可由宿主 secret store 注入；脚本不会把该值打印出来。
 
-**用户侧一次性操作（引导用户完成）：**
-
-1. 登录 https://one.dash.cloudflare.com/ → 左侧 **Networks → Tunnels → Add a tunnel**。
-2. 选 **Cloudflared**，命名（如 `llm-api-test`），保存。
-3. 创建页会显示安装命令，其中 `--token` 后面那串就是隧道 token，复制发给 agent。
-4. 在隧道的 **Public Hostname** 页添加：子域名如 `llm-test`、域名选自己的域名、`Service` 类型 `HTTP`、URL 填 `127.0.0.1:8090`（本项也可由隧道侧忽略，以 dashboard 为准）。
-
-**agent 侧：**
+关闭认证只适用于明确隔离的可信 loopback 场景：
 
 ```bash
-bash {baseDir}/scripts/console.sh tunnel --token <用户给的 token>
-# 或写入环境后常用：export CLOUDFLARE_TUNNEL_TOKEN=<token>
+LLM_API_TEST_DISABLE_AUTH=1 \
+bash <skill-root>/bin/llm-api-test console start
 ```
 
-固定公网地址即为 dashboard 里配置的主机名（如 `https://llm-test.example.com`）。
-token 等效于隧道控制权，等同密码保管；可写入 `$DATA/.env`（600 权限）持久化。
+不得把关闭认证的控制台绑定到非 loopback、反向代理或公网隧道。
 
-## 4. 网络兼容性
+## Cloudflare 快速隧道
 
-两种方式的 cloudflared 都以 `--protocol http2`（TCP 443）运行，封锁 UDP/QUIC 的网络也能出公网。如企业网络拦截 trycloudflare.com 域名本身，只能用方式二自有域名。
+隧道不是 setup 的一部分。先从 Cloudflare 官方渠道安装并审核固定版本的 `cloudflared`；本脚本不会自动下载 latest 二进制。获得明确公网暴露批准后：
 
-## 5. 生产化建议（超出本 skill 范围）
+```bash
+bash <skill-root>/bin/llm-api-test console tunnel
+bash <skill-root>/bin/llm-api-test console tunnel-url
+bash <skill-root>/bin/llm-api-test console tunnel-stop
+```
 
-- 命名隧道 + 自有域名 + Cloudflare Access（再加一层 IdP 登录）。
-- 或自建 frp/nginx 反代 + Basic Auth。
+快速隧道生成随机 `trycloudflare.com` 地址，无 SLA。URL 可以分享，但密码仍不得由 agent 从文件读取并转发到聊天。
+
+## Cloudflare 命名隧道
+
+先由账户管理员在 Cloudflare Zero Trust 中创建 tunnel 与 Public Hostname，并把 service 指向 `http://127.0.0.1:8090`。Tunnel token 等同控制权凭据，禁止粘贴进聊天或 argv。
+
+推荐由 secret store 注入：
+
+```bash
+CLOUDFLARE_TUNNEL_TOKEN='<secret-store-injected>' \
+bash <skill-root>/bin/llm-api-test console tunnel
+```
+
+或使用仅当前用户可读的普通文件：
+
+```bash
+chmod 600 /secure/path/cloudflared.token
+bash <skill-root>/bin/llm-api-test console tunnel \
+  --token-file /secure/path/cloudflared.token
+```
+
+`tunnel --token <value>` 会被脚本拒绝，因为进程 argv 可能被 shell history、进程列表或 agent 日志记录。
+
+## Container 与 OpenClaw sandbox
+
+Host 侧发现 skill 不表示 sandbox 已能启动服务。需分别确认：
+
+- skill 目录在 sandbox 中完整可读；
+- data/runtime 是窄范围可写 bind，且环境变量在 sandbox 内实际生效；
+- loopback socket/端口绑定被允许；
+- 如需外部访问，端口发布、反向代理和 HTTPS 出站分别获得批准；
+- 密钥通过 sandbox 支持的 secret/env 注入或只读 secret mount 提供，不假设 host 的 skill env 自动传入。
+
+不要为解决权限问题挂载整个 home、Docker socket、SSH 目录或云厂商凭据目录。OpenClaw 的完整配置与验收见 [tool-compatibility.md](tool-compatibility.md)。

@@ -1,11 +1,7 @@
 from __future__ import annotations
 
 import copy
-import tempfile
 import unittest
-from pathlib import Path
-
-import yaml
 
 from lib.config import (
     _normalize_provider_config,
@@ -21,6 +17,10 @@ from lib.config import (
 from lib.deepseek_params import build_request, weighted_workload_profiles
 from lib.image_validation import apply_capability_expectations, evaluate_case, grok_imagine_cases
 from lib.param_outcome import compatibility_pass_from_statuses, map_probe_outcome
+from lib.model_profile_catalog import (
+    get_model_profile_catalog,
+    resolve_runtime_profile_binding,
+)
 from lib.reference_specs import (
     capability_profile_snapshot,
     comparison_reference_source_for_model,
@@ -29,6 +29,7 @@ from lib.reference_specs import (
     load_model_capability_profiles,
     model_reference_spec_payload,
     pressure_profiles_for_model,
+    pressure_test_runnable,
     reference_param_rows,
     reference_sources_for_model,
     resolve_profile_expectation,
@@ -61,142 +62,20 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
             "models": models,
         }
 
-    @staticmethod
-    def _v3_capability_payload() -> dict:
-        return {
-            "schema_version": 3,
-            "modalities": {
-                "text": {
-                    "families": {
-                        "gpt": {
-                            "canonical_models": {"gpt-route-test": {}},
-                            "default_api_form": "openai_chat_completions",
-                            "api_forms": {
-                                "openai_chat_completions": {
-                                    "transport": "chat_completions",
-                                    "default_route_profile": "vendor_direct",
-                                    "route_profiles": {"vendor_direct": {}},
-                                    "model_profiles": {"gpt-route-test": {}},
-                                }
-                            },
-                        }
-                    }
-                }
-            },
-        }
-
-    def test_v3_capability_schema_is_migrated_read_only_to_route_first_v4(self) -> None:
-        payload = self._v3_capability_payload()
-        with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / "capabilities-v3.yaml"
-            path.write_text(yaml.safe_dump(payload), encoding="utf-8")
-            migrated = load_model_capability_profiles(path)
-            profile = load_model_capability_profile(
+    def test_capability_loaders_are_mpdb_only(self) -> None:
+        profiles = load_model_capability_profiles()
+        self.assertEqual(profiles["projection_source"], "yibu-model-profile-db")
+        self.assertTrue(profiles["catalog_digest"])
+        self.assertTrue(profiles["test_extension_digest"])
+        with self.assertRaises(TypeError):
+            load_model_capability_profiles("retired-capabilities.yaml")  # type: ignore[call-arg]
+        with self.assertRaises(TypeError):
+            load_model_capability_profile(
                 "text",
                 "gpt",
-                "gpt-route-test",
-                path=path,
-                route_profile="vendor_direct",
-                api_form="openai_chat_completions",
+                "gpt-5-mini",
+                path="retired-capabilities.yaml",  # type: ignore[call-arg]
             )
-        self.assertEqual(migrated["schema_version"], 4)
-        self.assertIn(
-            "openai_chat_completions",
-            migrated["modalities"]["text"]["families"]["gpt"]
-            ["route_profiles"]["vendor_direct"]["api_forms"],
-        )
-        self.assertEqual(
-            profile["model_api_profile_id"],
-            "gpt/gpt-route-test@vendor_direct/openai_chat_completions",
-        )
-
-    def test_v3_migration_rejects_conflicting_route_fields_with_paths(self) -> None:
-        payload = self._v3_capability_payload()
-        form = payload["modalities"]["text"]["families"]["gpt"]["api_forms"][
-            "openai_chat_completions"
-        ]
-        form["default_expectations"] = {"temperature": "supported"}
-        form["route_profiles"]["vendor_direct"] = {
-            "transport": "openai_responses",
-            "default_expectations": {"temperature": "unsupported"},
-        }
-        with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / "capabilities-v3-conflict.yaml"
-            path.write_text(yaml.safe_dump(payload), encoding="utf-8")
-            with self.assertRaisesRegex(
-                RuntimeError,
-                "migration conflict.*default_expectations/temperature.*"
-                "api_forms.*route_profiles.*transport",
-            ):
-                load_model_capability_profiles(path)
-
-    def test_v4_capability_merge_order_places_provider_override_last(self) -> None:
-        payload = {
-            "schema_version": 4,
-            "modalities": {
-                "text": {
-                    "families": {
-                        "gpt": {
-                            "default_parameter_expectations": {"probe": "supported"},
-                            "models": {
-                                "gpt-route-test": {
-                                    "parameter_expectations": {"probe": "unsupported"}
-                                }
-                            },
-                            "route_profiles": {
-                                "vendor_direct": {
-                                    "default_parameter_expectations": {
-                                        "probe": "supported"
-                                    },
-                                    "default_api_form": "openai_chat_completions",
-                                    "api_forms": {
-                                        "openai_chat_completions": {
-                                            "transport": "chat_completions",
-                                            "default_parameter_expectations": {
-                                                "probe": "unsupported"
-                                            },
-                                            "model_profiles": {
-                                                "gpt-route-test": {
-                                                    "parameter_expectations": {
-                                                        "probe": "supported"
-                                                    }
-                                                }
-                                            },
-                                        }
-                                    },
-                                }
-                            },
-                        }
-                    }
-                }
-            },
-        }
-        with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / "capabilities-v4.yaml"
-            path.write_text(yaml.safe_dump(payload), encoding="utf-8")
-            profile = load_model_capability_profile(
-                "text",
-                "gpt",
-                "gpt-route-test",
-                path=path,
-                route_profile="vendor_direct",
-                api_form="openai_chat_completions",
-            )
-            overridden = load_model_capability_profile(
-                "text",
-                "gpt",
-                "gpt-route-test",
-                path=path,
-                route_profile="vendor_direct",
-                api_form="openai_chat_completions",
-                provider_override={
-                    "parameter_expectations": {"probe": "unsupported"}
-                },
-            )
-        self.assertEqual(profile["parameter_expectations"]["probe"], "supported")
-        self.assertEqual(
-            overridden["parameter_expectations"]["probe"], "unsupported"
-        )
 
     def test_legacy_route_migration_preserves_supplier_evidence(self) -> None:
         providers = {
@@ -278,9 +157,37 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
         model = get_image_model_config(config, "image_proxy", "gpt-image-2")
         self.assertEqual(model["route_profile"], "dynamic_aggregator")
 
-    def test_every_configured_model_has_a_registered_capability_profile(self) -> None:
+    def test_every_configured_model_is_registered_or_explicitly_unresolved(self) -> None:
         config = load_config()
+        config["providers"]["unresolved_fixture"] = {
+            "label": "unresolved runtime fixture",
+            "base_url": "https://example.invalid/v1",
+            "backend": "proxy_unknown",
+            "default_transport": "chat_completions",
+            "models": {
+                "default": "unregistered-model",
+                "candidates": ["unregistered-model"],
+                "families": {"unregistered-model": "gpt"},
+                "routes": {
+                    "unregistered-model": {
+                        "dynamic_aggregator": {
+                            "api_forms": {"openai_chat_completions": {}}
+                        }
+                    }
+                },
+                "default_routes": {
+                    "unregistered-model": "dynamic_aggregator"
+                },
+                "default_api_forms": {
+                    "unregistered-model": {
+                        "dynamic_aggregator": "openai_chat_completions"
+                    }
+                },
+            },
+        }
         text_checked = 0
+        unresolved_checked = 0
+        fail_closed_checked = 0
         for provider, provider_cfg in config["providers"].items():
             models_cfg = provider_cfg.get("models") or {}
             candidates = list(models_cfg.get("candidates") or [])
@@ -306,32 +213,92 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                         model=model,
                         api_form=api_form,
                     ):
-                        capability = load_model_capability_profile(
-                            "text",
-                            family,
+                        binding = resolve_runtime_profile_binding(
+                            config,
+                            provider,
                             model,
-                            api_form=api_form,
-                            route_profile=route_profile,
+                            family,
+                            route_profile,
+                            api_form,
+                            modality="text",
                         )
+                        if not binding.get("catalog_resolved"):
+                            self.assertTrue(binding.get("reference_unresolved"))
+                            self.assertIsNone(binding.get("profile_id"))
+                            unresolved_checked += 1
+                            continue
+                        capability_family = str(
+                            binding.get("suite_family_id") or family
+                        )
+                        profile = binding.get("profile") or {}
+                        capability_model = str(
+                            profile.get("model_slug") or model
+                        )
+                        try:
+                            capability = load_model_capability_profile(
+                                "text",
+                                capability_family,
+                                capability_model,
+                                api_form=api_form,
+                                route_profile=route_profile,
+                            )
+                        except (KeyError, ValueError):
+                            interface = binding.get("interface") or {}
+                            policies = [
+                                row
+                                for row in interface.get("test_bindings") or []
+                                if row.get("extension_type") == "model_test_policy"
+                            ]
+                            self.assertTrue(
+                                interface.get("test_binding_status") != "required"
+                                or not policies
+                            )
+                            fail_closed_checked += 1
+                            continue
+                        if (
+                            not capability["known_model"]
+                            or not capability["known_api_profile"]
+                        ):
+                            self.assertIn(
+                                route_profile,
+                                {
+                                    "cloud_adapter",
+                                    "dynamic_aggregator",
+                                    "openrouter",
+                                    "provider_compat",
+                                },
+                            )
+                            self.assertEqual(
+                                binding["binding_source"],
+                                "catalog_official_reference",
+                            )
+                            text_checked += 1
+                            continue
                         self.assertTrue(capability["known_model"])
                         self.assertTrue(capability["known_api_profile"])
                         self.assertEqual(capability["api_form"], api_form)
                         self.assertEqual(
                             capability["route_profile"], route_profile
                         )
-                        sources = reference_sources_for_model(
-                            config,
-                            family,
-                            model,
-                            provider,
-                            api_form=api_form,
-                            route_profile=route_profile,
-                        )
+                        try:
+                            sources = reference_sources_for_model(
+                                config,
+                                family,
+                                model,
+                                provider,
+                                api_form=api_form,
+                                route_profile=route_profile,
+                            )
+                        except (KeyError, ValueError):
+                            self.assertFalse(capability["parameter_test_enabled"])
+                            self.assertFalse(capability["pressure_test_enabled"])
+                            fail_closed_checked += 1
+                            continue
                         self.assertTrue(sources)
                         comparison_source = comparison_reference_source_for_model(
                             "text",
-                            family,
-                            model,
+                            capability_family,
+                            capability_model,
                             api_form=api_form,
                             route_profile=route_profile,
                         )
@@ -339,8 +306,8 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                         if capability["pressure_test_enabled"]:
                             self.assertTrue(
                                 pressure_profiles_for_model(
-                                    family,
-                                    model,
+                                    capability_family,
+                                    capability_model,
                                     sources[0],
                                     api_form=api_form,
                                     route_profile=route_profile,
@@ -361,13 +328,48 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                         model=model,
                         api_form=api_form,
                     ):
-                        capability = load_model_capability_profile(
-                            "image",
-                            family,
+                        binding = resolve_runtime_profile_binding(
+                            config,
+                            str(provider_cfg["name"]),
                             model,
-                            api_form=api_form,
-                            route_profile=route_profile,
+                            family,
+                            str(route_profile),
+                            str(api_form),
+                            modality="image",
                         )
+                        if not binding.get("catalog_resolved"):
+                            self.assertTrue(binding.get("reference_unresolved"))
+                            self.assertIsNone(binding.get("profile_id"))
+                            unresolved_checked += 1
+                            continue
+                        profile = binding.get("profile") or {}
+                        capability_family = str(
+                            binding.get("suite_family_id") or family
+                        )
+                        capability_model = str(
+                            profile.get("model_slug") or model
+                        )
+                        try:
+                            capability = load_model_capability_profile(
+                                "image",
+                                capability_family,
+                                capability_model,
+                                api_form=api_form,
+                                route_profile=route_profile,
+                            )
+                        except (KeyError, ValueError):
+                            interface = binding.get("interface") or {}
+                            policies = [
+                                row
+                                for row in interface.get("test_bindings") or []
+                                if row.get("extension_type") == "model_test_policy"
+                            ]
+                            self.assertTrue(
+                                interface.get("test_binding_status") != "required"
+                                or not policies
+                            )
+                            fail_closed_checked += 1
+                            continue
                         self.assertTrue(capability["known_model"])
                         self.assertTrue(capability["known_api_profile"])
                         self.assertEqual(capability["api_form"], api_form)
@@ -375,13 +377,39 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                             capability["suite"],
                             {"banana", "gpt_image_2", "grok_imagine"},
                         )
+                        self.assertFalse(capability["pressure_test_enabled"])
+                        self.assertFalse(
+                            capability["test_policy_pressure_test_enabled"]
+                        )
+                        for field in (
+                            "pressure_profiles",
+                            "pressure_omit_params",
+                            "pressure_parameter_aliases",
+                            "pressure_overrides",
+                            "pressure_transport_overrides",
+                        ):
+                            self.assertFalse(capability[field])
                         image_checked += 1
 
         self.assertGreater(text_checked, 0)
         self.assertGreater(image_checked, 0)
+        self.assertGreater(unresolved_checked, 0)
+        # App provider fixtures may classify every non-runnable selection as
+        # unresolved before the strict capability lookup. Both paths are
+        # fail-closed; no diagnostic pseudo-profile is accepted.
+        self.assertGreater(fail_closed_checked + unresolved_checked, 0)
 
     def test_each_api_form_resolves_an_isolated_model_profile(self) -> None:
         cases = (
+            (
+                "gpt",
+                "gpt-5.6-luna",
+                "vendor_direct",
+                "openai_chat_completions",
+                "openai_gpt56_chat",
+                "openai_responses",
+                "openai_gpt56_responses",
+            ),
             (
                 "gpt",
                 "gpt-5.6-sol",
@@ -392,13 +420,13 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                 "openai_gpt56_responses",
             ),
             (
-                "gemini",
-                "gemini-2.5-pro",
-                "google_ai_studio",
+                "gpt",
+                "gpt-5.6-terra",
+                "vendor_direct",
                 "openai_chat_completions",
-                "gemini_openai_compat",
-                "gemini_generate_content",
-                "gemini_native_generate_content",
+                "openai_gpt56_chat",
+                "openai_responses",
+                "openai_gpt56_responses",
             ),
             (
                 "claude",
@@ -428,7 +456,7 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                 self.assertEqual(second["default_reference_source"], second_source)
                 self.assertNotEqual(first["model_api_profile_id"], second["model_api_profile_id"])
                 self.assertNotEqual(first["transport"], second["transport"])
-                with self.assertRaisesRegex(ValueError, "not allowed"):
+                with self.assertRaises(ValueError):
                     load_model_capability_profile(
                         "text",
                         family,
@@ -438,49 +466,48 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                         reference_source=second_source,
                     )
 
-    def test_gemini_ai_studio_and_vertex_are_distinct_route_profiles(self) -> None:
-        studio = load_model_capability_profile(
-            "text",
-            "gemini",
-            "gemini-2.5-pro",
-            route_profile="google_ai_studio",
-            api_form="gemini_generate_content",
-        )
-        vertex = load_model_capability_profile(
-            "text",
-            "gemini",
-            "gemini-2.5-pro",
-            route_profile="google_vertex",
-            api_form="gemini_generate_content",
-        )
-        self.assertEqual(
-            studio["default_reference_source"],
-            "gemini_native_generate_content",
-        )
-        self.assertEqual(
-            vertex["default_reference_source"],
-            "gemini_vertex_generate_content",
-        )
-        self.assertNotEqual(
-            studio["model_api_profile_id"], vertex["model_api_profile_id"]
-        )
-        self.assertNotEqual(
-            {row["parameter"] for row in reference_param_rows(
-                studio["default_reference_source"]
-            )},
-            {row["parameter"] for row in reference_param_rows(
-                vertex["default_reference_source"]
-            )},
-        )
-        with self.assertRaisesRegex(ValueError, "not allowed"):
+        # The Gemini 2.5 native Interface is retained as an access-restricted
+        # identity, not promoted into an executable Test Binding.
+        with self.assertRaises(ValueError):
             load_model_capability_profile(
                 "text",
                 "gemini",
                 "gemini-2.5-pro",
                 route_profile="google_ai_studio",
                 api_form="gemini_generate_content",
-                reference_source="gemini_vertex_generate_content",
             )
+
+    def test_gemini_ai_studio_and_vertex_are_distinct_route_profiles(self) -> None:
+        catalog = get_model_profile_catalog()
+        studio = catalog.get_profile(
+            "text/google_ai_studio/gemini/gemini-2.5-pro"
+        )
+        vertex = catalog.get_profile(
+            "text/google_vertex/gemini/gemini-2.5-pro"
+        )
+        self.assertEqual(studio["source_id"], "google_ai_studio")
+        self.assertEqual(vertex["source_id"], "google_vertex")
+        self.assertEqual(studio["profile_state"], "executable")
+        self.assertEqual(vertex["profile_state"], "identity_only")
+        self.assertNotEqual(studio["profile_id"], vertex["profile_id"])
+        self.assertNotEqual(
+            {row["parameter"] for row in reference_param_rows(
+                "gemini_native_generate_content"
+            )},
+            {row["parameter"] for row in reference_param_rows(
+                "gemini_vertex_generate_content"
+            )},
+        )
+        for route in ("google_ai_studio", "google_vertex"):
+            with self.subTest(route=route):
+                with self.assertRaises(ValueError):
+                    load_model_capability_profile(
+                        "text",
+                        "gemini",
+                        "gemini-2.5-pro",
+                        route_profile=route,
+                        api_form="gemini_generate_content",
+                    )
 
     def test_route_is_resolved_before_api_form_and_invalid_form_is_scoped(self) -> None:
         config = copy.deepcopy(load_config())
@@ -513,26 +540,23 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                 api_form="openai_chat_completions",
             )
 
-    def test_unregistered_route_and_form_have_distinct_profile_statuses(self) -> None:
-        unknown_route = load_model_capability_profile(
-            "text",
-            "gemini",
-            "gemini-2.5-pro",
-            route_profile="unregistered-route",
-            api_form="gemini_generate_content",
-        )
-        unknown_form = load_model_capability_profile(
-            "text",
-            "gemini",
-            "gemini-2.5-pro",
-            route_profile="google_vertex",
-            api_form="openai_chat_completions",
-        )
-        self.assertEqual(unknown_route["profile_status"], "unregistered_route")
-        self.assertEqual(
-            unknown_form["profile_status"],
-            "unregistered_api_form_for_route",
-        )
+    def test_unregistered_route_and_form_fail_closed(self) -> None:
+        with self.assertRaises(ValueError):
+            load_model_capability_profile(
+                "text",
+                "gemini",
+                "gemini-2.5-pro",
+                route_profile="unregistered-route",
+                api_form="gemini_generate_content",
+            )
+        with self.assertRaises(ValueError):
+            load_model_capability_profile(
+                "text",
+                "gemini",
+                "gemini-2.5-pro",
+                route_profile="google_vertex",
+                api_form="openai_chat_completions",
+            )
 
     def test_resolve_inherits_family_defaults_and_model_overrides(self) -> None:
         baseline = resolve_profile_expectation(
@@ -593,35 +617,24 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
             "unsupported",
         )
 
-    def test_unknown_model_is_diagnostic_only_and_not_registered(self) -> None:
-        profile = load_model_capability_profile(
-            "text",
-            "grok",
-            "grok-future-unknown",
-            route_profile="vendor_direct",
-        )
-        self.assertFalse(profile["known_model"])
-        self.assertEqual(profile["profile_status"], "unregistered_model")
-        self.assertEqual(
-            resolve_profile_expectation(
+    def test_unknown_model_fails_closed_without_a_pseudo_profile(self) -> None:
+        with self.assertRaises(ValueError):
+            load_model_capability_profile(
                 "text",
                 "grok",
                 "grok-future-unknown",
-                "grok_responses_reasoning_effort_none",
-                capability_profile=profile,
-            ),
-            "unsupported",
-        )
-        self.assertEqual(
+                route_profile="vendor_direct",
+                api_form="openai_responses",
+            )
+        with self.assertRaises(ValueError):
             resolve_profile_expectation(
                 "text",
                 "grok",
                 "grok-future-unknown",
                 "grok_responses_tools",
-                capability_profile=profile,
-            ),
-            "supported",
-        )
+                route_profile="vendor_direct",
+                api_form="openai_responses",
+            )
 
     def test_registered_models_expand_family_suite_into_explicit_lists(self) -> None:
         snapshot = capability_profile_snapshot(
@@ -691,7 +704,17 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                 route_profile="vendor_direct",
                 api_form="openai_chat_completions",
             ),
-            "deepseek_chat",
+            "deepseek_v4_pro_0813_chat",
+        )
+        self.assertEqual(
+            comparison_reference_source_for_model(
+                "text",
+                "deepseek",
+                "deepseek-v4-pro",
+                route_profile="aliyun_maas",
+                api_form="openai_chat_completions",
+            ),
+            "aliyun_deepseek_v4_openai_compat",
         )
         self.assertEqual(
             comparison_reference_source_for_model(
@@ -766,7 +789,7 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                 "gpt-5.5",
                 "capability_test",
             ),
-            "gpt5_dynamic_chat",
+            "openai_gpt5_chat",
         )
         self.assertEqual(
             default_reference_source_for_model(
@@ -775,7 +798,7 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                 "grok-4.20-multi-agent-0309",
                 "capability_test",
             ),
-            "grok_dynamic_responses",
+            "grok_responses",
         )
 
     def test_kimi_k3_negative_contract_and_pressure_parameters(self) -> None:
@@ -954,6 +977,60 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
         self.assertFalse(pressure_request.body["thinking"]["clear_thinking"])
         self.assertTrue(pressure_request.metadata["pass_reasoning_content"])
 
+    def test_glm_5_3_and_flash_have_dedicated_pressure_policies(self) -> None:
+        glm53 = load_model_capability_profile(
+            "text",
+            "glm",
+            "glm-5.3",
+            route_profile="vendor_direct",
+            api_form="openai_chat_completions",
+        )
+        self.assertEqual(glm53["reference_source"], "zhipu_glm_5_3_openai_compat")
+        self.assertTrue(glm53["pressure_test_enabled"])
+        self.assertEqual(
+            pressure_profiles_for_model(
+                "glm",
+                "glm-5.3",
+                "zhipu_glm_5_3_openai_compat",
+                route_profile="vendor_direct",
+                api_form="openai_chat_completions",
+            ),
+            [
+                "glm53_stream",
+                "glm53_reasoning_low",
+                "glm53_reasoning_max",
+                "glm53_temperature",
+                "glm53_max_tokens",
+                "glm53_json_output",
+                "glm53_tools",
+                "glm53_tool_calls_thinking",
+            ],
+        )
+
+        flash = load_model_capability_profile(
+            "text",
+            "glm",
+            "glm-5.3-flash",
+            route_profile="vendor_direct",
+            api_form="openai_chat_completions",
+        )
+        self.assertEqual(
+            flash["reference_source"],
+            "zhipu_glm_5_3_flash_openai_compat",
+        )
+        self.assertTrue(flash["pressure_test_enabled"])
+        self.assertEqual(
+            resolve_profile_expectation(
+                "text",
+                "glm",
+                "glm-5.3-flash",
+                "glm53_flash_file_image_mixed",
+                capability_profile=flash,
+                reference_source="zhipu_glm_5_3_flash_openai_compat",
+            ),
+            "unsupported",
+        )
+
     def test_qwen_3_7_thinking_profiles_and_pressure_selection(self) -> None:
         latest_pressure = pressure_profiles_for_model(
             "qwen",
@@ -1064,15 +1141,12 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
         self.assertIn("gemini_reasoning_high", chat_pressure)
         self.assertNotIn("sampling_non_thinking", chat_pressure)
         self.assertNotIn("gemini_n", chat_pressure)
-        native_pressure = pressure_profiles_for_model(
-            "gemini",
-            "gemini-3.6-flash",
-            "gemini_native_generate_content",
-        )
-        self.assertIn("gemini_native_thinking_medium", native_pressure)
-        self.assertIn("gemini_native_thinking_high", native_pressure)
-        self.assertNotIn("gemini_native_temperature", native_pressure)
-        self.assertNotIn("gemini_native_candidate_count", native_pressure)
+        with self.assertRaisesRegex(ValueError, "Pressure testing is disabled"):
+            pressure_profiles_for_model(
+                "gemini",
+                "gemini-3.6-flash",
+                "gemini_native_generate_content",
+            )
 
         config = copy.deepcopy(load_config())
         config["active_provider"] = "capability_test"
@@ -1151,9 +1225,9 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
         self.assertEqual(probe.body["generationConfig"]["candidateCount"], 2)
 
     def test_claude_opus_5_adaptive_effort_and_pressure_contract(self) -> None:
-        for profile in (
-            "claude_native_top_p",
-            "claude_native_thinking_budget",
+        for profile, expected in (
+            ("claude_native_top_p", "supported"),
+            ("claude_native_thinking_budget", "unsupported"),
         ):
             with self.subTest(profile=profile):
                 self.assertEqual(
@@ -1163,17 +1237,29 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
                         "claude-opus-5",
                         profile,
                         reference_source="claude_native_messages",
+                        route_profile="vendor_direct",
                     ),
-                    "unsupported",
+                    expected,
                 )
+        with self.assertRaises(ValueError):
+            resolve_profile_expectation(
+                "text",
+                "claude",
+                "claude-opus-5",
+                "claude_native_top_p",
+                reference_source="claude_aws_bedrock_runtime_messages",
+                route_profile="aws_bedrock",
+                api_form="aws_bedrock_runtime_messages",
+            )
         profiles = pressure_profiles_for_model(
             "claude",
             "claude-opus-5",
             "claude_native_messages",
+            route_profile="vendor_direct",
         )
-        self.assertIn("claude_native_thinking_adaptive", profiles)
-        self.assertIn("claude_native_effort_medium", profiles)
-        self.assertNotIn("claude_native_temperature", profiles)
+        self.assertNotIn("claude_native_thinking_adaptive", profiles)
+        self.assertNotIn("claude_native_effort_medium", profiles)
+        self.assertIn("claude_native_temperature", profiles)
         self.assertNotIn("claude_native_top_p", profiles)
         self.assertNotIn("claude_native_thinking_budget", profiles)
 
@@ -1209,8 +1295,8 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
             )
             if group == "compatibility_profiles" and weight > 0
         }
-        self.assertIn("claude_native_effort_medium", mixed_profiles)
-        self.assertNotIn("claude_native_temperature", mixed_profiles)
+        self.assertNotIn("claude_native_effort_medium", mixed_profiles)
+        self.assertIn("claude_native_temperature", mixed_profiles)
 
         effort = build_request(
             config,
@@ -1341,17 +1427,77 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
         self.assertNotIn("reasoning_effort", responses_pressure.body)
         self.assertNotIn("temperature", responses_pressure.body)
 
-    def test_image_only_model_disables_text_parameter_and_pressure_tests(self) -> None:
-        profile = load_model_capability_profile(
-            "text",
-            "gpt",
-            "gpt-image-2",
-            route_profile="vendor_direct",
-            api_form="openai_chat_completions",
+    def test_image_only_model_cannot_load_as_text_capability(self) -> None:
+        with self.assertRaises(ValueError):
+            load_model_capability_profile(
+                "text",
+                "gpt",
+                "gpt-image-2",
+                route_profile="vendor_direct",
+                api_form="openai_chat_completions",
+            )
+
+    def test_image_and_video_pressure_policy_cannot_be_overridden(self) -> None:
+        profiles = load_model_capability_profiles()
+        self.assertFalse(
+            profiles["modalities"]["image"]["pressure_test_enabled"]
         )
-        self.assertFalse(profile["parameter_test_enabled"])
-        self.assertFalse(profile["pressure_test_enabled"])
-        self.assertIn("image-only", profile["disabled_reason"])
+        self.assertFalse(
+            profiles["modalities"]["video"]["pressure_test_enabled"]
+        )
+
+        invalid_overrides = (
+            {"pressure_test_enabled": True},
+            {"test_policy_pressure_test_enabled": True},
+            {"pressure_profiles": {"source": ["profile"]}},
+            {"pressure_omit_params": ["temperature"]},
+            {"pressure_parameter_aliases": {"max_tokens": "max_output_tokens"}},
+            {"pressure_overrides": {"temperature": 1}},
+            {"pressure_transport_overrides": {"images-generations": {"x": 1}}},
+        )
+        for provider_override in invalid_overrides:
+            with self.subTest(provider_override=provider_override), self.assertRaisesRegex(
+                ValueError,
+                "cannot enable pressure testing|cannot define pressure policy fields",
+            ):
+                load_model_capability_profile(
+                    "image",
+                    "gpt-image-2",
+                    "gpt-image-2",
+                    route_profile="vendor_direct",
+                    api_form="openai_images_generations",
+                    provider_override=provider_override,
+                )
+
+    def test_pressure_runnable_preserves_text_policy_compatibility(self) -> None:
+        self.assertTrue(
+            pressure_test_runnable(
+                {
+                    "modality": "text",
+                    "pressure_test_enabled": True,
+                }
+            )
+        )
+        self.assertTrue(
+            pressure_test_runnable(
+                {
+                    "modality": "text",
+                    "pressure_test_enabled": True,
+                    "test_policy_pressure_test_enabled": False,
+                }
+            )
+        )
+        self.assertFalse(
+            pressure_test_runnable(
+                {
+                    "modality": "image",
+                    "pressure_test_enabled": True,
+                }
+            )
+        )
+        self.assertFalse(
+            pressure_test_runnable({"pressure_test_enabled": True})
+        )
 
     def test_pressure_profiles_and_request_body_exclude_unsupported_tools(self) -> None:
         profiles = pressure_profiles_for_model(
@@ -1499,6 +1645,19 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
             "supported",
         )
 
+        with self.assertRaises(ValueError):
+            apply_capability_expectations(
+                banana_variant_cases(
+                    "resolution",
+                    model_template="gemini-3.1-flash-image",
+                    include_cross_control=False,
+                ),
+                family="banana",
+                model="gemini-3.1-flash-image",
+                route_profile="provider_compat",
+                api_form="openai_chat_completions",
+            )
+
         banana_cases = apply_capability_expectations(
             banana_variant_cases(
                 "resolution",
@@ -1507,8 +1666,8 @@ class ParamCapabilityMatrixTest(unittest.TestCase):
             ),
             family="banana",
             model="gemini-3.1-flash-image",
-            route_profile="provider_compat",
-            api_form="openai_chat_completions",
+            route_profile="google_ai_studio",
+            api_form="gemini_interactions",
         )
         self.assertTrue(
             all(case.metadata["expectation"] == "supported" for case in banana_cases)

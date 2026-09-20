@@ -1,6 +1,6 @@
 # MiniMax 模型家族 Profile 说明
 
-<!-- 由 scripts/generate_test_docs.py 从 schema v4 生成，请勿手工维护表格。 -->
+<!-- 由 scripts/generate_test_docs.py 从 Model Profile Database 与测试扩展生成，请勿手工维护表格。 -->
 
 使用精简的 Chat Completions 基础矩阵验证流式、采样、JSON、停止词和工具。
 
@@ -10,7 +10,7 @@
 
 ![文字参数测试界面示意](../assets/ui/parameter-testing-console.svg)
 
-先在界面按 Provider → Model → Route Profile → API Form → Reference Source 选择组合，再用下文表格确认本次会运行哪些 profile。
+先在界面按 Provider → Model → Route Profile → API Form → Reference Contract 选择组合，再用下文表格确认本次会运行哪些 Test Case。
 
 ## 先理解判读规则
 
@@ -25,33 +25,31 @@
 |---|---|
 | `minimax-m2.5` | — |
 | `minimax-m2.7` | — |
-| `MiniMax-M3` | — |
+| `minimax-m3` | — |
 
 ## Route 与 API Form
 
-| Route Profile | API Form | 内部 transport | 已注册模型数 | Reference Source |
+| Route Profile | API Form | 内部 transport | 已注册模型数 | Reference Contract |
 |---|---|---|---:|---|
 | `vendor_direct` | `openai_chat_completions` | `chat_completions` | 3 | `minimax_openai_compat` |
-| `dynamic_aggregator` | `openai_chat_completions` | `chat_completions` | 3 | `minimax_dynamic_aggregator` |
 
-## Reference Source
+## Reference Contract
 
-| Reference Source | 说明 | Route / API Form | 认证范围 | Profile 数 | 官方资料 |
+| Reference Contract | 说明 | Route / API Form | 认证范围 | Test Case 数 | 官方资料 |
 |---|---|---|---|---:|---|
-| `minimax_dynamic_aggregator` | MiniMax through an unpinned aggregator | `dynamic_aggregator` / `openai_chat_completions` | `adapter_only` | 7 | [资料1](https://platform.minimaxi.com/document/ChatCompletion%20v2) |
-| `minimax_openai_compat` | MiniMax OpenAI-compatible Chat Completions | `vendor_direct` / `openai_chat_completions` | `raw_route_contract` | 7 | [资料1](https://platform.minimaxi.com/document/ChatCompletion%20v2) |
+| `minimax_openai_compat` | MiniMax OpenAI-compatible Chat Completions | `vendor_direct` / `openai_chat_completions` | `raw_route_contract` | 7 | [资料1](https://platform.minimaxi.com/docs/api-reference/api-overview) [资料2](https://platform.minimaxi.com/docs/api-reference/text-openai-api) [资料3](https://platform.minimaxi.com/docs/api-reference/text-post) [资料4](https://platform.minimax.io/docs/api-reference/text-openai-api) [资料5](https://platform.minimax.io/docs/api-reference/text-chat-openai) |
 
 ## 全部参数 Profile
 
 | Profile | 类别 | 具体测试目的 | 关键请求设置 | 期望 | 通过时还要检查 |
 |---|---|---|---|---|---|
-| `basic_stream` | 流式 | 验证 SSE 流式响应、结束标记和返回文本能够完整解析。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=true`<br>`thinking.type="disabled"` | 应支持 | 检查 chunk 结构、结束标记、文本拼接与 usage 末块。 |
-| `stream_with_usage` | 流式 | 验证 SSE 分块可解析，并在结束前得到独立、算术一致的 usage 信息。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=true`<br>`thinking.type="disabled"`<br>`stream_options.include_usage=true` | 应支持 | 检查 chunk 结构、结束标记、文本拼接与 usage 末块。 |
-| `sampling_non_thinking` | 推理 | 验证指定推理开关/档位，并检查响应中的 reasoning/thinking 语义；涉及 `messages`、`temperature`、`top_p`。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`temperature=0.7`<br>`top_p=0.9` | 应支持 | 检查请求档位和响应 reasoning/thinking 字段语义，不以可见文本长度代替。 |
-| `json_output` | 结构化输出 | 验证结构化输出参数 `max_tokens`、`messages`、`response_format`，并确认最终内容是可解析且符合约束的 JSON。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`response_format.type="json_object"` | 应支持 | 内容必须能解析为 JSON；有 schema 时还要满足 schema。 |
-| `stop_sequences` | 基础能力 | 验证停止序列参数 `messages`、`stop` 会影响结束位置或按契约被拒绝。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`stop=["\n\n","END"]` | 应支持 | 2xx 后仍需通过响应结构、内容、usage 和 returned-model 校验。 |
-| `tool_calls` | 工具调用 | 验证工具声明、tool choice、结构化调用参数以及必要时的工具结果回传。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`tools_fixture="fixtures/tools_weather.json"`<br>`multi_turn=true` | 应支持 | 不能只看 HTTP 2xx；必须存在合法 tool/function call，follow-up 后还要有最终文本。 |
-| `tool_choice_required` | 工具调用 | 验证工具声明、tool choice、结构化调用参数以及必要时的工具结果回传。<br>来源：`minimax_dynamic_aggregator`、`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`tools_fixture="fixtures/tools_weather.json"`<br>`multi_turn=true`<br>`tool_choice="required"` | 应支持 | 不能只看 HTTP 2xx；必须存在合法 tool/function call，follow-up 后还要有最终文本。 |
+| `basic_stream` | 流式 | 验证 SSE 流式响应、结束标记和返回文本能够完整解析。<br>来源：`minimax_openai_compat` | `stream=true`<br>`stream_options.include_usage=true`<br>`thinking.type="disabled"` | 应支持 | 检查 chunk 结构、结束标记、文本拼接与 usage 末块。 |
+| `stream_with_usage` | 流式 | 验证 SSE 分块可解析，并在结束前得到独立、算术一致的 usage 信息。<br>来源：`minimax_openai_compat` | `stream=true`<br>`thinking.type="disabled"`<br>`stream_options.include_usage=true` | 应支持 | 检查 chunk 结构、结束标记、文本拼接与 usage 末块。 |
+| `sampling_non_thinking` | 推理 | 验证指定推理开关/档位，并检查响应中的 reasoning/thinking 语义；涉及 `messages`、`temperature`、`top_p`。<br>来源：`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`temperature=0.7`<br>`top_p=0.9` | 应支持 | 检查请求档位和响应 reasoning/thinking 字段语义，不以可见文本长度代替。 |
+| `json_output` | 结构化输出 | 验证结构化输出参数 `max_tokens`、`messages`、`response_format`，并确认最终内容是可解析且符合约束的 JSON。<br>来源：`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`response_format.type="json_object"` | 应支持 | 内容必须能解析为 JSON；有 schema 时还要满足 schema。 |
+| `stop_sequences` | 基础能力 | 验证停止序列参数 `messages`、`stop` 会影响结束位置或按契约被拒绝。<br>来源：`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`stop=["\n\n","END"]` | 应支持 | 2xx 后仍需通过响应结构、内容、usage 和 returned-model 校验。 |
+| `tool_calls` | 工具调用 | 验证工具声明、tool choice、结构化调用参数以及必要时的工具结果回传。<br>来源：`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`tools_fixture="fixtures/tools_weather.json"`<br>`multi_turn=true` | 应支持 | 不能只看 HTTP 2xx；必须存在合法 tool/function call，follow-up 后还要有最终文本。 |
+| `tool_choice_required` | 工具调用 | 验证工具声明、tool choice、结构化调用参数以及必要时的工具结果回传。<br>来源：`minimax_openai_compat` | `stream=false`<br>`thinking.type="disabled"`<br>`tools_fixture="fixtures/tools_weather.json"`<br>`multi_turn=true`<br>`tool_choice="required"` | 应支持 | 不能只看 HTTP 2xx；必须存在合法 tool/function call，follow-up 后还要有最终文本。 |
 
 ## 去哪里看结果
 

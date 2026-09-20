@@ -5,6 +5,7 @@ import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from lib.model_profile_catalog import get_model_profile_catalog
 from lib.reference_specs import (
     get_reference_source,
     load_model_capability_profile,
@@ -12,7 +13,7 @@ from lib.reference_specs import (
     test_profiles_for_reference as profiles_for_reference,
 )
 from scripts.generate_test_docs import (
-    CAPABILITY_PATH,
+    DEFERRED_APP_PARITY_FAMILIES,
     FAMILY_META,
     PROJECT_ROOT,
     _image_case_sets,
@@ -26,7 +27,7 @@ LINK_PATTERN = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 class DocumentationCoverageTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.capabilities = load_model_capability_profiles(CAPABILITY_PATH)
+        cls.capabilities = load_model_capability_profiles()
         cls.rendered = build_documents()
 
     def test_generated_family_documents_are_current(self) -> None:
@@ -37,6 +38,26 @@ class DocumentationCoverageTest(unittest.TestCase):
                 expected.rstrip() + "\n",
                 f"regenerate {path.relative_to(PROJECT_ROOT)}",
             )
+
+    def test_execution_gated_app_parity_manuals_are_deferred(self) -> None:
+        self.assertEqual(
+            DEFERRED_APP_PARITY_FAMILIES,
+            {
+                ("text", "claude"),
+                ("text", "claude_fable"),
+                ("text", "deepseek"),
+                ("text", "gpt"),
+            },
+        )
+        for key in DEFERRED_APP_PARITY_FAMILIES:
+            path = (
+                PROJECT_ROOT
+                / "docs"
+                / "model_profiles"
+                / f"{FAMILY_META[key]['slug']}.md"
+            )
+            self.assertTrue(path.exists())
+            self.assertNotIn(path, self.rendered)
 
     def test_every_registered_family_model_route_and_form_is_documented(self) -> None:
         registered: set[tuple[str, str]] = set()
@@ -51,6 +72,8 @@ class DocumentationCoverageTest(unittest.TestCase):
                     / "model_profiles"
                     / f"{FAMILY_META[key]['slug']}.md"
                 ).read_text(encoding="utf-8")
+                if key in DEFERRED_APP_PARITY_FAMILIES:
+                    continue
                 models = family_cfg.get("models") or family_cfg.get("canonical_models") or {}
                 for model in models:
                     self.assertIn(f"`{model}`", doc, f"{key} model is undocumented")
@@ -72,19 +95,25 @@ class DocumentationCoverageTest(unittest.TestCase):
                 / "model_profiles"
                 / f"{FAMILY_META[key]['slug']}.md"
             ).read_text(encoding="utf-8")
+            if key in DEFERRED_APP_PARITY_FAMILIES:
+                continue
+            # Coverage is independent of runtime selection: every source-bound
+            # policy must be documented, including disabled parallel Interfaces.
             sources: set[str] = set()
-            for route, route_cfg in (family_cfg.get("route_profiles") or {}).items():
-                for api_form, form_cfg in (route_cfg.get("api_forms") or {}).items():
-                    for model in (form_cfg.get("model_profiles") or {}):
-                        profile = load_model_capability_profile(
-                            "text",
-                            str(family),
-                            str(model),
-                            path=CAPABILITY_PATH,
-                            route_profile=str(route),
-                            api_form=str(api_form),
-                        )
-                        sources.update(profile.get("allowed_reference_sources") or [])
+            catalog = get_model_profile_catalog()
+            registered = {
+                (str(route), str(form), str(model))
+                for route, route_cfg in (family_cfg.get("route_profiles") or {}).items()
+                for form, form_cfg in (route_cfg.get("api_forms") or {}).items()
+                for model in (form_cfg.get("model_profiles") or {})
+            }
+            for policy in catalog.list_test_bindings(extension_type="model_test_policy"):
+                interface = catalog.get_interface(policy["interface_id"])
+                if (interface.get("modality") == "text"
+                        and interface.get("family_id") == family
+                        and (interface.get("routing_mode"), interface.get("api_form"), interface.get("model_slug")) in registered
+                        and (policy.get("suite_family_id") or family) == family):
+                    sources.update(policy.get("reference_contract_ids") or [])
             for source_id in sources:
                 source = get_reference_source(source_id)
                 self.assertEqual(source.get("model_family"), family)

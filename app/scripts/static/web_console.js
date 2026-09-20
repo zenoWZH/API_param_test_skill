@@ -1,5 +1,11 @@
 const appState = {
   config: null,
+  workflowPreview: null,
+  workflowPreviewKey: "",
+  workflowPreviewLoading: false,
+  workflowPreviewError: "",
+  workflowPreviewRequestId: 0,
+  workflowPreviewTimer: null,
   activeTab: "param",
   currentJobId: null,
   currentJob: null,
@@ -12,6 +18,11 @@ const appState = {
   imageHistoryLoading: false,
   imageHistoryRequestId: 0,
   imageLiveJobId: null,
+  imagePlanPreviewKey: "",
+  imagePlanPreview: null,
+  imagePlanPreviewCount: null,
+  imagePlanPreviewLoading: false,
+  imagePlanPreviewError: "",
   timeoutSec: 300,
   loadResults: [],
   selectedLoadResultId: "",
@@ -23,10 +34,13 @@ const appState = {
       model: "",
       routeProfile: "",
       apiForm: "",
-      referenceSource: "",
-      referenceManual: false,
+      referenceContractId: "",
+      workflowBindingId: "",
+      workflowCases: "",
+      parameterSuite: "",
+      contractManual: false,
       toolValidationMode: "auto",
-      paramTestRuns: 3,
+      paramTestRuns: 1,
     },
     image: {
       provider: "",
@@ -34,11 +48,14 @@ const appState = {
       routeProfile: "",
       apiForm: "",
       transport: "",
-      suite: "smoke",
+      suite: "full",
+      runCount: 1,
+      cases: "",
       quality: "low",
       outputFormat: "png",
       include2k: false,
       include4k: false,
+      resolutionPreferences: {},
       noNegative: false,
       noCrossControl: false,
       visualForensics: true,
@@ -69,6 +86,8 @@ const appState = {
     cache: {
       provider: "",
       model: "",
+      routeProfile: "",
+      apiForm: "",
       scenario: "progressive_customer_session",
       diagnosticScenario: "",
       sessions: 10,
@@ -435,10 +454,18 @@ function familyFor(providerName, model) {
   return "unknown";
 }
 
-function referenceSourceForFamily(family) {
-  const sources = (appState.config && appState.config.reference_sources) || [];
-  const match = sources.find((source) => (source.default_for_families || []).includes(family));
-  return (match && match.id) || appState.config.default_reference_source || (sources[0] && sources[0].id) || "";
+function referenceContractIdForFamily(family) {
+  const contracts = (appState.config && (
+    appState.config.reference_contracts || appState.config.reference_sources
+  )) || [];
+  const match = contracts.find((contract) => (
+    contract.default_for_families || []
+  ).includes(family));
+  return (match && (match.contract_id || match.id))
+    || appState.config.default_reference_contract_id
+    || appState.config.default_reference_source
+    || (contracts[0] && (contracts[0].contract_id || contracts[0].id))
+    || "";
 }
 
 function modelCapability(providerName, model) {
@@ -455,7 +482,7 @@ function routeProfileForModel(providerName, model, current = "") {
   const capability = modelCapability(providerName, model) || {};
   const routes = routesForModel(providerName, model);
   if (current && routes[current]) return current;
-  return capability.default_route_profile || Object.keys(routes)[0] || capability.route_profile || "";
+  return capability.workflow_default_route_profile || capability.default_route_profile || Object.keys(routes)[0] || capability.route_profile || "";
 }
 
 function routeCapability(providerName, model, routeProfile = "") {
@@ -472,12 +499,123 @@ function apiFormForModel(providerName, model, routeProfile = "", current = "") {
   const capability = routeCapability(providerName, model, routeProfile);
   const forms = apiFormsForModel(providerName, model, routeProfile);
   if (current && forms[current]) return current;
-  return capability.default_api_form || Object.keys(forms)[0] || capability.api_form || "";
+  return capability.workflow_default_api_form || capability.default_api_form || Object.keys(forms)[0] || capability.api_form || "";
 }
 
 function apiFormCapability(providerName, model, routeProfile, apiForm) {
   const capability = routeCapability(providerName, model, routeProfile);
   return apiFormsForModel(providerName, model, routeProfile)[apiForm] || capability;
+}
+
+function cacheLeafRunnable(capability) {
+  return !!capability
+    && capability.profile_status === "registered"
+    && capability.pressure_test_runnable === true;
+}
+
+function cacheLeafSupportsTools(capability) {
+  return cacheLeafRunnable(capability)
+    && capability.cache_tool_runnable === true;
+}
+
+function selectedCacheLeafCapability() {
+  const form = appState.formsByTab.cache;
+  return apiFormCapability(
+    form.provider, form.model, form.routeProfile, form.apiForm
+  ) || {};
+}
+
+function cacheScenarioNeedsTools(form) {
+  const diagnostic = form.diagnosticScenario || "";
+  return diagnostic === "kilocode_agent_session"
+    || (!diagnostic && form.toolStage !== "off");
+}
+
+function cacheScenarioRunnable(capability, form) {
+  return cacheLeafRunnable(capability)
+    && (!cacheScenarioNeedsTools(form) || cacheLeafSupportsTools(capability));
+}
+
+function normalizeCacheScenarioForCapability(form, capability) {
+  if (cacheLeafSupportsTools(capability)) return false;
+  let changed = false;
+  if (form.toolStage !== "off") {
+    form.toolStage = "off";
+    changed = true;
+  }
+  if (form.diagnosticScenario === "kilocode_agent_session") {
+    form.diagnosticScenario = "";
+    changed = true;
+  }
+  return changed;
+}
+
+function cacheRouteRunnable(capability) {
+  const forms = (capability && capability.api_forms) || {};
+  const leaves = Object.values(forms);
+  return leaves.length
+    ? leaves.some((leaf) => cacheLeafRunnable(leaf))
+    : cacheLeafRunnable(capability);
+}
+
+function cacheModelRunnable(providerName, model) {
+  const capability = modelCapability(providerName, model) || {};
+  const routeLeaves = Object.values(capability.routes || {});
+  return routeLeaves.length
+    ? routeLeaves.some((route) => cacheRouteRunnable(route))
+    : cacheLeafRunnable(capability);
+}
+
+function cacheModelsFor(providerName) {
+  const models = modelsFor(providerName);
+  const runnable = models.filter((model) => cacheModelRunnable(providerName, model));
+  return runnable.length ? runnable : models;
+}
+
+function cacheSelectedModelForProvider(providerName, currentModel = "") {
+  const models = cacheModelsFor(providerName);
+  if (currentModel && models.includes(currentModel)) return currentModel;
+  return models[0] || "";
+}
+
+function cacheRoutesForModel(providerName, model) {
+  const routes = routesForModel(providerName, model);
+  const runnable = Object.fromEntries(
+    Object.entries(routes).filter(([, capability]) => cacheRouteRunnable(capability))
+  );
+  return Object.keys(runnable).length ? runnable : routes;
+}
+
+function cacheRouteProfileForModel(providerName, model, current = "") {
+  const capability = modelCapability(providerName, model) || {};
+  const allRoutes = routesForModel(providerName, model);
+  const runnableRoutes = Object.entries(allRoutes).filter(
+    ([, route]) => cacheRouteRunnable(route)
+  );
+  const routes = runnableRoutes.length ? Object.fromEntries(runnableRoutes) : allRoutes;
+  if (current && routes[current]) return current;
+  if (runnableRoutes.length) return runnableRoutes[0][0];
+  return capability.default_route_profile || Object.keys(routes)[0] || capability.route_profile || "";
+}
+
+function cacheApiFormsForModel(providerName, model, routeProfile = "") {
+  const forms = apiFormsForModel(providerName, model, routeProfile);
+  const runnable = Object.fromEntries(
+    Object.entries(forms).filter(([, capability]) => cacheLeafRunnable(capability))
+  );
+  return Object.keys(runnable).length ? runnable : forms;
+}
+
+function cacheApiFormForModel(providerName, model, routeProfile = "", current = "") {
+  const capability = routeCapability(providerName, model, routeProfile);
+  const allForms = apiFormsForModel(providerName, model, routeProfile);
+  const runnableForms = Object.entries(allForms).filter(
+    ([, leaf]) => cacheLeafRunnable(leaf)
+  );
+  const forms = runnableForms.length ? Object.fromEntries(runnableForms) : allForms;
+  if (current && forms[current]) return current;
+  if (runnableForms.length) return runnableForms[0][0];
+  return capability.default_api_form || Object.keys(forms)[0] || capability.api_form || "";
 }
 
 function imageModelCapability(providerName, model) {
@@ -510,14 +648,25 @@ function imageApiFormCapability(providerName, model, routeProfile, apiForm) {
   return (capability.api_forms && capability.api_forms[apiForm]) || capability;
 }
 
-function referenceSourceForModel(providerName, model, routeProfile = "", apiForm = "") {
+function referenceContractIdForModel(providerName, model, routeProfile = "", apiForm = "") {
   const selectedForm = apiFormForModel(providerName, model, routeProfile, apiForm);
   const capability = apiFormCapability(providerName, model, routeProfile, selectedForm);
-  return (capability && capability.reference_source) || "";
+  const form = appState.formsByTab.param;
+  const ordinarySelected = form.workflowBindingId === "__ordinary__"
+    && form.provider === providerName && form.model === model && form.apiForm === selectedForm;
+  const workflow = !ordinarySelected && capability && capability.workflow_available
+    && (capability.test_workflows || []).find((item) => !isOptionalParamWorkflow(item));
+  if (workflow) return workflow.reference_contract_id;
+  return (capability && (
+    capability.default_reference_contract_id || capability.reference_source
+  )) || "";
 }
 
-function sourceById(id) {
-  return ((appState.config && appState.config.reference_sources) || []).find((item) => item.id === id) || null;
+function contractById(id) {
+  const contracts = (appState.config && (
+    appState.config.reference_contracts || appState.config.reference_sources
+  )) || [];
+  return contracts.find((item) => (item.contract_id || item.id) === id) || null;
 }
 
 function isBusy(job = appState.currentJob) {
@@ -562,14 +711,15 @@ function initialiseForms() {
   appState.formsByTab.param.apiForm = apiFormForModel(
     provider, model, appState.formsByTab.param.routeProfile
   );
-  appState.formsByTab.param.referenceSource = referenceSourceForModel(
+  appState.formsByTab.param.referenceContractId = referenceContractIdForModel(
     provider,
     model,
     appState.formsByTab.param.routeProfile,
     appState.formsByTab.param.apiForm,
   );
   appState.formsByTab.param.toolValidationMode = "auto";
-  appState.formsByTab.param.paramTestRuns = Number(defaults.param_test_runs || 3);
+  appState.formsByTab.param.parameterSuite = "";
+  appState.formsByTab.param.paramTestRuns = Number(defaults.param_test_runs || 1);
 
   const imageDefaults = appState.config.image_defaults || {};
   const imageProvider = imageProviders()[0] || null;
@@ -582,7 +732,7 @@ function initialiseForms() {
     imageForm.provider, imageForm.model, imageForm.routeProfile
   );
   imageForm.transport = (imageModel && imageModel.transport) || "";
-  imageForm.suite = imageDefaults.suite || "smoke";
+  imageForm.suite = imageDefaults.suite || "full";
   imageForm.quality = imageDefaults.quality || "low";
   imageForm.outputFormat = imageDefaults.output_format || "png";
   imageForm.include2k = !!imageDefaults.include_2k;
@@ -618,7 +768,7 @@ function initialiseForms() {
   appState.formsByTab.load.soakDuration = soak.duration || "1h";
 
   appState.formsByTab.cache.provider = provider;
-  appState.formsByTab.cache.model = model;
+  appState.formsByTab.cache.model = cacheSelectedModelForProvider(provider, model);
   const cache = appState.config.cache_test || {};
   const diagnosticDefaults = cache.diagnostic_defaults || {};
   const kilocodeDiagnostic = diagnosticDefaults.kilocode_agent_session || {};
@@ -626,6 +776,10 @@ function initialiseForms() {
   const diagnosticControls = kilocodeDiagnostic.controls || {};
   const legacyDiagnostic = diagnosticDefaults.growing_conversation || {};
   const cacheForm = appState.formsByTab.cache;
+  cacheForm.routeProfile = cacheRouteProfileForModel(provider, cacheForm.model);
+  cacheForm.apiForm = cacheApiFormForModel(
+    provider, cacheForm.model, cacheForm.routeProfile
+  );
   cacheForm.scenario = "progressive_customer_session";
   cacheForm.diagnosticScenario = cache.scenario && cache.scenario !== "progressive_customer_session"
     ? cache.scenario
@@ -678,7 +832,9 @@ function renderControls() {
   renderImageControls();
   renderParamRouteProfiles();
   renderParamApiForms();
-  renderReferenceSources();
+  renderCacheRouteProfiles();
+  renderCacheApiForms();
+  renderReferenceContracts();
   renderToolValidationMode();
   renderParamRunHint();
   renderBusyState();
@@ -736,8 +892,10 @@ function renderProviderSelect(tab) {
 function renderModelSelect(tab) {
   const form = appState.formsByTab[tab];
   const modelSelect = $(`${tab}Model`);
-  const models = modelsFor(form.provider);
-  form.model = selectedModelForProvider(form.provider, form.model);
+  const models = tab === "cache" ? cacheModelsFor(form.provider) : modelsFor(form.provider);
+  form.model = tab === "cache"
+    ? cacheSelectedModelForProvider(form.provider, form.model)
+    : selectedModelForProvider(form.provider, form.model);
   modelSelect.innerHTML = models.map((model) => `<option value="${esc(model)}">${esc(model)}</option>`).join("");
   modelSelect.value = form.model;
   renderProviderStatus(tab);
@@ -756,7 +914,7 @@ function renderProviderStatus(tab) {
   }
   if (familyStatus) familyStatus.textContent = `family: ${family}`;
   if (profileStatus) {
-    const capability = tab === "param"
+    const capability = ["param", "cache"].includes(tab)
       ? apiFormCapability(
         form.provider, form.model, form.routeProfile, form.apiForm
       )
@@ -796,6 +954,34 @@ function renderParamApiForms() {
   select.value = form.apiForm;
 }
 
+function renderCacheRouteProfiles() {
+  const form = appState.formsByTab.cache;
+  const select = $("cacheRouteProfile");
+  if (!select) return;
+  const routes = cacheRoutesForModel(form.provider, form.model);
+  form.routeProfile = cacheRouteProfileForModel(
+    form.provider, form.model, form.routeProfile
+  );
+  select.innerHTML = Object.keys(routes).map((route) => (
+    `<option value="${esc(route)}">${esc(route)}</option>`
+  )).join("");
+  select.value = form.routeProfile;
+}
+
+function renderCacheApiForms() {
+  const form = appState.formsByTab.cache;
+  const select = $("cacheApiForm");
+  if (!select) return;
+  const rows = cacheApiFormsForModel(form.provider, form.model, form.routeProfile);
+  form.apiForm = cacheApiFormForModel(
+    form.provider, form.model, form.routeProfile, form.apiForm
+  );
+  select.innerHTML = Object.keys(rows).map((apiForm) => (
+    `<option value="${esc(apiForm)}">${esc(apiForm)}</option>`
+  )).join("");
+  select.value = form.apiForm;
+}
+
 function imageSelectionKey() {
   const form = appState.formsByTab.image;
   return `${form.provider || ""}\u0000${form.model || ""}\u0000${form.routeProfile || ""}\u0000${form.apiForm || ""}`;
@@ -815,31 +1001,97 @@ function matchesImageSelection(job) {
     && (job.model_profile_id || "") === (capability.profile_id || "");
 }
 
-function imageCaseEstimate() {
+function imageRunCountValue() {
+  const raw = Number(appState.formsByTab.image.runCount || 1);
+  return Number.isFinite(raw) ? Math.max(1, Math.min(Math.trunc(raw), 1000)) : 1;
+}
+
+function imageRequestPayload() {
   const form = appState.formsByTab.image;
-  const model = imageModelById(form.provider, form.model);
-  if (!model) return 0;
-  if (form.suite === "smoke") return 1;
-  if (model.family === "grok-imagine") {
-    let count = 5;
-    if (!form.noNegative) count += form.suite === "full" ? 3 : 2;
-    if (form.include2k) count += 3;
-    return count;
+  const cases = String(form.cases || "").split(/[,，\n]+/).map((value) => value.trim()).filter(Boolean);
+  return {
+    type: "image_param_test", provider: form.provider, model: form.model,
+    timeout_sec: timeoutSecValue(), run_count: imageRunCountValue(),
+    image_plan: {
+      route_profile: form.routeProfile, api_form: form.apiForm, suite: form.suite,
+      include_2k: !!form.include2k, include_4k: !!form.include4k, quality: form.quality,
+      output_format: form.outputFormat, no_negative: !!form.noNegative,
+      no_cross_control: !!form.noCrossControl, visual_forensics: !!form.visualForensics,
+      ...(cases.length ? {cases} : {}),
+    },
+  };
+}
+
+function imagePreviewCurrent() {
+  return !!appState.imagePlanPreview && typeof appState.imagePlanPreview.plan_digest === "string"
+    && !appState.imagePlanPreviewLoading && appState.imagePlanPreviewKey === JSON.stringify(imageRequestPayload());
+}
+
+function renderImageCaseHint() {
+  const count = appState.imagePlanPreviewCount;
+  $("imageCaseHint").textContent = appState.imagePlanPreviewLoading
+    ? "counting cases…"
+    : count === null
+      ? "case count unavailable"
+      : `${count} case${count === 1 ? "" : "s"}`;
+  if (imagePreviewCurrent()) {
+    const preview = appState.imagePlanPreview;
+    $("imageCaseHint").textContent = `${preview.estimated_case_count} 个用例 × ${preview.plan.run_count} 轮 · 请求上限 ${preview.request_cap} · 清理上限 ${preview.cleanup_request_cap}`;
   }
-  let count;
-  if (model.family === "banana") {
-    count = form.noCrossControl ? 2 : 4;
-    const latestFlashImage = ["gemini-3.1-flash-image", "gemini-3.1-flash-image-preview"]
-      .includes(model.id);
-    if (latestFlashImage && ["chat-completions", "gemini-interactions"].includes(form.transport)) {
-      count += 2;
-      if (!form.noNegative) count += 2;
+  $("imageCaseHint").title = appState.imagePlanPreviewError;
+}
+
+async function refreshImagePlanPreview() {
+  const payload = imageRequestPayload();
+  const key = JSON.stringify(payload);
+  if (imagePreviewCurrent() && !appState.imagePlanPreviewError) return appState.imagePlanPreview;
+  appState.imagePlanPreviewKey = key;
+  appState.imagePlanPreviewCount = null;
+  appState.imagePlanPreview = null;
+  appState.imagePlanPreviewError = "";
+  appState.imagePlanPreviewLoading = !!payload.provider && !!payload.model;
+  renderImageCaseHint();
+  renderBusyState();
+  if (!appState.imagePlanPreviewLoading) return;
+  try {
+    const response = await fetch("/api/image-plan/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const preview = await response.json();
+    if (key !== appState.imagePlanPreviewKey) return;
+    if (!response.ok) throw new Error(preview.error || "failed to count image cases");
+    if (!Number.isInteger(preview.estimated_case_count) || preview.estimated_case_count < 1) {
+      throw new Error("invalid image case count");
     }
-  } else {
-    count = form.noNegative ? 8 : 13;
+    appState.imagePlanPreviewCount = preview.estimated_case_count;
+    appState.imagePlanPreview = preview;
+    return preview;
+  } catch (error) {
+    if (key !== appState.imagePlanPreviewKey) return;
+    appState.imagePlanPreviewError = error.message || String(error);
+  } finally {
+    if (key === appState.imagePlanPreviewKey) {
+      appState.imagePlanPreviewLoading = false;
+      renderImageCaseHint();
+      renderBusyState();
+    }
   }
-  if (form.include4k) count += 1;
-  return count;
+}
+
+function applyImageResolutionDefaults(form) {
+  const capability = imageApiFormCapability(form.provider, form.model, form.routeProfile, form.apiForm) || {};
+  const suite = capability.suite;
+  if (!suite || form.suite === "smoke") return;
+  const explicit = (form.resolutionPreferences || {})[suite];
+  if (explicit) {
+    form.include2k = explicit.include2k;
+    form.include4k = explicit.include4k;
+  } else if (form.suite === "full") {
+    form.include2k = suite === "grok_imagine";
+    form.include4k = suite !== "grok_imagine";
+  }
 }
 
 function renderImageControls() {
@@ -883,12 +1135,13 @@ function renderImageControls() {
   $("imageApiForm").value = form.apiForm;
   $("imageApiForm").disabled = allowed.length <= 1;
 
-  const fixedBanana = !!model
-    && model.family === "banana"
-    && !String(model.id).includes("{resolution}")
-    && !String(model.id).includes("{resolution_lower}");
-  if (fixedBanana) form.noCrossControl = true;
-  const grokImagine = !!model && model.family === "grok-imagine";
+  applyImageResolutionDefaults(form);
+  const grokImagine = (imageApiFormCapability(form.provider, form.model, form.routeProfile, form.apiForm) || {}).suite === "grok_imagine";
+  const fixedImage25Matrix = !!model && /^gpt-image-2\.5-(sunburst|flare)(-2026-09-08)?$/.test(model.id);
+  if (fixedImage25Matrix) {
+    form.quality = "low";
+    form.outputFormat = "png";
+  }
   if (form.transport === "gemini-interactions") form.outputFormat = "jpeg";
   if (grokImagine) form.include4k = false;
   else form.include2k = false;
@@ -897,6 +1150,8 @@ function renderImageControls() {
     form.include4k = false;
   }
   $("imageSuite").value = form.suite;
+  $("imageRunCount").value = imageRunCountValue();
+  $("imageCases").value = form.cases || "";
   $("imageQuality").value = form.quality;
   $("imageOutputFormat").value = form.outputFormat;
   $("imageInclude2k").checked = form.include2k;
@@ -907,13 +1162,13 @@ function renderImageControls() {
   $("imageInclude4kWrap").hidden = grokImagine;
   $("imageNoNegative").checked = form.noNegative;
   $("imageNoCrossControl").checked = form.noCrossControl;
-  $("imageNoCrossControl").disabled = fixedBanana;
+  $("imageNoCrossControl").disabled = false;
   $("imageVisualForensics").checked = form.visualForensics;
 
   const familyManagedQuality = ["chat-completions", "gemini-interactions"].includes(form.transport)
-    || grokImagine;
+    || grokImagine || fixedImage25Matrix;
   const familyManagedFormat = ["chat-completions", "gemini-interactions"].includes(form.transport)
-    || grokImagine;
+    || grokImagine || fixedImage25Matrix;
   $("imageQualityWrap").hidden = familyManagedQuality;
   $("imageOutputFormatWrap").hidden = familyManagedFormat;
   $("imageQuality").disabled = familyManagedQuality;
@@ -931,8 +1186,7 @@ function renderImageControls() {
   const certificationScope = capability.certification_scope || "raw_route_contract";
   $("imageProfileStatus").textContent = `model profile: ${profileStatus}${capability.profile_id ? ` · ${capability.profile_id}` : ""} · scope: ${certificationScope}`;
   $("imageProfileStatus").className = `pill ${profileStatus === "registered" && certificationScope !== "adapter_only" ? "ok" : "warn"}`;
-  const count = imageCaseEstimate();
-  $("imageCaseHint").textContent = `${count} case${count === 1 ? "" : "s"}`;
+  refreshImagePlanPreview();
   const hasBillableNegative = !!model && !form.noNegative && form.suite !== "smoke";
   const costly = form.include2k || form.include4k || hasBillableNegative;
   $("imageCostHint").textContent = costly
@@ -976,40 +1230,379 @@ async function loadLatestImageResult() {
   }
 }
 
-function renderReferenceSources() {
+function isOptionalParamWorkflow(workflow) {
+  return workflow.optional === true || workflow.factory_id === "media_input";
+}
+
+function paramWorkflowChoices() {
   const form = appState.formsByTab.param;
-  const select = $("referenceSource");
-  const allSources = appState.config.reference_sources || [];
+  const leaf = apiFormCapability(form.provider, form.model, form.routeProfile, form.apiForm) || {};
+  return leaf.workflow_available === true ? (leaf.test_workflows || []) : [];
+}
+
+function selectedParamWorkflow() {
+  const form = appState.formsByTab.param;
+  if (form.workflowBindingId === "__ordinary__") return null;
+  const choices = paramWorkflowChoices();
+  return choices.find((item) => item.workflow_binding_id === form.workflowBindingId)
+    || choices.find((item) => !isOptionalParamWorkflow(item)) || null;
+}
+
+function workflowCaseGroupLabel(item) {
+  const group = item.group || item.phase || "";
+  return ({image: "图片输入", audio: "音频输入", video: "视频输入", mixed: "图音混合"})[group] || group;
+}
+
+function renderParamWorkflowSelector(workflow) {
+  const select = $("paramWorkflow");
+  if (!select) return;
+  const form = appState.formsByTab.param;
+  const leaf = apiFormCapability(form.provider, form.model, form.routeProfile, form.apiForm) || {};
+  const hasDefaultWorkflow = paramWorkflowChoices().some((item) => !isOptionalParamWorkflow(item));
+  const ordinaryEnabled = !hasDefaultWorkflow && leaf.profile_status === "registered" && leaf.parameter_test_enabled !== false;
+  select.innerHTML = `<option value="__ordinary__"${ordinaryEnabled ? "" : " disabled"}>普通参数测试${ordinaryEnabled ? "" : "（不可用）"}</option>`
+    + paramWorkflowChoices().map((item) => {
+      const label = item.label || (item.factory_id === "media_input" ? "图片/视频/音频输入" : item.workflow_id || "功能套件");
+      return `<option value="${esc(item.workflow_binding_id)}">${esc(label)} · ${Number(item.case_count || (item.cases || []).length)} 个用例</option>`;
+    }).join("");
+  select.value = workflow ? workflow.workflow_binding_id : "__ordinary__";
+}
+
+async function changeParamWorkflow(bindingId) {
+  const form = appState.formsByTab.param;
+  form.workflowBindingId = bindingId || "__ordinary__";
+  form.workflowCases = "";
+  form.referenceContractId = "";
+  if ("referenceManual" in form) form.referenceManual = false;
+  if ("contractManual" in form) form.contractManual = false;
+  if ("parameterSuite" in form) form.parameterSuite = "";
+  appState.workflowPreviewRequestId += 1;
+  appState.workflowPreview = null;
+  appState.workflowPreviewKey = "";
+  appState.workflowPreviewError = "";
+  appState.workflowPreviewLoading = false;
+  clearTimeout(appState.workflowPreviewTimer);
+  appState.paramHistoryResult = null;
+  renderReferenceContracts();
+  renderProviderStatus("param");
+  await loadParamSpecs();
+  renderBusyState();
+}
+
+function syncParamWorkflow() {
+  const form = appState.formsByTab.param;
+  const workflow = selectedParamWorkflow();
+  const binding = workflow ? workflow.workflow_binding_id : (form.workflowBindingId === "__ordinary__" ? "__ordinary__" : "");
+  if (form.workflowBindingId !== binding) {
+    form.workflowCases = "";
+    appState.workflowPreview = null;
+    appState.workflowPreviewKey = "";
+    appState.workflowPreviewError = "";
+  }
+  form.workflowBindingId = binding;
+  renderParamWorkflowSelector(workflow);
+  if (workflow) {
+    form.referenceContractId = workflow.reference_contract_id;
+    form.toolValidationMode = "auto";
+    if ("referenceManual" in form) form.referenceManual = false;
+    if ("contractManual" in form) form.contractManual = false;
+    if ("parameterSuite" in form) form.parameterSuite = "";
+  }
+  const wrap = $("paramWorkflowCasesWrap");
+  if (wrap) wrap.hidden = !workflowRequestPayload() || !!form.parameterSuite || (!workflow && form.apiForm === "deepseek_beta_chat_prefix");
+  const evidence = $("paramWorkflowEvidence");
+  if (evidence) evidence.hidden = !workflow;
+  const input = $("paramWorkflowCases");
+  if (input) input.value = form.workflowCases || "";
+  const choices = $("paramWorkflowCaseOptions");
+  if (choices) choices.innerHTML = workflow ? workflow.cases.map((item) => (
+    `<option value="${esc(item.id)}">${esc(workflowCaseGroupLabel(item))} · ${esc(item.name || item.id)}</option>`
+  )).join("") : "";
+  const contract = $("referenceContractId");
+  if (contract) contract.disabled = !!workflow;
+  const reset = $("resetContract");
+  if (reset) reset.disabled = !!workflow;
+  const mode = $("toolValidationMode");
+  if (mode) mode.disabled = !!workflow;
+  const suite = $("parameterSuite");
+  if (suite && suite.parentElement) suite.parentElement.hidden = !!workflow;
+  if (suite && workflow) { suite.value = ""; suite.disabled = true; }
+  renderWorkflowPreview();
+  return workflow;
+}
+
+function workflowRequestPayload() {
+  const form = appState.formsByTab.param;
+  const workflow = selectedParamWorkflow();
+  if (!workflow && (!form.provider || !form.model)) return null;
+  const cases = String(form.workflowCases || "").split(/[,，\n]+/).map((value) => value.trim()).filter(Boolean);
+  if (!workflow) return {
+    type: "param_test", provider: form.provider, model: form.model,
+    route_profile: form.routeProfile, api_form: form.apiForm,
+    reference_contract_id: form.referenceContractId,
+    ...(form.parameterSuite ? {parameter_suite: form.parameterSuite} : {}),
+    tool_validation_mode: form.toolValidationMode || "auto",
+    param_test_runs: paramTestRunsValue(), timeout_sec: timeoutSecValue(),
+    ...(cases.length ? {cases} : {suite: "full"}),
+  };
+  return {
+    type: "param_test", provider: form.provider, model: form.model,
+    route_profile: form.routeProfile, api_form: form.apiForm,
+    workflow_binding_id: workflow.workflow_binding_id,
+    reference_contract_id: workflow.reference_contract_id,
+    source_id: workflow.source_id, profile_id: workflow.profile_id, interface_id: workflow.interface_id,
+    tool_validation_mode: "auto", param_test_runs: paramTestRunsValue(), timeout_sec: timeoutSecValue(),
+    ...(cases.length ? {cases} : {suite: "full"}),
+  };
+}
+
+function workflowSelectionKey() {
+  return JSON.stringify(workflowRequestPayload());
+}
+
+function workflowPreviewCurrent() {
+  return !!appState.workflowPreview && !appState.workflowPreviewLoading
+    && appState.workflowPreviewKey === workflowSelectionKey();
+}
+
+function renderWorkflowPreview() {
+  const node = $("paramWorkflowPreview");
+  if (!node) return;
+  const workflow = selectedParamWorkflow();
+  const available = !!workflowRequestPayload();
+  node.hidden = !available;
+  node.className = available ? "notice active" : "notice";
+  if (!available) { node.textContent = ""; return; }
+  if (appState.workflowPreviewLoading) { node.textContent = "正在核对用例、请求上限与清理计划…"; return; }
+  if (appState.workflowPreviewError) { node.textContent = appState.workflowPreviewError; return; }
+  if (!workflowPreviewCurrent()) { node.textContent = "等待测试计划预览。"; return; }
+  const preview = appState.workflowPreview;
+  const names = new Map(preview.plan.definition.cases.map((item) => [item.id, item.name || item.id]));
+  const conditions = (preview.preconditions || []).map((item) => (
+    `${names.get(item.case_id) || item.case_id}: ${(item.requirements || []).map((value) => typeof value === "string" ? value : JSON.stringify(value)).join("; ")}`
+  ));
+  const selection = String(appState.formsByTab.param.workflowCases || "").trim() ? "选定用例及必要前置步骤" : "完整套件";
+  node.innerHTML = `<b>${esc(selection)}</b> · ${preview.selected_cases.length} 个用例 · ${preview.plan.run_count} 轮 · `
+    + `请求上限 ${preview.request_cap} · 清理上限 ${preview.cleanup_request_cap}`
+    + (conditions.length ? `<details><summary>${conditions.length} 项执行前提</summary><ul>${conditions.map((item) => `<li>${esc(item)}</li>`).join("")}</ul></details>` : "");
+}
+
+async function refreshWorkflowPreview(force = false) {
+  const payload = workflowRequestPayload();
+  if (!payload) return null;
+  const key = JSON.stringify(payload);
+  if (!force && workflowPreviewCurrent()) return appState.workflowPreview;
+  const requestId = ++appState.workflowPreviewRequestId;
+  appState.workflowPreviewKey = key;
+  appState.workflowPreview = null;
+  appState.workflowPreviewError = "";
+  appState.workflowPreviewLoading = true;
+  renderWorkflowPreview();
+  renderBusyState();
+  try {
+    const response = await fetch("/api/test-plan/preview", {
+      method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload),
+    });
+    const preview = await response.json();
+    if (requestId !== appState.workflowPreviewRequestId || key !== workflowSelectionKey()) return null;
+    if (!response.ok) throw new Error(preview.error || "无法生成测试计划。");
+    appState.workflowPreview = preview;
+    if (!selectedParamWorkflow() && $("paramWorkflowCaseOptions")) {
+      $("paramWorkflowCaseOptions").innerHTML = preview.plan.definition.cases
+        .filter((item) => item.id !== "identity_probe")
+        .map((item) => `<option value="${esc(item.id)}">${esc(item.name || item.id)}</option>`).join("");
+    }
+    return preview;
+  } catch (error) {
+    if (requestId === appState.workflowPreviewRequestId && key === workflowSelectionKey()) {
+      appState.workflowPreviewError = error.message || String(error);
+    }
+    return null;
+  } finally {
+    if (requestId === appState.workflowPreviewRequestId) {
+      appState.workflowPreviewLoading = false;
+      renderWorkflowPreview();
+      renderParamRunHint();
+      renderBusyState();
+    }
+  }
+}
+
+function queueWorkflowPreview() {
+  if (!workflowRequestPayload()) return;
+  appState.workflowPreview = null;
+  appState.workflowPreviewError = "";
+  clearTimeout(appState.workflowPreviewTimer);
+  renderWorkflowPreview();
+  renderBusyState();
+  appState.workflowPreviewTimer = setTimeout(() => selectedParamWorkflow() ? loadWorkflowParamSpecs() : refreshWorkflowPreview(), 200);
+}
+
+function renderParamSpecMode(workflow) {
+  const title = $("paramSpecsTitle");
+  if (title) title.textContent = workflow ? "套件用例" : "Interface Contract Parameter Specs";
+  const head = $("paramSpecsHead");
+  if (head) head.innerHTML = workflow
+    ? "<tr><th>用例</th><th>官方来源</th><th>分组</th><th>用例 ID</th></tr>"
+    : "<tr><th>Parameter</th><th>Official / Contract</th><th>Model profile expectation</th><th>Coverage</th></tr>";
+}
+
+async function loadWorkflowParamSpecs() {
+  const workflow = syncParamWorkflow();
+  if (!workflow) return;
+  renderParamSpecMode(true);
+  const requestId = ++appState.paramHistoryRequestId;
+  appState.paramSpec = {workflow: true, comparison: []};
+  appState.paramHistoryResult = null;
+  appState.paramHistoryLoading = true;
+  $("paramProfileStatus").textContent = `功能套件可用 · 来源 ${workflow.source_id}`;
+  $("paramProfileStatus").className = "pill ok";
+  const preview = await refreshWorkflowPreview();
+  if (requestId !== appState.paramHistoryRequestId) return;
+  const selected = new Set(preview ? preview.selected_cases : []);
+  $("paramSpecs").innerHTML = (workflow.cases || []).filter((item) => !preview || selected.has(item.id)).map((item) => (
+    `<tr><td>${esc(item.name || item.id)}</td><td>${esc(workflow.source_id)}</td><td>${esc(workflowCaseGroupLabel(item))}</td><td>${esc(item.id)}</td></tr>`
+  )).join("");
+  if (preview) {
+    try {
+      const response = await fetch("/api/jobs", {cache: "no-store"});
+      const history = await response.json();
+      if (!response.ok) throw new Error(history.error || "无法读取历史结果。");
+      const match = (history.jobs || []).find((job) => matchesParamSelection(job) && !isBusy(job));
+      if (match) {
+        const detail = await fetch(`/api/jobs/${encodeURIComponent(match.id)}`, {cache: "no-store"});
+        const result = await detail.json();
+        if (detail.ok && requestId === appState.paramHistoryRequestId) appState.paramHistoryResult = result;
+      }
+    } catch (error) {
+      if (requestId === appState.paramHistoryRequestId) showError(error.message || String(error));
+    }
+  }
+  if (requestId === appState.paramHistoryRequestId) {
+    appState.paramHistoryLoading = false;
+    renderParamResults(appState.currentJob);
+  }
+}
+
+function workflowStateLabel(state) {
+  return ({passed: "通过", failed: "失败", blocked: "依赖阻塞", cancelled: "已取消", skipped: "跳过",
+    inconclusive: "未确认", unknown: "未确认", running: "执行中", stopping: "停止并清理中", stopped: "已停止",
+    pending: "等待", incomplete: "未完成", invalid: "证据无效"})[state] || state || "等待";
+}
+
+function renderWorkflowParamResult(job) {
+  const progress = (job && job.progress) || {};
+  const plan = (job && job.job_spec && job.job_spec.execution_plan)
+    || (appState.workflowPreview && appState.workflowPreview.plan);
+  const runs = progress.runs || [];
+  const verifiedPass = progress.pass === true && (!job || !job.result_validation || job.result_validation.pass === true);
+  const outcome = verifiedPass ? "passed" : progress.status === "passed" ? "incomplete" : progress.status || "pending";
+  renderMetrics("param", [
+    ["用例校验与清理", workflowStateLabel(outcome)],
+    ["用例", `${progress.completed_cases || 0}/${progress.total_cases || (plan ? plan.selected_cases.length * plan.run_count : 0)}`],
+    ["步骤", `${progress.completed_steps || 0}/${progress.total_steps || (plan ? plan.ordered_steps.length * plan.run_count : 0)}`],
+    ["请求尝试", progress.attempt_count || 0], ["依赖阻塞", progress.blocked_steps || 0],
+    ["清理", workflowStateLabel(progress.cleanup_status || "pending")],
+    ["资源已清理", `${progress.deleted_resource_count || 0}/${progress.resource_count || 0}`],
+  ]);
+  $("paramResultsHead").innerHTML = "<tr><th>测试用例</th><th>每轮结果与步骤</th></tr>";
+  const definitions = new Map(plan ? plan.definition.cases.map((item) => [item.id, item]) : []);
+  $("paramResults").innerHTML = (plan ? plan.selected_cases : []).map((caseId) => {
+    const definition = definitions.get(caseId) || {};
+    const cells = Array.from({length: plan.run_count}, (_, index) => {
+      const run = runs.find((item) => item.run_index === index + 1);
+      const result = run && (run.cases || []).find((item) => item.id === caseId);
+      const status = result ? result.status : "pending";
+      const style = status === "passed" ? "pass" : status === "failed" ? "fail" : status === "blocked" ? "incompatible" : "pending";
+      const details = run ? (run.steps || []).filter((item) => item.case_id === caseId).map((item) => (
+        `${item.id}: ${workflowStateLabel(item.status)}${(item.blocked_dependencies || []).length ? ` · 前置 ${item.blocked_dependencies.join(", ")}` : ""}`
+      )).join("\n") : "";
+      return `<span class="run-chip status-${style}" title="${esc(details)}">R${index + 1}: ${esc(workflowStateLabel(status))}</span>`;
+    }).join("");
+    const policy = (plan.case_policies || {})[caseId] || definition.success_policy || "all";
+    const aggregate = (progress.case_outcomes || {})[caseId];
+    const policyLabel = policy === "any" ? "任一轮（有条件）" : "每轮";
+    const aggregateLabel = aggregate ? ` · 汇总：${workflowStateLabel(aggregate.status)}` : "";
+    return `<tr><td><b>${esc(definition.name || caseId)}</b><div class="muted">${esc(definition.phase || "")}</div>`
+      + `<div class="muted" title="保留每轮原始结果。仅合并用例允许的非致命失败；缺失轮次、执行异常或清理失败仍不通过。">规则：${esc(policyLabel)}${esc(aggregateLabel)}</div></td><td>${cells}</td></tr>`;
+  }).join("") || '<tr><td colspan="2" class="muted">等待测试计划。</td></tr>';
+  renderFiles("param", job);
+  renderTokenAudit(null);
+  renderModelIdentity(null);
+  $("paramFailedCaseLog").textContent = (progress.evidence_errors || []).join("\n")
+    || runs.flatMap((run) => (run.steps || []).filter((step) => ["failed", "blocked", "cancelled", "inconclusive"].includes(step.status)).map((step) => (
+      `R${run.run_index} ${step.id}: ${workflowStateLabel(step.status)}`
+    ))).join("\n") || "暂无失败或阻塞用例。";
+  $("paramLogTail").textContent = job ? job.log_tail || "" : "";
+  const evidence = $("paramWorkflowEvidence");
+  if (evidence) evidence.hidden = false;
+  const attempts = $("paramWorkflowAttempts");
+  if (attempts) attempts.innerHTML = runs.flatMap((run) => (run.attempts || []).map((attempt) => {
+    const step = (run.steps || []).find((item) => item.id === attempt.step_id);
+    const definition = definitions.get(step && step.case_id) || {};
+    return `<tr><td>R${run.run_index}</td><td>${esc(definition.name || (step && step.case_id) || attempt.step_id)}</td>`
+      + `<td>${esc(attempt.phase === "cleanup" ? "清理" : "用例")}</td><td>${esc(({dispatching: "等待响应", received: "已收到响应", exception: "请求异常"})[attempt.status] || attempt.status)}</td>`
+      + `<td>${esc(attempt.http_status || "—")}</td></tr>`;
+  })).join("") || '<tr><td colspan="5" class="muted">尚无请求记录。</td></tr>';
+  const cleanup = $("paramWorkflowCleanup");
+  if (cleanup) cleanup.textContent = runs.map((run) => (
+    `R${run.run_index}: 清理${workflowStateLabel(run.cleanup_status)} · ${run.deleted_resource_count}/${run.resource_count} 个资源已删除 · ${run.unknown_creation_count} 个创建结果未确认`
+  )).join("\n") || "尚无清理记录。";
+}
+
+function renderReferenceContracts() {
+  const form = appState.formsByTab.param;
+  const workflow = syncParamWorkflow();
+  if (workflow) {
+    const select = $("referenceContractId");
+    select.innerHTML = `<option value="${esc(workflow.reference_contract_id)}">${esc(workflow.reference_contract_id)}</option>`;
+    select.value = workflow.reference_contract_id;
+    renderContractMode();
+    renderToolValidationMode();
+    return;
+  }
+  const select = $("referenceContractId");
+  const allContracts = appState.config.reference_contracts
+    || appState.config.reference_sources
+    || [];
   const capability = apiFormCapability(
     form.provider, form.model, form.routeProfile, form.apiForm
   );
-  const allowed = new Set(capability.reference_sources || []);
-  const sources = allSources.filter((source) => allowed.has(source.id));
-  if (!form.referenceSource) {
-    form.referenceSource = referenceSourceForModel(
+  const allowed = new Set(
+    capability.reference_contract_ids || capability.reference_sources || []
+  );
+  const contracts = allContracts.filter((contract) => (
+    allowed.has(contract.contract_id || contract.id)
+  ));
+  if (!form.referenceContractId) {
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
     );
   }
-  if (!sources.some((source) => source.id === form.referenceSource)) {
-    form.referenceSource = referenceSourceForModel(
+  if (!contracts.some((contract) => (
+    (contract.contract_id || contract.id) === form.referenceContractId
+  ))) {
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
-    ) || (sources[0] && sources[0].id) || "";
-    form.referenceManual = false;
+    ) || (contracts[0] && (contracts[0].contract_id || contracts[0].id)) || "";
+    form.contractManual = false;
   }
-  select.innerHTML = sources.map((source) => (
-    `<option value="${esc(source.id)}">${esc(source.label || source.id)}</option>`
+  select.innerHTML = contracts.map((contract) => (
+    `<option value="${esc(contract.contract_id || contract.id)}">${esc(contract.label || contract.contract_id || contract.id)}</option>`
   )).join("");
-  select.value = form.referenceSource;
-  renderReferenceMode();
+  select.value = form.referenceContractId;
+  renderContractMode();
   renderToolValidationMode();
 }
 
-function renderReferenceMode() {
+function renderContractMode() {
   const form = appState.formsByTab.param;
-  const source = sourceById(form.referenceSource);
-  const sourceId = source ? source.id : form.referenceSource;
-  $("referenceMode").textContent = `reference: ${form.referenceManual ? "manual" : "default"} ${sourceId || ""}`;
-  $("referenceMode").className = `pill ${form.referenceManual ? "warn" : "ok"}`;
+  const contract = contractById(form.referenceContractId);
+  const contractId = contract
+    ? (contract.contract_id || contract.id)
+    : form.referenceContractId;
+  $("contractMode").textContent = `contract: ${form.contractManual ? "manual" : "default"} ${contractId || ""}`;
+  $("contractMode").className = `pill ${form.contractManual ? "warn" : "ok"}`;
 }
 
 function renderToolValidationMode() {
@@ -1017,14 +1610,17 @@ function renderToolValidationMode() {
   const select = $("toolValidationMode");
   if (!select) return;
   select.value = form.toolValidationMode || "auto";
-  const source = String(form.referenceSource || "");
+  const contractId = String(form.referenceContractId || "");
   let automatic = "OpenAI-compatible tool_calls";
-  if (source === "gemini_native_generate_content" || source === "gemini_vertex_generate_content") {
+  if (contractId === "gemini_native_generate_content" || contractId === "gemini_vertex_generate_content") {
     automatic = "Gemini Native functionCall";
   }
-  if (source === "claude_native_messages" || source === "claude_fable_native_messages") {
+  if (contractId === "claude_native_messages" || contractId === "claude_fable_native_messages") {
     automatic = "Claude Native tool_use";
   }
+  const workflow = selectedParamWorkflow();
+  if (workflow && workflow.factory_id === "media_input") automatic = "图片/语音理解（无工具调用）";
+  else if (workflow && form.apiForm === "anthropic_messages") automatic = "Anthropic Messages tool_use";
   const effective = form.toolValidationMode === "auto"
     ? `auto → ${automatic}`
     : form.toolValidationMode;
@@ -1034,8 +1630,10 @@ function renderToolValidationMode() {
 
 async function loadParamSpecs() {
   if (!appState.config) return;
+  if (selectedParamWorkflow()) return loadWorkflowParamSpecs();
+  renderParamSpecMode(false);
   const form = appState.formsByTab.param;
-  const sourceId = form.referenceSource || referenceSourceForModel(
+  const contractId = form.referenceContractId || referenceContractIdForModel(
     form.provider, form.model, form.routeProfile, form.apiForm
   );
   const selectionKey = paramSelectionKey(
@@ -1043,30 +1641,33 @@ async function loadParamSpecs() {
     form.model,
     form.routeProfile,
     form.apiForm,
-    sourceId,
+    contractId,
     form.toolValidationMode,
+    form.parameterSuite,
   );
   const requestId = ++appState.paramHistoryRequestId;
   appState.paramSpec = null;
   appState.paramHistoryResult = null;
   appState.paramHistoryLoading = true;
+  renderParameterSuites();
+  renderBusyState();
   renderParamResults(appState.currentJob);
   const historyQuery = new URLSearchParams({
     provider: form.provider,
     model: form.model,
     route_profile: form.routeProfile,
     api_form: form.apiForm,
-    reference_source: sourceId,
+    contract_id: contractId,
     tool_validation_mode: form.toolValidationMode,
   });
+  if (form.parameterSuite) historyQuery.set("parameter_suite", form.parameterSuite);
+  const specQuery = new URLSearchParams({
+    provider: form.provider, model: form.model, route_profile: form.routeProfile,
+    api_form: form.apiForm, contract_id: contractId,
+  });
+  if (form.parameterSuite) specQuery.set("parameter_suite", form.parameterSuite);
   const [payload, historyPayload] = await Promise.all([
-    fetch(`/api/param-specs?${new URLSearchParams({
-      provider: form.provider,
-      model: form.model,
-      route_profile: form.routeProfile,
-      api_form: form.apiForm,
-      reference_source: sourceId,
-    }).toString()}`, { cache: "no-store" }).then((resp) => resp.json()),
+    fetch(`/api/param-specs?${specQuery.toString()}`, { cache: "no-store" }).then((resp) => resp.json()),
     fetch(`/api/param-results/latest?${historyQuery.toString()}`, { cache: "no-store" }).then((resp) => resp.json()),
   ]);
   const currentForm = appState.formsByTab.param;
@@ -1077,13 +1678,17 @@ async function loadParamSpecs() {
       currentForm.model,
       currentForm.routeProfile,
       currentForm.apiForm,
-      currentForm.referenceSource,
+      currentForm.referenceContractId,
       currentForm.toolValidationMode,
+      currentForm.parameterSuite,
     )
   ) return;
   appState.paramSpec = payload;
   appState.paramHistoryResult = historyPayload.result || null;
   appState.paramHistoryLoading = false;
+  renderParameterSuites();
+  renderBusyState();
+  if (payload.error) showError(payload.error);
   const capability = payload.model_capability_profile || {};
   const profileStatus = capability.profile_status || "unknown";
   const certificationScope = capability.certification_scope || "raw_route_contract";
@@ -1096,15 +1701,26 @@ async function loadParamSpecs() {
   renderParamRunHint();
   const currentJob = appState.currentJob && appState.currentJob.type === "param_test" ? appState.currentJob : null;
   renderParamResults(currentJob);
+  await refreshWorkflowPreview();
 }
 
-function paramSelectionKey(provider, model, routeProfile, apiForm, referenceSource, toolValidationMode) {
-  return `${provider || ""}\u0000${model || ""}\u0000${routeProfile || ""}\u0000${apiForm || ""}\u0000${referenceSource || ""}\u0000${toolValidationMode || "auto"}`;
+function paramSelectionKey(provider, model, routeProfile, apiForm, referenceContractId, toolValidationMode, parameterSuite) {
+  return `${provider || ""}\u0000${model || ""}\u0000${routeProfile || ""}\u0000${apiForm || ""}\u0000${referenceContractId || ""}\u0000${toolValidationMode || "auto"}\u0000${parameterSuite || ""}`;
 }
 
 function matchesParamSelection(job) {
   if (!job || job.type !== "param_test") return false;
   const form = appState.formsByTab.param;
+  const workflow = selectedParamWorkflow();
+  if (workflow) {
+    const spec = job.job_spec || {};
+    return job.provider === form.provider && job.model === form.model
+      && job.route_profile === form.routeProfile && job.api_form === form.apiForm
+      && spec.test_binding_id === workflow.workflow_binding_id
+      && spec.reference_contract_id === workflow.reference_contract_id
+      && workflowPreviewCurrent() && (spec.execution_plan || {}).plan_digest === appState.workflowPreview.plan_digest;
+  }
+  if (((job.job_spec || {}).execution_plan || {}).definition?.factory?.factory_id === "media_input") return false;
   const capability = apiFormCapability(
     form.provider, form.model, form.routeProfile, form.apiForm
   );
@@ -1113,11 +1729,49 @@ function matchesParamSelection(job) {
     && (job.route_profile || "") === (form.routeProfile || "")
     && (job.api_form || "") === (form.apiForm || "")
     && (job.model_profile_id || "") === (capability.profile_id || "")
-    && job.reference_source === form.referenceSource
-    && (job.tool_validation_mode || "auto") === form.toolValidationMode;
+    && (job.reference_contract_id || job.reference_source) === form.referenceContractId
+    && (job.tool_validation_mode || "auto") === form.toolValidationMode
+    && (job.parameter_suite || (job.job_spec && job.job_spec.parameter_suite) || "") === (form.parameterSuite || "");
+}
+
+function fixedParamRequestCount() {
+  const form = appState.formsByTab.param;
+  const prefillModels = ["claude-haiku-4-5-20251001", "claude-opus-4-5-20251101", "claude-sonnet-4-5-20250929"];
+  const cacheModels = ["claude-haiku-4-5-20251001", "claude-opus-4-5-20251101", "claude-opus-4-6", "claude-opus-4-7", "claude-opus-4-8", "claude-opus-5", "claude-sonnet-4-5-20250929", "claude-sonnet-4-6", "claude-sonnet-5"];
+  if (form.provider === "anthropic_official" && cacheModels.includes(form.model)
+      && form.routeProfile === "vendor_direct" && form.apiForm === "anthropic_messages"
+      && form.referenceContractId === "claude_native_messages"
+      && form.parameterSuite === `anthropic_cache_${form.model.replaceAll("-", "_")}_20260908`) return 5;
+  if (form.provider === "anthropic_official" && prefillModels.includes(form.model)
+      && form.routeProfile === "vendor_direct" && form.apiForm === "anthropic_messages"
+      && form.referenceContractId === "claude_native_messages"
+      && form.parameterSuite === `anthropic_prefill_${form.model.replaceAll("-", "_")}_20260908`) return 3;
+  if (form.provider !== "deepseek_official" || form.model !== "deepseek-v4-pro" || form.routeProfile !== "vendor_direct") return 0;
+  if (form.apiForm === "openai_fim_completions_beta"
+      && form.referenceContractId === "deepseek_v4_pro_0813_fim_beta"
+      && form.parameterSuite === "deepseek_fim_causal_20260908") return 8;
+  if (form.apiForm === "deepseek_beta_chat_prefix"
+      && form.referenceContractId === "deepseek_v4_pro_0813_chat_prefix_beta"
+      && !form.parameterSuite) return 5;
+  return 0;
+}
+
+function renderParameterSuites() {
+  const form = appState.formsByTab.param;
+  const selected = form.parameterSuite || "";
+  const suites = (appState.paramSpec && appState.paramSpec.available_parameter_suites) || [];
+  const options = suites.filter(item => item && typeof item.id === "string");
+  const available = options.some(item => item.id === selected);
+  const select = $("parameterSuite");
+  select.innerHTML = `<option value="">${!form.parameterSuite && fixedParamRequestCount() === 5 ? "固定前缀验证" : "通用参数矩阵"}</option>`
+    + options.map(item => `<option value="${esc(item.id)}">${esc(item.label || item.id)} · ${Number(item.request_count)} 次</option>`).join("")
+    + (selected && !available ? `<option value="${esc(selected)}" disabled>所选套件当前不可用</option>` : "");
+  select.value = selected;
+  select.disabled = options.length === 0 && !selected;
 }
 
 function paramTestRunsValue() {
+  if (!selectedParamWorkflow() && fixedParamRequestCount()) return 1;
   const defaults = (appState.config && appState.config.defaults) || {};
   const maxRuns = Number(defaults.param_test_runs_max || 1000);
   const raw = Number(appState.formsByTab.param.paramTestRuns || $("paramTestRuns").value || 1);
@@ -1127,13 +1781,32 @@ function paramTestRunsValue() {
 
 function renderParamRunHint() {
   if (!appState.config) return;
+  if (selectedParamWorkflow()) {
+    const runs = paramTestRunsValue();
+    $("paramTestRuns").value = runs;
+    $("paramTestRuns").disabled = false;
+    const preview = workflowPreviewCurrent() ? appState.workflowPreview : null;
+    $("paramRunHint").textContent = preview
+      ? `${preview.selected_cases.length} 个用例 × ${runs} 轮 · ${preview.ordered_steps.length} 步骤/轮`
+      : `完整套件默认执行 ${runs} 轮`;
+    return;
+  }
   const form = appState.formsByTab.param;
   const runs = paramTestRunsValue();
-  const source = sourceById(form.referenceSource);
-  const profiles = Number((source && source.test_profile_count) || 0);
-  const testedParams = Number((source && source.tested_param_count) || 0);
-  const totalParams = Number((source && source.param_count) || 0);
+  const contract = contractById(form.referenceContractId);
+  const profiles = Number((contract && contract.test_profile_count) || 0);
+  const testedParams = Number((contract && contract.tested_param_count) || 0);
+  const totalParams = Number((contract && contract.param_count) || 0);
   $("paramTestRuns").value = runs;
+  const fixedCount = fixedParamRequestCount();
+  $("paramTestRuns").disabled = fixedCount > 0;
+  if (fixedCount) {
+    form.paramTestRuns = 1;
+    $("paramRunHint").textContent = fixedCount === 5 && form.provider === "anthropic_official"
+      ? "2 次官方输入估算 + 3 次缓存生成对照 · 输入合格后继续 · 报告保留一个月"
+      : `${fixedCount} 项固定对照 · 顺序执行一次`;
+    return;
+  }
   $("paramRunHint").textContent = `${profiles * runs} cells · ${testedParams}/${totalParams} params · ${profiles} profiles x ${runs} runs`;
 }
 
@@ -1194,6 +1867,7 @@ function cacheRequestEstimate() {
 
 function renderCacheToolStageOptions() {
   const form = appState.formsByTab.cache;
+  const toolsRunnable = cacheLeafSupportsTools(selectedCacheLeafCapability());
   const rounds = Math.max(2, Math.trunc(Number(form.roundsPerSession) || 2));
   form.roundsPerSession = rounds;
   const current = form.toolStage === "off" ? "off" : String(
@@ -1203,17 +1877,29 @@ function renderCacheToolStageOptions() {
     '<option value="off">关闭</option>',
     ...Array.from({ length: rounds - 1 }, (_item, index) => {
       const round = index + 2;
-      return `<option value="${round}">第 ${round} 轮 · 真实工具调用</option>`;
+      return `<option value="${round}"${toolsRunnable ? "" : " disabled"}>第 ${round} 轮 · 真实工具调用</option>`;
     }),
   ].join("");
   form.toolStage = current;
   $("cacheToolStage").value = current;
+  $("cacheToolStage").disabled = !toolsRunnable;
 }
 
 function renderCacheFormState() {
   const form = appState.formsByTab.cache;
+  const capability = selectedCacheLeafCapability();
+  const toolsRunnable = cacheLeafSupportsTools(capability);
+  const adjustedForCapability = normalizeCacheScenarioForCapability(
+    form, capability
+  );
   renderCacheToolStageOptions();
   const diagnostic = form.diagnosticScenario || "";
+  const diagnosticSelect = $("cacheDiagnosticScenario");
+  const kilocodeOption = diagnosticSelect.querySelector(
+    'option[value="kilocode_agent_session"]'
+  );
+  if (kilocodeOption) kilocodeOption.disabled = !toolsRunnable;
+  diagnosticSelect.value = diagnostic;
   const progressive = !diagnostic;
   $("cacheProgressiveFields").hidden = !progressive;
   $("cacheAdvanced").hidden = !progressive;
@@ -1236,8 +1922,11 @@ function renderCacheFormState() {
   const flow = progressive
     ? `短固定 system → 批量 seed → 等待 ${esc(form.waitAfterSeed)}s → 逐轮增长${form.toolStage === "off" ? "" : ` → 第 ${esc(form.toolStage)} 轮真实 tool call + follow-up`} → 独立结构探针。`
     : `诊断场景 <strong>${esc(diagnostic)}</strong> 使用历史口径，结果不会与 v10 混画。`;
+  const toolGate = toolsRunnable
+    ? `MPDB tool: ${esc(capability.cache_tool_profile || "approved")}`
+    : `MPDB tool: unavailable${adjustedForCapability ? " · 已自动关闭工具场景" : ""}`;
   const limitTone = estimate.total > 1000 ? "bad" : estimate.total > 100 ? "warn" : "ok";
-  $("cacheFlowPreview").innerHTML = `${flow} <strong>客户 ${estimate.customer}</strong> + 结构探针 ${estimate.structure} + 控制 ${estimate.control} = <strong>${estimate.total} requests</strong> <span class="pill ${limitTone}">${estimate.total > 1000 ? "超过硬上限" : estimate.total > 100 ? "需确认" : "规模安全"}</span>`;
+  $("cacheFlowPreview").innerHTML = `${flow} <strong>客户 ${estimate.customer}</strong> + 结构探针 ${estimate.structure} + 控制 ${estimate.control} = <strong>${estimate.total} requests</strong> <span class="pill ${limitTone}">${estimate.total > 1000 ? "超过硬上限" : estimate.total > 100 ? "需确认" : "规模安全"}</span> <span class="pill ${toolsRunnable ? "ok" : "warn"}">${toolGate}</span>`;
   renderCacheSummary();
   renderBusyState();
 }
@@ -1290,7 +1979,23 @@ async function createJob(type) {
     showError(`Provider ${provider ? (provider.label || provider.name) : ""} has no API key configured.`);
     return;
   }
-  const payload = jobPayload(type);
+  let payload = jobPayload(type);
+  if (type === "param_test" && workflowRequestPayload()) {
+    const preview = await refreshWorkflowPreview();
+    if (!preview || !workflowPreviewCurrent()) {
+      showError(appState.workflowPreviewError || "测试选择已改变，请等待新预览。");
+      return;
+    }
+    payload = {...workflowRequestPayload(), plan_digest: preview.plan_digest, ...(preview.plan_seed ? {plan_seed: preview.plan_seed} : {})};
+  }
+  if (type === "image_param_test") {
+    const preview = await refreshImagePlanPreview();
+    if (!preview || !imagePreviewCurrent()) {
+      showError(appState.imagePlanPreviewError || "图片测试选择已改变，请等待新预览。");
+      return;
+    }
+    payload = {...imageRequestPayload(), plan_digest: preview.plan_digest};
+  }
   if (
     (type === "quick_load" || type === "staircase")
     && payload.target_rpm > 0
@@ -1311,6 +2016,15 @@ async function createJob(type) {
   const data = await resp.json();
   if (!resp.ok) {
     showError(data.error || "failed to create job");
+    if (type === "param_test" && workflowRequestPayload() && String(data.error || "").includes("changed since preview")) {
+      await refreshWorkflowPreview(true);
+      showError(`${data.error} · 预览已重新读取，请核对后重试。`);
+    }
+    if (type === "image_param_test" && String(data.error || "").includes("changed since preview")) {
+      appState.imagePlanPreview = null;
+      await refreshImagePlanPreview();
+      showError(`${data.error} · 预览已重新读取，请核对后重试。`);
+    }
     await pollJob();
     return;
   }
@@ -1352,6 +2066,12 @@ function targetTpmValue() {
 
 function jobPayload(type) {
   const timeout_sec = timeoutSecValue();
+  if (type === "param_test" && workflowRequestPayload()) {
+    return {...workflowRequestPayload(), ...(workflowPreviewCurrent() ? {
+      plan_digest: appState.workflowPreview.plan_digest,
+      ...(appState.workflowPreview.plan_seed ? {plan_seed: appState.workflowPreview.plan_seed} : {}),
+    } : {})};
+  }
   if (type === "param_test") {
     const form = appState.formsByTab.param;
     const runs = paramTestRunsValue();
@@ -1362,32 +2082,15 @@ function jobPayload(type) {
       model: form.model,
       route_profile: form.routeProfile,
       api_form: form.apiForm,
-      reference_source: form.referenceSource,
+      reference_contract_id: form.referenceContractId,
+      parameter_suite: form.parameterSuite || null,
       tool_validation_mode: form.toolValidationMode,
       param_test_runs: runs,
       timeout_sec,
     };
   }
   if (type === "image_param_test") {
-    const form = appState.formsByTab.image;
-    return {
-      type,
-      provider: form.provider,
-      model: form.model,
-      timeout_sec,
-      image_plan: {
-        route_profile: form.routeProfile,
-        api_form: form.apiForm,
-        suite: form.suite,
-        include_2k: !!form.include2k,
-        include_4k: !!form.include4k,
-        quality: form.quality,
-        output_format: form.outputFormat,
-        no_negative: !!form.noNegative,
-        no_cross_control: !!form.noCrossControl,
-        visual_forensics: !!form.visualForensics,
-      },
-    };
+    return {...imageRequestPayload(), ...(imagePreviewCurrent() ? {plan_digest: appState.imagePlanPreview.plan_digest} : {})};
   }
   if (type === "cache_suite") {
     const form = appState.formsByTab.cache;
@@ -1462,6 +2165,8 @@ function jobPayload(type) {
       type,
       provider: form.provider,
       model: form.model,
+      route_profile: form.routeProfile,
+      api_form: form.apiForm,
       workload: "cache_suite",
       cache_plan,
       confirm_large_run: estimate.total > 100 && !!form.confirmLarge,
@@ -1630,10 +2335,13 @@ function renderBusyState() {
     appState.formsByTab.image.model,
   );
   const imageFullMissingHighResolution = appState.formsByTab.image.suite === "full"
-    && (imageModel && imageModel.family === "grok-imagine"
+    && ((imageApiFormCapability(appState.formsByTab.image.provider, appState.formsByTab.image.model, appState.formsByTab.image.routeProfile, appState.formsByTab.image.apiForm) || {}).suite === "grok_imagine"
       ? !appState.formsByTab.image.include2k
       : !appState.formsByTab.image.include4k);
   $("startImage").disabled = busy
+    || !imagePreviewCurrent()
+    || appState.imagePlanPreviewLoading
+    || appState.imagePlanPreviewCount === null
     || !imageProvider
     || !imageProvider.has_key
     || (imageApiFormCapability(
@@ -1650,22 +2358,32 @@ function renderBusyState() {
     paramForm.routeProfile,
     paramForm.apiForm,
   ) || {};
-  $("startParam").disabled = busy
-    || paramCapability.profile_status !== "registered"
-    || paramCapability.parameter_test_enabled === false;
+  const workflow = selectedParamWorkflow();
+  $("startParam").disabled = workflow
+    ? busy || !workflowPreviewCurrent() || !!appState.workflowPreviewError
+    : busy|| paramCapability.profile_status !== "registered"
+    || paramCapability.parameter_test_enabled === false
+    || (Boolean(paramForm.parameterSuite) && (!appState.paramSpec || appState.paramSpec.error
+        || appState.paramSpec.parameter_suite !== paramForm.parameterSuite));
   const loadForm = appState.formsByTab.load;
   const loadCapability = modelCapability(loadForm.provider, loadForm.model) || {};
   ["startQuickLoad", "startStaircase", "startSoak"].forEach((id) => {
     $(id).disabled = busy
       || loadCapability.profile_status !== "registered"
-      || loadCapability.pressure_test_enabled === false;
+      || loadCapability.pressure_test_runnable !== true;
   });
   const cacheForm = appState.formsByTab.cache;
-  const cacheCapability = modelCapability(cacheForm.provider, cacheForm.model) || {};
+  const cacheCapability = apiFormCapability(
+    cacheForm.provider,
+    cacheForm.model,
+    cacheForm.routeProfile,
+    cacheForm.apiForm,
+  ) || {};
   const cacheEstimate = cacheRequestEstimate();
   $("startCache").disabled = busy
     || cacheCapability.profile_status !== "registered"
-    || cacheCapability.pressure_test_enabled === false
+    || cacheCapability.pressure_test_runnable !== true
+    || !cacheScenarioRunnable(cacheCapability, cacheForm)
     || cacheEstimate.total > 1000
     || (cacheEstimate.total > 100 && !appState.formsByTab.cache.confirmLarge);
   ["globalStop", "stopParam", "stopImage", "stopLoad", "stopCache"].forEach((id) => {
@@ -1789,8 +2507,18 @@ function renderParamResults(job) {
   }
   const emptyText = appState.paramHistoryLoading
     ? "Loading the latest matching parameter test result."
-    : "No previous result for this provider / model / reference source.";
+    : "No previous result for this provider / model / Interface Contract.";
   renderProgress("param", visibleJob, emptyText);
+  if (selectedParamWorkflow() || (visibleJob && visibleJob.job_spec && visibleJob.job_spec.test_workflow_snapshot)) {
+    if (visibleJob) {
+      const progress = visibleJob.progress || {};
+      const verifiedPass = progress.pass === true && (!visibleJob.result_validation || visibleJob.result_validation.pass === true);
+      resultSource.className = `pill ${verifiedPass ? "ok" : ["invalid", "incomplete", "failed"].includes(progress.status)
+        || progress.cleanup_status === "incomplete" ? "bad" : "warn"}`;
+    }
+    renderWorkflowParamResult(visibleJob);
+    return;
+  }
   if (!visibleJob) {
     renderMetrics("param", paramEmptyMetrics());
     renderFiles("param", null);
@@ -1810,16 +2538,54 @@ function renderParamResults(job) {
   renderModelIdentity(visibleJob);
 }
 
+function caseOverallPass(row) {
+  if (!row) return undefined;
+  if ((row.request_input_integrity || {}).status === "fail") return false;
+  if (row.overall_pass === false || row.token_validation_pass === false || row.pass === false) return false;
+  const exchanges = ((row.token_audit || {}).exchanges) || [];
+  if (!exchanges.length || exchanges.some((exchange) => tokenExchangeValidationPass(exchange) === null)) return undefined;
+  if ((row.token_audit || {}).validation_pass !== true) return false;
+  if (exchanges.some((exchange) => tokenExchangeValidationPass(exchange) !== true)) return false;
+  return row.overall_pass === true || row.pass === true;
+}
+
 function imageTestMetrics(job) {
   const progress = (job && job.progress) || {};
   const summary = (job && job.image_summary) || {};
+  const audit = summary.token_audit_summary || null;
+  const results = (job && job.image_results) || [];
+  const passed = results.length
+    ? results.filter((row) => caseOverallPass(row) === true).length
+    : summary.pass_count ?? progress.pass_count ?? 0;
+  const failed = results.length
+    ? results.filter((row) => caseOverallPass(row) === false).length
+    : summary.failure_count ?? progress.failure_count ?? 0;
+  if (isResponsesImageAudit(audit)) {
+    return [
+      ["Completed", `${progress.completed_cases ?? summary.case_count ?? 0}/${progress.total_cases ?? summary.case_count ?? 0}`],
+      ["Passed", passed], ["Failed", failed],
+      ["Current case", progress.current_case || (job ? job.status : "n/a")],
+      ["Return code", job && job.returncode != null ? job.returncode : "running"],
+      ["Usage and image-estimate gate", tokenValidationGateLabel(job, audit)],
+      ["Validated / required generations", tokenExchangeCountLabel(audit)],
+      ["Expected rejections", audit.expected_rejection_count ?? "n/a"],
+      ["Exact media token counts", "Not verified"],
+    ];
+  }
   return [
     ["Completed", `${progress.completed_cases ?? summary.case_count ?? 0}/${progress.total_cases ?? summary.case_count ?? 0}`],
-    ["Passed", progress.pass_count ?? summary.pass_count ?? 0],
-    ["Failed", progress.failure_count ?? summary.failure_count ?? 0],
+    ["Passed", passed],
+    ["Failed", failed],
     ["Current case", progress.current_case || (job ? job.status : "n/a")],
     ["Last latency", progress.last_latency_ms == null ? "n/a" : fmtDuration(progress.last_latency_ms)],
     ["Return code", job && job.returncode != null ? job.returncode : "running"],
+    ["Token validation gate", tokenValidationGateLabel(job, audit)],
+    ["Validation status", auditStatusLabel(audit && audit.validation_status)],
+    ["Validated / required exchanges", tokenExchangeCountLabel(audit)],
+    ["Missing usage", audit ? audit.missing_usage_count ?? "n/a" : "n/a"],
+    ["Gross failures / partial", tokenGrossCountLabel(audit)],
+    ["Exact coverage", fmtPct(audit && audit.coverage)],
+    ["Exact accuracy", tokenExactAccuracyLabel(audit)],
   ];
 }
 
@@ -1854,6 +2620,12 @@ function renderImageSummary(job) {
   const postprocess = summary.postprocess_inference || {};
   const modelCheck = summary.model_check || job.image_model_check || {};
   const tokenAudit = summary.token_audit_summary || {};
+  const tokenGate = tokenValidationGateInfo(job, tokenAudit);
+  const tokenDetail = isResponsesImageAudit(tokenAudit)
+    ? `${tokenExchangeCountLabel(tokenAudit)} validated / required generations · ${tokenAudit.expected_rejection_count ?? 0} expected rejections · separate mainline and image-tool usage · official image-output estimates; exact media counts unverified`
+    : `${tokenExchangeCountLabel(tokenAudit)} required exchanges · missing usage ${tokenAudit.missing_usage_count ?? "n/a"} · gross ${tokenAudit.gross_failure_count ?? "n/a"} fail / ${tokenAudit.gross_partial_count ?? "n/a"} partial · exact coverage ${fmtPct(tokenAudit.coverage)} · exact accuracy ${tokenExactAccuracyLabel(tokenAudit)}`;
+  const suitePass = summary.pass === true && tokenGate.pass === true;
+  const suiteFail = summary.pass === false || tokenGate.pass === false;
   const identityAudit = summary.model_identity_summary || {};
   const missing = modelCheck.missing_requested_models || [];
   const postEvidence = postprocess.evidence || [];
@@ -1874,9 +2646,9 @@ function renderImageSummary(job) {
     ? "No per-image forensic metrics were collected."
     : (visualReasons.length ? visualReasons.join(", ") : "Per-image forensic metrics were collected.");
   node.innerHTML = `
-    <div class="image-summary-card ${summary.pass ? "pass" : "fail"}">
+    <div class="image-summary-card ${suitePass ? "pass" : suiteFail ? "fail" : "warn"}">
       <div class="eyebrow">Suite verdict</div>
-      <strong>${summary.pass ? "PASS" : "FAIL"}</strong>
+      <strong>${suitePass ? "PASS" : suiteFail ? "FAIL" : "UNVERIFIED"}</strong>
       <span>${esc(`${summary.pass_count ?? 0} passed / ${summary.failure_count ?? 0} failed`)}</span>
     </div>
     <div class="image-summary-card">
@@ -1894,10 +2666,10 @@ function renderImageSummary(job) {
       <strong>${esc(modelCheck.status_code == null ? "unavailable" : `HTTP ${modelCheck.status_code}`)}</strong>
       <span>${esc(missing.length ? `Missing: ${missing.join(", ")}` : `${modelCheck.model_count ?? 0} models listed`)}</span>
     </div>
-    <div class="image-summary-card ${tokenAudit.pass === false ? "fail" : (tokenAudit.status === "pass" ? "pass" : "warn")}">
-      <div class="eyebrow">Token accuracy</div>
-      <strong>${esc(tokenAudit.status || "not_available")}</strong>
-      <span>${esc(`${tokenAudit.exact_dimension_count ?? 0} exact dimensions · ${tokenAudit.mismatch_count ?? 0} mismatches`)}</span>
+    <div class="image-summary-card ${tokenGate.pass === false ? "fail" : (tokenGate.pass === true ? "pass" : "warn")}">
+      <div class="eyebrow">Token validation</div>
+      <strong>${esc(`${tokenValidationGateLabel(job, tokenAudit)} · ${auditStatusLabel(tokenAudit.validation_status)}`)}</strong>
+      <span>${esc(tokenDetail)}</span>
     </div>
     <div class="image-summary-card ${identityAudit.status === "mismatch" ? "fail" : (identityAudit.status === "match" ? "pass" : "warn")}">
       <div class="eyebrow">Execution identity</div>
@@ -1914,13 +2686,15 @@ function renderImageSummary(job) {
 function renderImageCaseRows(job) {
   const results = (job && job.image_results) || [];
   $("imageResults").innerHTML = results.map((result) => {
+    const overallPass = caseOverallPass(result);
+    const overallStatus = overallPass === undefined ? "token_unverified"
+      : result.overall_status || result.status || "unknown";
     const actual = (result.actual_images || [])[0] || {};
     const actualSize = actual.width && actual.height ? `${actual.width}×${actual.height}` : "n/a";
     const previews = (result.artifact_urls || []).map((url, index) => (
-      `<button class="image-thumb-button" type="button" data-image-url="${esc(url)}" data-image-caption="${esc(`${result.case || "case"} #${index + 1}`)}"><img class="image-thumb ${result.pass ? "pass" : "fail"}" src="${esc(url)}" loading="lazy" alt="${esc(result.case || "image result")}"></button>`
+      `<button class="image-thumb-button" type="button" data-image-url="${esc(url)}" data-image-caption="${esc(`${result.case || "case"} #${index + 1}`)}"><img class="image-thumb ${overallPass ? "pass" : "fail"}" src="${esc(url)}" loading="lazy" alt="${esc(result.case || "image result")}"></button>`
     )).join("");
-    const failures = (result.failures || []).join(", ");
-    const tokenStatus = result.token_audit && result.token_audit.status || "not_available";
+    const failures = (result.overall_failures || result.failures || []).join(", ");
     const identityStatus = result.model_identity_audit && result.model_identity_audit.status || "unverifiable";
     return `<tr>
       <td>${esc(result.case || "")}</td>
@@ -1930,8 +2704,8 @@ function renderImageCaseRows(job) {
       <td>${result.latency_ms == null ? "n/a" : esc(fmtDuration(result.latency_ms))}</td>
       <td>${esc(actualSize)}</td>
       <td>${esc(actual.format || "n/a")}</td>
-      <td><b>${esc(tokenStatus)}</b><div class="muted">identity ${esc(identityStatus)}</div></td>
-      <td class="${result.pass ? "status-pass" : "status-fail"}" title="${esc(failures)}">${esc(result.status || "unknown")}</td>
+      <td>${imageTokenAuditDetail(result)}<div class="muted">identity ${esc(identityStatus)}</div></td>
+      <td class="${overallPass ? "status-pass" : "status-fail"}" title="${esc(failures)}">${esc(overallStatus)}</td>
       <td><div class="image-thumb-list">${previews || '<span class="muted">No artifact</span>'}</div></td>
     </tr>`;
   }).join("") || '<tr><td colspan="10" class="muted">No image test results yet.</td></tr>';
@@ -2163,6 +2937,12 @@ function loadMetricSections(job) {
           tone: Number(s.success_rate) < 0.99 ? "warning" : "",
         },
         {
+          label: "HTTP 2xx Rate",
+          value: fmtPct(s.http_2xx_rate),
+          hint: "Transport-level 2xx among sent HTTP requests; a refusal can still be a business failure.",
+          tone: Number(s.http_2xx_rate) < 0.99 ? "warning" : "",
+        },
+        {
           label: "Successful Requests",
           value: fmtCompact(successCount),
         },
@@ -2328,8 +3108,8 @@ function renderAdaptiveNotice(prefix, summary, job) {
 
 function paramTestMetrics(job) {
   const results = referenceParamResults(job.param_results);
-  const passed = results.filter((row) => row.status === "pass").length;
-  const failed = results.filter((row) => row.status === "fail").length;
+  const passed = results.filter((row) => caseOverallPass(row) === true).length;
+  const failed = results.filter((row) => caseOverallPass(row) === false).length;
   const incompatible = results.filter((row) => row.status === "incompatible").length;
   const total = (job.verdict && job.verdict.total) || (job.progress && job.progress.total_cells) || results.length;
   const successRate = total ? passed / Number(total) : null;
@@ -2343,12 +3123,16 @@ function paramTestMetrics(job) {
     ["Fail cells", failed],
     ["Total", total || "waiting"],
     ["Return code", job.returncode ?? "running"],
-    ["Reference", job.reference_label || job.reference_source || "waiting"],
+    ["Contract", job.reference_label || job.reference_contract_id || job.reference_source || "waiting"],
     ["Tool validation", job.tool_validation_mode || "auto"],
-    ["Token audit coverage", fmtPct(audit && audit.coverage)],
-    ["Token audit pass rate", fmtPct(audit && audit.pass_rate)],
-    ["Token mismatches", audit ? audit.mismatch_count : "n/a"],
-    ["Token accuracy gate", job && job.verdict && job.verdict.token_accuracy_pass === false ? "FAIL" : (job && job.verdict && job.verdict.token_accuracy_pass === true ? "PASS" : "n/a")],
+    ["Token validation gate", tokenValidationGateLabel(job, audit)],
+    ["Validation status", auditStatusLabel(audit && audit.validation_status)],
+    ["Validated / required exchanges", tokenExchangeCountLabel(audit)],
+    ["Missing usage", audit ? audit.missing_usage_count ?? "n/a" : "n/a"],
+    ["Gross failures / partial", tokenGrossCountLabel(audit)],
+    ["Exact coverage", fmtPct(audit && audit.coverage)],
+    ["Exact accuracy", tokenExactAccuracyLabel(audit)],
+    ["Exact mismatches", audit ? audit.exact_mismatch_count ?? audit.failed_dimensions ?? "n/a" : "n/a"],
     ["Model identity", identity ? identity.status : "n/a"],
     ["Identity gate", job && job.verdict && job.verdict.model_identity_pass === false ? "FAIL" : (job && job.verdict && job.verdict.model_identity_pass === true ? "PASS" : "n/a")],
     ["Thinking tokens", audit && audit.thinking_tokens !== null ? fmtNum(audit.thinking_tokens) : "n/a"],
@@ -2360,6 +3144,24 @@ function paramTestMetrics(job) {
 function cacheMetrics(job) {
   const s = job.summary || {};
   const cp = job.cache_progress || {};
+  if (s.cache_evaluation_policy === "scenario_expectations_v1") {
+    const controls = s.cache_control_metrics || {};
+    return [
+      ["缓存 token 命中率", fmtPct(s.cached_input_token_ratio)],
+      ["命中请求比例", fmtPct(s.cache_hit_request_ratio)],
+      ["测量覆盖率", fmtPct(s.cache_measurement_coverage)],
+      ["缓存读取 token", fmtNum(s.cached_input_tokens)],
+      ["总输入 token", fmtNum(s.customer_input_tokens)],
+      ["正例命中请求比例", fmtPct((controls.positive_long_prefix || {}).cache_hit_request_ratio)],
+      ["负例意外命中比例", fmtPct((controls.negative_unique_prefix || {}).cache_hit_request_ratio)],
+      ["前缀复用效率（诊断）", fmtPct(s.prefix_cache_hit_rate ?? s.cache_efficiency)],
+      ["缺失读数", fmtNum(s.cache_missing_measurement_count)],
+      ["异常读数", fmtNum(s.cache_invalid_measurement_count)],
+      ["控制判定", s.cache_expectation_status || s.cache_usage_accuracy_status || "n/a"],
+      ["Phase", cp.phase || "waiting"],
+      ["Family", job.model_family],
+    ];
+  }
   const scenario = (job.effective_cache_plan && job.effective_cache_plan.scenario)
     || job.cache_result_scenario
     || "legacy";
@@ -2503,10 +3305,14 @@ function paramEmptyMetrics() {
     ["Pass cells", "n/a"],
     ["Incompatible cells", "n/a"],
     ["Fail cells", "n/a"],
-    ["Token audit coverage", "n/a"],
-    ["Token audit pass rate", "n/a"],
-    ["Token mismatches", "n/a"],
-    ["Token accuracy gate", "n/a"],
+    ["Token validation gate", "n/a"],
+    ["Validation status", "n/a"],
+    ["Validated / required exchanges", "n/a"],
+    ["Missing usage", "n/a"],
+    ["Gross failures / partial", "n/a"],
+    ["Exact coverage", "n/a"],
+    ["Exact accuracy", "n/a"],
+    ["Exact mismatches", "n/a"],
     ["Model identity", "n/a"],
     ["Identity gate", "n/a"],
     ["Thinking tokens", "n/a"],
@@ -2557,7 +3363,7 @@ function renderParamMatrix(job) {
   const spec = appState.paramSpec || {};
   const specRows = spec.params || spec.comparison || [];
   const results = referenceParamResults(job && job.param_results);
-  $("paramResultsHead").innerHTML = "<tr><th>Reference Parameter</th><th>Runs</th></tr>";
+  $("paramResultsHead").innerHTML = "<tr><th>Contract Parameter</th><th>Runs</th></tr>";
   if (!specRows.length) {
     $("paramResults").innerHTML = '<tr><td colspan="2" class="muted">Loading reference parameters.</td></tr>';
     renderFailedCaseLog(job, results);
@@ -2599,6 +3405,8 @@ function renderTokenAudit(job) {
     const input = row.input || {};
     const output = row.output || {};
     const accounting = row.usage_accounting || {};
+    const presence = row.usage_presence || {};
+    const gross = row.gross_plausibility || {};
     const inputAccuracy = row.input_accuracy || {
       status: "not_available",
       reported_tokens: input.compared_tokens ?? input.reported_tokens,
@@ -2620,31 +3428,89 @@ function renderTokenAudit(job) {
       errors: accounting.errors || [],
     };
     const reported = row.reported || accounting;
+    const inputGross = gross.input || {
+      status: input.status || "not_available",
+      reported_tokens: input.compared_tokens ?? input.reported_tokens,
+      estimated_tokens: input.estimated_tokens,
+      minimum_plausible_tokens: input.expected_min,
+      maximum_plausible_tokens: input.expected_max,
+      note: input.note,
+    };
+    const outputGross = gross.output || {
+      status: output.status || "not_available",
+      reported_tokens: output.reported_total_tokens,
+      estimated_tokens: output.estimated_visible_output_tokens,
+      minimum_plausible_tokens: output.expected_total_min,
+      maximum_plausible_tokens: output.expected_total_max,
+      note: output.note,
+    };
+    const validationStatus = row.validation_status
+      || (row.validation_pass === false ? "fail" : "not_available");
+    const currentPass = tokenExchangeValidationPass(row);
+    const validationGate = currentPass === true
+      ? "PASS"
+      : currentPass === false
+        ? "FAIL"
+        : "UNVERIFIED (legacy)";
+    const validationFailures = (row.validation_failures || []).join("; ");
     const sources = [input.source, output.source, output.thinking_source].filter(Boolean).join(" · ");
     return `<tr>
       <td><b>${esc(row.profile || "unknown")}</b><div class="muted">R${esc(row.run_index || 1)} · ${esc(row.exchange || "initial")}</div></td>
-      <td class="status-${esc(auditStatusClass(inputAccuracy.status))}">${auditAccuracyDimension("Input", inputAccuracy)}</td>
-      <td class="status-${esc(auditStatusClass(outputAccuracy.status))}">${auditAccuracyDimension("Output", outputAccuracy)}</td>
-      <td><b>answer ${esc(fmtNum(reported.answer_tokens))} · thinking ${esc(fmtNum(reported.thinking_tokens))}</b><div class="muted">image ${esc(fmtNum(reported.image_tokens))} · cached ${esc(fmtNum(reported.cached_tokens ?? reported.cache_tokens))} · total ${esc(fmtNum(reported.total_tokens))}</div></td>
+      <td class="status-${esc(auditStatusClass(inputGross.status))}">${auditTokenDimension("Input", inputGross, inputAccuracy)}</td>
+      <td class="status-${esc(auditStatusClass(outputGross.status))}">${auditTokenDimension("Output", outputGross, outputAccuracy)}${auditOutputCompletion(row)}</td>
+      <td class="status-${esc(auditStatusClass(presence.status))}">${auditUsagePresence(row, presence)}<div class="muted">answer ${esc(fmtNum(reported.answer_tokens))} · thinking ${esc(fmtNum(reported.thinking_tokens))} · image ${esc(fmtNum(reported.image_tokens))} · cached ${esc(fmtNum(reported.cached_tokens ?? reported.cache_tokens))} · total ${esc(fmtNum(reported.total_tokens))}</div></td>
       <td class="status-${esc(auditStatusClass(arithmetic.status))}"><b>${esc(auditStatusLabel(arithmetic.status))}</b><div class="muted">${esc((arithmetic.errors || []).join("; ") || "input + output = total; components are inclusive")}</div></td>
-      <td class="status-${esc(auditStatusClass(row.status))}"><b>${esc(auditStatusLabel(row.status))} · ${esc(row.evidence_level || "unavailable")}</b><div class="muted" title="${esc(sources)}">${esc(inputAccuracy.note || outputAccuracy.note || sources || "No independent exact counter")}</div></td>
+      <td class="status-${esc(auditStatusClass(validationStatus))}"><b>validation ${esc(auditStatusLabel(validationStatus))} · gate ${esc(validationGate)}</b><div class="muted">evidence ${esc(auditStatusLabel(row.status))} · ${esc(row.evidence_level || "unavailable")}</div><div class="muted" title="${esc(sources)}">${esc(validationFailures || sources || "No validation failures")}</div></td>
     </tr>`;
   }).join("");
+}
+
+function auditTokenDimension(label, gross, accuracy) {
+  const reported = gross.reported_tokens == null ? "n/a" : fmtNum(gross.reported_tokens);
+  const estimate = gross.estimated_tokens == null ? "n/a" : fmtNum(gross.estimated_tokens);
+  const minimum = gross.minimum_plausible_tokens;
+  const maximum = gross.maximum_plausible_tokens;
+  const range = minimum == null || maximum == null
+    ? "n/a"
+    : `${fmtNum(minimum)}–${fmtNum(maximum)}`;
+  const note = gross.note || "within the gross plausibility envelope";
+  return `<b>${esc(label)} gross ${esc(auditStatusLabel(gross.status))}</b><div class="muted">reported ${esc(reported)} · estimate ${esc(estimate)} · range ${esc(range)}</div><div class="muted">${esc(note)}</div>${auditAccuracyDimension(label, accuracy)}`;
 }
 
 function auditAccuracyDimension(label, accuracy) {
   const reported = accuracy.reported_tokens == null ? "n/a" : fmtNum(accuracy.reported_tokens);
   const independent = accuracy.independent_tokens == null ? "n/a" : fmtNum(accuracy.independent_tokens);
   const delta = accuracy.delta == null ? "n/a" : fmtNum(accuracy.delta);
-  return `<b>${esc(label)} reported ${esc(reported)}</b><div class="muted">independent ${esc(independent)} · delta ${esc(delta)} · ${esc(accuracy.evidence_level || "unavailable")} · ${esc(auditStatusLabel(accuracy.status))}</div>`;
+  return `<div class="muted">exact ${esc(label.toLowerCase())} ${esc(auditStatusLabel(accuracy.status))} · reported ${esc(reported)} · independent ${esc(independent)} · delta ${esc(delta)} · ${esc(accuracy.evidence_level || "unavailable")}</div>`;
 }
 
-function tokenAuditRows(job) {
+function auditUsagePresence(row, presence) {
+  const required = presence.required === true || row.usage_required === true;
+  const requirement = required ? "REQUIRED" : "NOT REQUIRED";
+  const input = presence.input_present === true
+    ? "present"
+    : presence.input_present === false
+      ? "missing"
+      : "unknown";
+  const output = presence.output_present === true
+    ? "present"
+    : presence.output_present === false
+      ? "missing"
+      : "unknown";
+  const missing = (presence.missing_fields || []).join(", ");
+  const note = presence.note || (missing ? `missing ${missing}` : "input/output usage fields observed");
+  return `<b>usage ${esc(requirement)} · ${esc(auditStatusLabel(presence.status))}</b><div class="muted">input ${esc(input)} · output ${esc(output)}${missing ? ` · missing ${esc(missing)}` : ""}</div><div class="muted">${esc(note)}</div>`;
+}
+
+function tokenAuditSources(job) {
   if (!job) return [];
   const results = referenceParamResults(job.param_results);
   const probe = job.verdict && job.verdict.identity_probe;
-  const sources = probe ? [{ ...probe, profile: "identity_probe", run_index: 0 }, ...results] : results;
-  return sources.flatMap((result) => {
+  return probe ? [{ ...probe, profile: "identity_probe", run_index: 0 }, ...results] : results;
+}
+
+function tokenAuditRows(job) {
+  return tokenAuditSources(job).flatMap((result) => {
     const exchanges = result && result.token_audit && Array.isArray(result.token_audit.exchanges)
       ? result.token_audit.exchanges
       : [];
@@ -2701,18 +3567,126 @@ function renderModelIdentity(job) {
   }).join("");
 }
 
+function isResponsesImageAudit(audit) {
+  return !!audit && audit.schema_version === 1
+    && audit.policy === "openai_responses_image_usage_and_estimate_v1";
+}
+
+function responsesImageExchangePass(row) {
+  if (!isResponsesImageAudit(row)) return null;
+  if (row.validation_pass === false || !Array.isArray(row.validation_failures)
+      || row.validation_failures.length) return false;
+  const integrity = row.request_integrity || {};
+  const hashes = [integrity.expected_sha256, integrity.actual_sha256, integrity.wire_sha256];
+  if (row.validation_pass !== true || integrity.status !== "pass"
+      || hashes.some((value) => typeof value !== "string" || !/^[0-9a-f]{64}$/.test(value))
+      || new Set(hashes).size !== 1) return null;
+  const checks = row.checks || {};
+  if (row.usage_required === false) {
+    return row.validation_status === "not_applicable"
+      && (checks.rejection || {}).parameter_rejection_proven === true;
+  }
+  if (row.usage_required !== true || row.validation_status !== "pass") return false;
+  const aggregate = checks.aggregate_image_usage;
+  const individual = checks.individual_image_usage || [];
+  const imageCheck = (item) => item && item.pass === true
+    && item.image_output_token_accuracy_pass === true && item.exact_output_count_verified === false;
+  return (checks.mainline_usage || {}).pass === true
+    && (aggregate ? imageCheck(aggregate) : individual.length > 0 && individual.every(imageCheck));
+}
+
+function responsesImageGateInfo(job, audit) {
+  const summary = (job && job.image_summary) || {};
+  const validation = summary.result_validation || {};
+  if (audit.pass === false || summary.token_validation_pass === false
+      || audit.validation_failure_count > 0) return { pass: false, source: "image_policy" };
+  const numbers = [audit.exchange_count, audit.required_exchange_count,
+    audit.validated_exchange_count, audit.expected_rejection_count, audit.validation_failure_count];
+  const caseAudits = audit.case_audits || [];
+  const complete = numbers.every((value) => Number.isInteger(value) && value >= 0)
+    && audit.exchange_count > 0 && audit.required_exchange_count <= audit.exchange_count
+    && audit.validated_exchange_count === audit.required_exchange_count
+    && audit.expected_rejection_count === audit.exchange_count - audit.required_exchange_count
+    && audit.validation_status === (audit.required_exchange_count > 0 ? "pass" : "not_applicable")
+    && audit.validation_failure_count === 0 && Array.isArray(caseAudits)
+    && caseAudits.length === audit.exchange_count
+    && caseAudits.every((item) => isResponsesImageAudit(item) && item.validation_pass === true
+      && Array.isArray(item.exchanges) && item.exchanges.length === 1
+      && responsesImageExchangePass(item.exchanges[0]) === true);
+  if (!complete || !job || job.type !== "image_param_test"
+      || validation.validation_policy !== audit.policy || validation.current !== true
+      || validation.identity_match !== true || validation.token_audit_summary_current !== true
+      || validation.token_validation_pass !== true || summary.token_validation_pass !== true) {
+    return { pass: null, source: "incomplete" };
+  }
+  return { pass: audit.pass === true, source: audit.required_exchange_count === 0 ? "image_rejection" : "image_policy" };
+}
+
+function tokenExchangeValidationPass(row) {
+  if (isResponsesImageAudit(row)) return responsesImageExchangePass(row);
+  if (row.validation_pass === false || row.count_request_integrity === "fail"
+      || (row.validation_failures || []).length) return false;
+  if (Number(row.schema_version || 0) !== 4) return null;
+  if (row.validation_pass !== true) return false;
+  if (row.usage_required === false) return row.validation_status === "not_applicable";
+  const gross = row.gross_plausibility || {};
+  return row.usage_required === true
+    && row.validation_status === "pass"
+    && (row.usage_presence || {}).status === "pass"
+    && (row.usage_arithmetic || {}).status === "pass"
+    && gross.status === "pass"
+    && (gross.input || {}).status === "pass"
+    && (gross.output || {}).status === "pass"
+    && (row.output_completion || {}).status === "pass"
+    && (row.input_accuracy || {}).status !== "fail"
+    && (row.output_accuracy || {}).status !== "fail";
+}
+
 function tokenAuditSummary(job) {
   const verdictSummary = job && job.verdict && job.verdict.token_audit_summary;
-  if (verdictSummary && Number(verdictSummary.exchange_count || 0) > 0) return verdictSummary;
+  const hasValidationSummary = verdictSummary && (
+    Number(verdictSummary.schema_version || 0) === 4
+    || verdictSummary.validation_status !== undefined
+    || verdictSummary.required_exchange_count !== undefined
+  );
+  if (verdictSummary && (hasValidationSummary || Number(verdictSummary.exchange_count || 0) > 0)) {
+    return verdictSummary;
+  }
   const rows = tokenAuditRows(job);
   if (!rows.length) return null;
+  const missingAuditResults = tokenAuditSources(job).filter((result) => (
+    !Array.isArray((result.token_audit || {}).exchanges)
+    || !result.token_audit.exchanges.length
+  ));
+  const invalidAuditResults = tokenAuditSources(job).filter((result) => (
+    Array.isArray((result.token_audit || {}).exchanges)
+    && result.token_audit.exchanges.length
+    && result.token_audit.validation_pass !== true
+  ));
   const dimensions = rows.flatMap((row) => (
     row.input_accuracy || row.output_accuracy
       ? [row.input_accuracy || {}, row.output_accuracy || {}]
       : [row.input || {}, row.output || {}]
   ));
-  const eligible = dimensions.filter((item) => item.status && item.status !== "not_available");
-  const passed = eligible.filter((item) => item.status === "pass").length;
+  const exactDimensions = dimensions.filter((item) => (
+    item.evidence_level === "exact" && ["pass", "fail"].includes(item.status)
+  ));
+  const exactPassed = exactDimensions.filter((item) => item.status === "pass").length;
+  const exactFailed = exactDimensions.filter((item) => item.status === "fail").length;
+  const requiredRows = rows.filter((row) => (
+    row.usage_required === true || (row.usage_presence || {}).required === true
+  ));
+  const validatedRows = requiredRows.filter((row) => tokenExchangeValidationPass(row) === true);
+  const validationFailures = rows.filter((row) => tokenExchangeValidationPass(row) !== true);
+  const missingUsage = requiredRows.filter((row) => (
+    (row.usage_presence || {}).status !== "pass"
+  ));
+  const grossFailures = requiredRows.filter((row) => (
+    (row.gross_plausibility || {}).status === "fail"
+  ));
+  const grossPartial = requiredRows.filter((row) => (
+    (row.gross_plausibility || {}).status === "partial"
+  ));
   const thinkingRows = rows.filter((row) => {
     const value = (row.usage_accounting || {}).thinking_tokens;
     return value !== null && value !== undefined;
@@ -2729,15 +3703,209 @@ function tokenAuditSummary(job) {
     })
     .reduce((sum, row) => sum + Number((row.usage_accounting.details_advisory || {}).reasoning_tokens || 0), 0);
   return {
+    schema_version: Math.max(...rows.map((row) => Number(row.schema_version || 0))),
+    validation_status: validationFailures.length || missingAuditResults.length || invalidAuditResults.length
+      ? "fail"
+      : grossPartial.length
+        ? "partial"
+        : requiredRows.length
+          ? "pass"
+          : "not_applicable",
+    pass: validationFailures.length === 0 && missingAuditResults.length === 0 && invalidAuditResults.length === 0,
     exchange_count: rows.length,
-    coverage: dimensions.length ? eligible.length / dimensions.length : 0,
-    pass_rate: eligible.length ? passed / eligible.length : null,
-    mismatch_count: eligible.filter((item) => item.status === "fail").length
-      + rows.filter((row) => row.usage_arithmetic && row.usage_arithmetic.status === "fail").length,
+    required_exchange_count: requiredRows.length,
+    validated_exchange_count: validatedRows.length,
+    validation_failure_count: validationFailures.length,
+    missing_usage_count: missingUsage.length,
+    gross_check_count: requiredRows.filter((row) => row.gross_plausibility).length,
+    gross_failure_count: grossFailures.length,
+    gross_partial_count: grossPartial.length,
+    arithmetic_check_count: rows.filter((row) => row.usage_arithmetic).length,
+    arithmetic_failure_count: rows.filter((row) => (row.usage_arithmetic || {}).status === "fail").length,
+    completion_check_count: requiredRows.filter((row) => row.output_completion).length,
+    completion_failure_count: requiredRows.filter((row) => (row.output_completion || {}).status === "fail").length,
+    completion_unverified_count: requiredRows.filter((row) => !["pass", "fail"].includes((row.output_completion || {}).status)).length,
+    missing_audit_result_count: missingAuditResults.length,
+    invalid_audit_result_count: invalidAuditResults.length,
+    exact_dimension_count: exactDimensions.length,
+    coverage: dimensions.length ? exactDimensions.length / dimensions.length : 0,
+    pass_rate: exactDimensions.length ? exactPassed / exactDimensions.length : null,
+    exact_mismatch_count: exactFailed,
+    mismatch_count: validationFailures.length,
     thinking_tokens: thinkingRows.length ? thinkingTokens : null,
     advisory_thinking_tokens: advisoryThinking || null,
     thinking_share: thinkingOutputTokens > 0 ? thinkingTokens / thinkingOutputTokens : null,
   };
+}
+
+function tokenValidationGateInfo(job, audit) {
+  if (isResponsesImageAudit(audit)) return responsesImageGateInfo(job, audit);
+  const verdict = (job && job.verdict) || {};
+  const imageSummary = (job && job.image_summary) || {};
+  if (verdict.token_validation_pass === false || imageSummary.token_validation_pass === false) {
+    return { pass: false, source: "verdict" };
+  }
+  const visibleResults = [...tokenAuditSources(job), ...((job && job.image_results) || [])];
+  let unverifiedVisibleExchange = false;
+  for (const result of visibleResults) {
+    const detail = result.token_audit || {};
+    const exchanges = Array.isArray(detail.exchanges) ? detail.exchanges : [];
+    if (result.token_validation_pass === false || detail.validation_pass === false
+        || exchanges.some((row) => tokenExchangeValidationPass(row) === false)) {
+      return { pass: false, source: "exchange" };
+    }
+    if (!exchanges.length || detail.validation_pass !== true
+        || exchanges.some((row) => tokenExchangeValidationPass(row) !== true)) {
+      unverifiedVisibleExchange = true;
+    }
+  }
+  if (unverifiedVisibleExchange) return { pass: null, source: "incomplete" };
+  if (audit && Number(audit.schema_version || 0) === 4) {
+    const required = audit.required_exchange_count;
+    const checked = ["validation_failure_count", "missing_usage_count", "gross_failure_count",
+      "gross_partial_count", "missing_audit_result_count", "invalid_audit_result_count",
+      "completion_failure_count", "completion_unverified_count", "arithmetic_failure_count"];
+    const numeric = [audit.exchange_count, required, audit.validated_exchange_count,
+      audit.gross_check_count, audit.completion_check_count, audit.arithmetic_check_count,
+      ...checked.map((key) => audit[key])];
+    if (numeric.some((value) => !Number.isInteger(value) || value < 0)) {
+      return { pass: audit.pass === false ? false : null, source: "incomplete" };
+    }
+    const complete = audit.exchange_count > 0 && required <= audit.exchange_count
+      && audit.validated_exchange_count === required
+      && audit.gross_check_count === required
+      && audit.completion_check_count === required
+      && audit.arithmetic_check_count === audit.exchange_count
+      && checked.every((key) => audit[key] === 0)
+      && audit.validation_status === (required > 0 ? "pass" : "not_applicable");
+    return {
+      pass: audit.pass === true && complete,
+      source: typeof verdict.token_validation_pass === "boolean" || typeof imageSummary.token_validation_pass === "boolean"
+        ? "verdict" : "schema_v4_summary",
+    };
+  }
+  if (verdict.token_validation_pass === true || imageSummary.token_validation_pass === true
+      || (audit && audit.pass === true)) return { pass: null, source: "legacy" };
+  const legacy = typeof verdict.token_accuracy_pass === "boolean"
+    ? verdict.token_accuracy_pass
+    : typeof imageSummary.token_accuracy_pass === "boolean"
+      ? imageSummary.token_accuracy_pass
+      : null;
+  if (legacy !== null) {
+    return { pass: legacy === false ? false : null, source: "legacy" };
+  }
+  return { pass: null, source: "none" };
+}
+
+function tokenValidationGateLabel(job, audit) {
+  const gate = tokenValidationGateInfo(job, audit);
+  if (gate.source === "image_rejection" && gate.pass === true) return "N/A (expected rejection)";
+  if (gate.source === "image_policy") return gate.pass === true ? "PASS (image policy)" : "FAIL (image policy)";
+  if (gate.source === "legacy") return gate.pass === false ? "FAIL (legacy)" : "UNVERIFIED (legacy)";
+  if (gate.source === "incomplete" && gate.pass === null) return "UNVERIFIED (incomplete)";
+  if (gate.pass === true) return gate.source === "schema_v4_summary" ? "PASS (current)" : "PASS";
+  if (gate.pass === false) return gate.source === "schema_v4_summary" ? "FAIL (current)" : "FAIL";
+  return "n/a";
+}
+
+function tokenExchangeCountLabel(audit) {
+  if (!audit || (audit.validated_exchange_count == null && audit.required_exchange_count == null)) {
+    return "n/a";
+  }
+  return `${audit.validated_exchange_count ?? 0}/${audit.required_exchange_count ?? 0}`;
+}
+
+function tokenGrossCountLabel(audit) {
+  if (!audit || (audit.gross_failure_count == null && audit.gross_partial_count == null)) {
+    return "n/a";
+  }
+  return `${audit.gross_failure_count ?? 0} / ${audit.gross_partial_count ?? 0}`;
+}
+
+function tokenExactAccuracyLabel(audit) {
+  if (!audit) return "n/a";
+  const coverage = Number(audit.coverage || 0);
+  const exactDimensions = Number(audit.exact_dimension_count || 0);
+  if (coverage <= 0 || exactDimensions <= 0) return "N/A (no exact evidence)";
+  const mismatches = Number(audit.exact_mismatch_count ?? audit.failed_dimensions ?? 0);
+  return mismatches > 0 ? "FAIL" : "PASS";
+}
+
+function imageTokenAuditDetail(result) {
+  const audit = result.token_audit || {};
+  const exchanges = Array.isArray(audit.exchanges) ? audit.exchanges : [];
+  if (isResponsesImageAudit(audit)) {
+    const exchange = exchanges[0] || {};
+    const passed = responsesImageExchangePass(exchange);
+    const label = passed === true ? (exchange.usage_required ? "PASS (image policy)" : "N/A (expected rejection)")
+      : passed === false ? "FAIL" : "UNVERIFIED";
+    const checks = exchange.checks || {};
+    const mainline = (checks.mainline_usage || {}).reported_usage || {};
+    const imageChecks = checks.aggregate_image_usage ? [checks.aggregate_image_usage] : (checks.individual_image_usage || []);
+    const imageDetails = imageChecks.map((check) => auditDimension(
+      check.scope === "aggregate_of_all_image_generation_calls" ? "Image tool output (aggregate estimate)" : "Image tool output (per-call estimate)",
+      (check.reported_usage || {}).output_tokens, check.comparison_min, check.comparison_max, check.status,
+    )).join("");
+    return `<b>${esc(label)}</b><div class="muted">${esc((exchange.validation_failures || []).join("; "))}</div>`
+      + (exchange.usage_required === false ? '<div class="muted">No generation usage required for this attributed parameter rejection.</div>'
+        : `<div>Main model: input ${esc(fmtNum(mainline.input_tokens))} · output ${esc(fmtNum(mainline.output_tokens))} · total ${esc(fmtNum(mainline.total_tokens))}</div>${imageDetails}<div class="muted">Mainline and image-tool usage are separate. Exact media-input and image-output counts remain unverified.</div>`);
+  }
+  if (exchanges.length > 1) {
+    return exchanges.map((exchange) => `<div><b>${esc(exchange.exchange || "exchange")}</b>${imageTokenAuditDetail({
+      token_audit: { ...audit, exchanges: [exchange] },
+      token_validation_status: exchange.validation_status,
+      token_validation_pass: tokenExchangeValidationPass(exchange),
+      token_validation_failures: exchange.validation_failures,
+    })}</div>`).join("");
+  }
+  const exchange = Array.isArray(audit.exchanges) ? audit.exchanges[0] || {} : {};
+  const presence = exchange.usage_presence || {};
+  const gross = exchange.gross_plausibility || {};
+  const input = exchange.input || {};
+  const output = exchange.output || {};
+  const inputAccuracy = exchange.input_accuracy || {};
+  const outputAccuracy = exchange.output_accuracy || {};
+  const inputGross = gross.input || {
+    status: input.status || "not_available",
+    reported_tokens: input.compared_tokens ?? input.reported_tokens,
+    estimated_tokens: input.estimated_tokens,
+    minimum_plausible_tokens: input.expected_min,
+    maximum_plausible_tokens: input.expected_max,
+    note: input.note,
+  };
+  const outputGross = gross.output || {
+    status: output.status || "not_available",
+    reported_tokens: output.reported_total_tokens,
+    estimated_tokens: output.estimated_visible_output_tokens,
+    minimum_plausible_tokens: output.expected_total_min,
+    maximum_plausible_tokens: output.expected_total_max,
+    note: output.note,
+  };
+  const validationStatus = result.token_validation_status
+    || audit.validation_status
+    || exchange.validation_status
+    || "not_available";
+  const validationPass = typeof result.token_validation_pass === "boolean"
+    ? result.token_validation_pass
+    : typeof audit.validation_pass === "boolean"
+      ? audit.validation_pass
+      : exchange.validation_pass;
+  const currentPass = tokenExchangeValidationPass(exchange);
+  const gate = validationPass === false || currentPass === false ? "FAIL"
+    : validationPass === true && currentPass === true ? "PASS" : "UNVERIFIED";
+  const failures = result.token_validation_failures
+    || audit.validation_failures
+    || exchange.validation_failures
+    || [];
+  if (!Object.keys(exchange).length) {
+    return `<b>validation ${esc(auditStatusLabel(validationStatus))} · gate ${esc(gate)}</b><div class="muted">No per-exchange token audit details</div>`;
+  }
+  return `<b>validation ${esc(auditStatusLabel(validationStatus))} · gate ${esc(gate)}</b><div class="muted">${esc(failures.join("; ") || "No validation failures")}</div>${auditUsagePresence(exchange, presence)}<div>${auditTokenDimension("Input", inputGross, inputAccuracy)}</div><div>${auditTokenDimension("Output", outputGross, outputAccuracy)}${auditOutputCompletion(exchange)}</div>`;
+}
+
+function auditOutputCompletion(exchange) {
+  const completion = exchange.output_completion || {};
+  return `<div class="muted">Output completion ${esc(auditStatusLabel(completion.status))}${completion.note ? ": " + esc(completion.note) : ""}</div>`;
 }
 
 function auditDimension(label, value, expectedMin, expectedMax, status) {
@@ -2778,6 +3946,27 @@ function parameterCoverageLabel(row, profiles, allProfiles) {
 function parameterRunSummary(row, matching, allProfiles) {
   if (row.coverage_mode === "not_tested") return { status: "not-tested", label: "n/t" };
   if (!matching.length) return { status: "waiting", label: "-" };
+  const tokenFailures = matching.filter((item) => (
+    item.token_validation_pass === false
+    || item.overall_status === "token_validation_failed"
+    || (((item.token_audit || {}).exchanges) || []).some((exchange) => tokenExchangeValidationPass(exchange) === false)
+  ));
+  if (tokenFailures.length) {
+    return {
+      status: "fail",
+      label: "token fail",
+      title: `${tokenFailures.length} request(s) failed required token validation`,
+    };
+  }
+  const unverifiedTokens = matching.some((item) => {
+    const exchanges = ((item.token_audit || {}).exchanges) || [];
+    return !exchanges.length || item.token_audit.validation_pass !== true
+      || exchanges.some((exchange) => tokenExchangeValidationPass(exchange) !== true);
+  });
+  if (unverifiedTokens) return {
+    status: "partial", label: "token unverified",
+    title: "Current input/output quantity and completion evidence is missing",
+  };
   if (row.coverage_mode === "all_profiles") {
     const expected = allProfiles.length;
     const rejected = matching.filter((item) => !httpAccepted(item));
@@ -2832,23 +4021,31 @@ function renderFailedCaseLog(job, results) {
     $("paramFailedCaseLog").textContent = job.param_failed_cases_log;
     return;
   }
-  const failed = (Array.isArray(results) ? results : []).filter((row) => row.status === "incompatible" || row.status === "fail");
+  const failed = (Array.isArray(results) ? results : []).filter((row) => (
+    caseOverallPass(row) === false
+    || row.status === "incompatible"
+    || row.status === "fail"
+    || row.status === "unexpected_acceptance"
+  ));
   if (!failed.length) {
     $("paramFailedCaseLog").textContent = "No failed or incompatible parameter test cases.";
     return;
   }
   $("paramFailedCaseLog").textContent = failed.map((item, index) => [
-    `===== Case ${index + 1}: ${item.status} =====`,
+    `===== Case ${index + 1}: ${item.overall_status || item.status} =====`,
     `profile: ${item.profile || ""}`,
     `parameter: ${item.parameter || ""}`,
     `run_index: ${item.run_index || ""}`,
     `provider/model: ${item.provider || ""} / ${item.model || ""}`,
-    `reference: ${item.reference_source || ""} (${item.reference_family || ""})`,
+    `contract: ${item.reference_contract_id || item.reference_source || ""} (${item.reference_family || ""})`,
     `input_sample: ${item.input_sample || ""}`,
     `status_code: ${item.status_code ?? ""}`,
     `latency_ms: ${item.latency_ms ?? ""}`,
     `failure_classification: ${item.failure_classification || ""}`,
     `failure_reason: ${item.failure_reason || item.reason || ""}`,
+    `token_validation_status: ${item.token_validation_status || ""}`,
+    `token_validation_pass: ${item.token_validation_pass ?? ""}`,
+    `token_validation_failures: ${JSON.stringify(item.token_validation_failures || [])}`,
     `failed_check: ${item.failed_check || (item.failure_detail && item.failure_detail.failed_check) || ""}`,
     `failed_item: ${item.failed_item || (item.failure_detail && item.failure_detail.failed_item) || ""}`,
     "expected:",
@@ -2901,21 +4098,36 @@ function paramRunCount(job, results) {
 function syncProvider(tab) {
   const form = appState.formsByTab[tab];
   form.provider = $(`${tab}Provider`).value;
-  form.model = selectedModelForProvider(form.provider, "");
+  form.model = tab === "cache"
+    ? cacheSelectedModelForProvider(form.provider)
+    : selectedModelForProvider(form.provider, "");
   renderModelSelect(tab);
   if (tab === "param") {
+    form.workflowBindingId = "";
+    form.workflowCases = "";
+    form.parameterSuite = "";
     form.routeProfile = routeProfileForModel(form.provider, form.model);
     renderParamRouteProfiles();
     form.apiForm = apiFormForModel(
       form.provider, form.model, form.routeProfile
     );
     renderParamApiForms();
-    form.referenceManual = false;
-    form.referenceSource = referenceSourceForModel(
+    form.contractManual = false;
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
     );
-    renderReferenceSources();
+    renderReferenceContracts();
     loadParamSpecs();
+  }
+  if (tab === "cache") {
+    form.routeProfile = cacheRouteProfileForModel(form.provider, form.model);
+    form.apiForm = cacheApiFormForModel(
+      form.provider, form.model, form.routeProfile
+    );
+    renderCacheRouteProfiles();
+    renderCacheApiForms();
+    renderProviderStatus(tab);
+    renderCacheFormState();
   }
   renderBusyState();
 }
@@ -2925,24 +4137,38 @@ function syncModel(tab) {
   form.model = $(`${tab}Model`).value;
   renderProviderStatus(tab);
   if (tab === "param") {
+    form.workflowBindingId = "";
+    form.workflowCases = "";
+    form.parameterSuite = "";
     form.routeProfile = routeProfileForModel(form.provider, form.model);
     renderParamRouteProfiles();
     form.apiForm = apiFormForModel(
       form.provider, form.model, form.routeProfile
     );
     renderParamApiForms();
-    form.referenceManual = false;
-    form.referenceSource = referenceSourceForModel(
+    form.contractManual = false;
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
     );
-    renderReferenceSources();
+    renderReferenceContracts();
     loadParamSpecs();
+  }
+  if (tab === "cache") {
+    form.routeProfile = cacheRouteProfileForModel(form.provider, form.model);
+    form.apiForm = cacheApiFormForModel(
+      form.provider, form.model, form.routeProfile
+    );
+    renderCacheRouteProfiles();
+    renderCacheApiForms();
+    renderProviderStatus(tab);
+    renderCacheFormState();
   }
   renderBusyState();
 }
 
 function syncImageProvider() {
   const form = appState.formsByTab.image;
+  form.cases = "";
   form.provider = $("imageProvider").value;
   form.model = selectedImageModel(form.provider, "");
   const model = imageModelById(form.provider, form.model);
@@ -2955,6 +4181,7 @@ function syncImageProvider() {
 
 function syncImageModel() {
   const form = appState.formsByTab.image;
+  form.cases = "";
   form.model = $("imageModel").value;
   const model = imageModelById(form.provider, form.model);
   form.routeProfile = imageRouteProfileForModel(form.provider, form.model);
@@ -2973,10 +4200,26 @@ function bindEvents() {
     $(`${tab}Provider`).addEventListener("change", () => syncProvider(tab));
     $(`${tab}Model`).addEventListener("change", () => syncModel(tab));
   });
+  $("cacheRouteProfile").addEventListener("change", () => {
+    const form = appState.formsByTab.cache;
+    form.routeProfile = $("cacheRouteProfile").value;
+    form.apiForm = cacheApiFormForModel(form.provider, form.model, form.routeProfile);
+    renderCacheApiForms();
+    renderProviderStatus("cache");
+    renderCacheFormState();
+    renderBusyState();
+  });
+  $("cacheApiForm").addEventListener("change", () => {
+    appState.formsByTab.cache.apiForm = $("cacheApiForm").value;
+    renderProviderStatus("cache");
+    renderCacheFormState();
+    renderBusyState();
+  });
   $("imageProvider").addEventListener("change", syncImageProvider);
   $("imageModel").addEventListener("change", syncImageModel);
   $("imageRouteProfile").addEventListener("change", () => {
     const form = appState.formsByTab.image;
+    form.cases = "";
     form.routeProfile = $("imageRouteProfile").value;
     form.apiForm = "";
     form.transport = "";
@@ -2985,10 +4228,19 @@ function bindEvents() {
     loadLatestImageResult();
   });
   $("imageApiForm").addEventListener("change", () => {
+    appState.formsByTab.image.cases = "";
     appState.formsByTab.image.apiForm = $("imageApiForm").value;
     appState.formsByTab.image.transport = "";
     renderImageControls();
     loadLatestImageResult();
+  });
+  $("imageRunCount").addEventListener("input", () => {
+    appState.formsByTab.image.runCount = $("imageRunCount").value;
+    refreshImagePlanPreview();
+  });
+  $("imageCases").addEventListener("input", () => {
+    appState.formsByTab.image.cases = $("imageCases").value;
+    refreshImagePlanPreview();
   });
   $("imageSuite").addEventListener("change", () => {
     appState.formsByTab.image.suite = $("imageSuite").value;
@@ -2996,9 +4248,11 @@ function bindEvents() {
   });
   $("imageQuality").addEventListener("change", () => {
     appState.formsByTab.image.quality = $("imageQuality").value;
+    renderImageControls();
   });
   $("imageOutputFormat").addEventListener("change", () => {
     appState.formsByTab.image.outputFormat = $("imageOutputFormat").value;
+    renderImageControls();
   });
   const imageChecks = {
     imageInclude2k: "include2k",
@@ -3009,42 +4263,54 @@ function bindEvents() {
   };
   Object.entries(imageChecks).forEach(([id, key]) => {
     $(id).addEventListener("change", () => {
-      appState.formsByTab.image[key] = $(id).checked;
+      const form = appState.formsByTab.image;
+      form[key] = $(id).checked;
+      if (key === "include2k" || key === "include4k") {
+        const suite = (imageApiFormCapability(form.provider, form.model, form.routeProfile, form.apiForm) || {}).suite;
+        if (suite) (form.resolutionPreferences ||= {})[suite] = {include2k: form.include2k, include4k: form.include4k};
+      }
       renderImageControls();
     });
   });
 
-  $("referenceSource").addEventListener("change", () => {
+  $("referenceContractId").addEventListener("change", () => {
     const form = appState.formsByTab.param;
-    form.referenceSource = $("referenceSource").value;
-    form.referenceManual = true;
-    renderReferenceMode();
+    form.referenceContractId = $("referenceContractId").value;
+    form.parameterSuite = "";
+    form.contractManual = true;
+    renderContractMode();
     renderToolValidationMode();
     loadParamSpecs();
   });
   $("paramRouteProfile").addEventListener("change", () => {
     const form = appState.formsByTab.param;
+    form.workflowBindingId = "";
+    form.workflowCases = "";
     form.routeProfile = $("paramRouteProfile").value;
+    form.parameterSuite = "";
     form.apiForm = "";
-    form.referenceSource = "";
-    form.referenceManual = false;
+    form.referenceContractId = "";
+    form.contractManual = false;
     appState.paramHistoryResult = null;
     renderParamApiForms();
-    form.referenceSource = referenceSourceForModel(
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
     );
-    renderReferenceSources();
+    renderReferenceContracts();
     renderProviderStatus("param");
     loadParamSpecs();
   });
   $("paramApiForm").addEventListener("change", () => {
     const form = appState.formsByTab.param;
+    form.workflowBindingId = "";
+    form.workflowCases = "";
     form.apiForm = $("paramApiForm").value;
-    form.referenceManual = false;
-    form.referenceSource = referenceSourceForModel(
+    form.parameterSuite = "";
+    form.contractManual = false;
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
     );
-    renderReferenceSources();
+    renderReferenceContracts();
     renderProviderStatus("param");
     loadParamSpecs();
   });
@@ -3054,23 +4320,41 @@ function bindEvents() {
     renderToolValidationMode();
     loadParamSpecs();
   });
-  $("resetReference").addEventListener("click", () => {
+  $("resetContract").addEventListener("click", () => {
     const form = appState.formsByTab.param;
-    form.referenceManual = false;
-    form.referenceSource = referenceSourceForModel(
+    form.contractManual = false;
+    form.parameterSuite = "";
+    form.referenceContractId = referenceContractIdForModel(
       form.provider, form.model, form.routeProfile, form.apiForm
     );
-    renderReferenceSources();
+    renderReferenceContracts();
     renderToolValidationMode();
     loadParamSpecs();
   });
   $("paramTestRuns").addEventListener("input", () => {
     appState.formsByTab.param.paramTestRuns = $("paramTestRuns").value;
     renderParamRunHint();
+    queueWorkflowPreview();
+  });
+  $("parameterSuite").addEventListener("change", () => {
+    appState.formsByTab.param.parameterSuite = $("parameterSuite").value;
+    appState.paramHistoryResult = null;
+    renderParamRunHint();
+    queueWorkflowPreview();
+    loadParamSpecs();
   });
   $("paramTestRuns").addEventListener("change", () => {
     appState.formsByTab.param.paramTestRuns = paramTestRunsValue();
     renderParamRunHint();
+    queueWorkflowPreview();
+  });
+
+  $("paramWorkflow").addEventListener("change", () => {
+    changeParamWorkflow($("paramWorkflow").value);
+  });
+  $("paramWorkflowCases").addEventListener("input", () => {
+    appState.formsByTab.param.workflowCases = $("paramWorkflowCases").value;
+    queueWorkflowPreview();
   });
 
   $("workload").addEventListener("change", () => {

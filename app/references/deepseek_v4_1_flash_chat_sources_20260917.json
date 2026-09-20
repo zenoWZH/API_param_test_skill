@@ -1,0 +1,956 @@
+{
+  "retrieved_at": "2026-09-17",
+  "model_version": "DeepSeek-V4.1-Flash",
+  "request_model_id": "deepseek-flash",
+  "evidence_kind": "official_documentation",
+  "live_api_verified": false,
+  "scope": "Source-specific documentation facts for the DeepSeek official API. No upstream requests or legacy-profile evidence was used as live proof.",
+  "model_facts": {
+    "official_release_date": "2026-09-10",
+    "legacy_model_ids_routed_to_current": [
+      "deepseek-v4-flash",
+      "deepseek-v4-flash-vision-exp"
+    ],
+    "context_window_tokens": 1048576,
+    "input_modalities": [
+      "text",
+      "image"
+    ],
+    "output_modalities": [
+      "text"
+    ],
+    "official_sources": [
+      "https://api-docs.deepseek.com/quick_start/pricing/",
+      "https://api-docs.deepseek.com/updates/",
+      "https://api-docs.deepseek.com/guides/vision/",
+      "https://api-docs.deepseek.com/quick_start/agent_integrations/codex/"
+    ],
+    "notes": [
+      "The pricing table describes the context as 1M; DeepSeek's current integration model metadata explicitly gives 1048576.",
+      "Do not infer the state of deepseek-v4-pro from Flash alias migration; current pricing/updates and the original September 10 announcement conflict on Pro retirement."
+    ],
+    "source_request_model_id": "deepseek-flash"
+  },
+  "model_slug": "deepseek-v4.1-flash",
+  "interfaces": {
+    "openai_chat_completions": {
+      "parameters": {
+        "model": {
+          "state": "supported",
+          "constraints": {
+            "type": "string",
+            "required": true,
+            "value": "deepseek-flash"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/quick_start/pricing/"
+          ]
+        },
+        "messages": {
+          "state": "supported",
+          "constraints": {
+            "type": "array",
+            "required": true,
+            "min_items": 1,
+            "roles": [
+              "system",
+              "user",
+              "assistant",
+              "tool"
+            ],
+            "system_content": "string",
+            "assistant_content": "nullable string",
+            "user_content": "string or content-part array",
+            "tool_call_id_required_for_tool_messages": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "thinking": {
+          "state": "supported",
+          "constraints": {
+            "type": "object",
+            "type_enum": [
+              "enabled",
+              "disabled"
+            ],
+            "default_type": "enabled",
+            "sdk_location": "extra_body.thinking"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "reasoning_effort": {
+          "state": "supported",
+          "constraints": {
+            "type": "string",
+            "enum": [
+              "none",
+              "low",
+              "high",
+              "max"
+            ],
+            "default": "high",
+            "none_disables_thinking": true,
+            "non_none_enables_thinking": true,
+            "compatibility_aliases": {
+              "minimal": "low",
+              "medium": "high",
+              "xhigh": "high",
+              "ultra": "max"
+            },
+            "alias_provenance": "ultra is listed in the thinking guide; the Chat API reference explicitly lists minimal, medium and xhigh.",
+            "conflicting_explicit_thinking_and_effort_precedence": "not established by these documents"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "max_tokens": {
+          "state": "supported",
+          "constraints": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 393216,
+            "default_by_mode": {
+              "non_thinking": 8192,
+              "thinking": 65536,
+              "thinking_max_effort": 131072
+            },
+            "input_plus_generated_limited_by_context": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "temperature": {
+          "state": "conditional",
+          "constraints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 1,
+            "effective_when": "thinking disabled",
+            "thinking_enabled_behavior": "accepted but ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "top_p": {
+          "state": "conditional",
+          "constraints": {
+            "type": "number",
+            "exclusive_minimum": 0,
+            "maximum": 1,
+            "default": 1,
+            "effective_when": "thinking enabled",
+            "thinking_effective_minimum": 0.95,
+            "below_thinking_minimum_behavior": "clamped to 0.95",
+            "non_thinking_behavior": "fixed at 1.0; supplied value ignored"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "frequency_penalty": {
+          "state": "ignored",
+          "constraints": {
+            "deprecated": true,
+            "effect": "No effect when supplied; current API reference gives no active range."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "presence_penalty": {
+          "state": "ignored",
+          "constraints": {
+            "deprecated": true,
+            "effect": "No effect when supplied; current API reference gives no active range."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "stop": {
+          "state": "supported",
+          "constraints": {
+            "types": [
+              "string",
+              "array of strings"
+            ],
+            "max_sequences": 16
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "response_format": {
+          "state": "supported",
+          "constraints": {
+            "type": "object",
+            "type_enum": [
+              "text",
+              "json_object"
+            ],
+            "default_type": "text",
+            "json_object_requires_json_instruction": true,
+            "json_object_prompt_guidance": "Include json in a system/user instruction and provide an example.",
+            "json_object_may_return_empty_content": true,
+            "json_object_may_truncate_at_token_or_context_limit": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/json_mode/"
+          ]
+        },
+        "response_format.json_schema": {
+          "state": "unsupported",
+          "constraints": {
+            "reason": "Chat response_format.type is explicitly limited to text or json_object; beta strict tool schemas are a different feature."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/tool_calls/"
+          ]
+        },
+        "stream": {
+          "state": "supported",
+          "constraints": {
+            "type": "boolean",
+            "wire_format": "server-sent events",
+            "terminator": "data: [DONE]",
+            "default": "not stated in current reference"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "stream_options": {
+          "state": "conditional",
+          "constraints": {
+            "requires": {
+              "stream": true
+            },
+            "non_stream_error_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "stream_options.include_usage": {
+          "state": "conditional",
+          "constraints": {
+            "type": "boolean",
+            "requires": {
+              "stream": true
+            },
+            "true_behavior": "Intermediate chunks carry usage:null; final finish_reason chunk carries total usage.",
+            "false_or_omitted_behavior": "Intermediate chunks omit usage; final finish_reason chunk still carries total usage.",
+            "separate_usage_only_chunk": false,
+            "final_choices_count": 1,
+            "terminator": "data: [DONE]"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "tools": {
+          "state": "supported",
+          "constraints": {
+            "type": "array",
+            "tool_type_enum": [
+              "function"
+            ],
+            "unique_function_names": true,
+            "function_name_max_length": 128,
+            "function_name_allowed_characters": "a-z A-Z 0-9 _ -",
+            "omitted_parameters_behavior": "empty parameter list",
+            "function_parameters_format": "JSON Schema",
+            "thinking_supported": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/tool_calls/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "tools[].function.strict": {
+          "state": "conditional",
+          "constraints": {
+            "type": "boolean",
+            "default": false,
+            "requires_base_url": "https://api.deepseek.com/beta",
+            "all_function_tools_must_set_strict": true,
+            "supported_modes": [
+              "thinking",
+              "non-thinking"
+            ],
+            "schema_types": [
+              "object",
+              "string",
+              "number",
+              "integer",
+              "boolean",
+              "array",
+              "enum",
+              "anyOf"
+            ],
+            "object_all_properties_required": true,
+            "object_additional_properties": false
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/tool_calls/"
+          ]
+        },
+        "tool_choice": {
+          "state": "conditional",
+          "constraints": {
+            "values": [
+              "none",
+              "auto",
+              "required",
+              {
+                "type": "function",
+                "function": {
+                  "name": "function_name"
+                }
+              }
+            ],
+            "default_without_tools": "none",
+            "default_with_tools": "auto",
+            "thinking_allowed": [
+              "none",
+              "auto"
+            ],
+            "thinking_disallowed": [
+              "required",
+              "named function"
+            ],
+            "thinking_disallowed_error_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "logprobs": {
+          "state": "supported",
+          "constraints": {
+            "type": "boolean",
+            "output": "choice.logprobs.content; response schema also defines choice.logprobs.reasoning_content",
+            "thinking_restriction": "No prohibition appears in current Chat reference or thinking guide; no live verification."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "top_logprobs": {
+          "state": "conditional",
+          "constraints": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 20,
+            "requires": {
+              "logprobs": true
+            }
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "user_id": {
+          "state": "supported",
+          "constraints": {
+            "max_length": 512,
+            "allowed_characters": "a-z A-Z 0-9 _ -",
+            "uses": [
+              "end-user identification",
+              "KV cache isolation",
+              "scheduling isolation"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "messages[].reasoning_content": {
+          "state": "conditional",
+          "constraints": {
+            "requires_replay_when_tools_present": true,
+            "replay_all_previous_turns": true,
+            "replay_required_even_without_tool_call_in_that_turn": true,
+            "missing_replay_error_status": 400,
+            "when_tools_absent": "prior reasoning_content is ignored and excluded from context"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/thinking_mode/"
+          ]
+        },
+        "messages[-1].prefix": {
+          "state": "conditional",
+          "constraints": {
+            "type": "boolean",
+            "value": true,
+            "requires_base_url": "https://api.deepseek.com/beta",
+            "requires_last_role": "assistant",
+            "effect": "Continue the provided assistant content."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/chat_prefix_completion/"
+          ]
+        },
+        "messages[-1].reasoning_content": {
+          "state": "conditional",
+          "constraints": {
+            "beta_prefix_input": true,
+            "requires_last_role": "assistant",
+            "requires_prefix": true,
+            "meaning": "Reasoning prefix for thinking-mode chat prefix completion."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "messages[].content[].image_url": {
+          "state": "conditional",
+          "constraints": {
+            "type": "image_url",
+            "supported_user_messages": true,
+            "url_types": [
+              "public http(s) URL",
+              "base64 data URL"
+            ],
+            "formats": [
+              "JPEG",
+              "PNG",
+              "GIF",
+              "WebP"
+            ],
+            "mime_detected_from_content": true,
+            "external_url_max_characters": 8192,
+            "external_download_timeout_seconds": 60,
+            "inline_or_external_image_max_bytes": 33554432,
+            "request_body_max_bytes": 50331648,
+            "system_or_assistant_images_error_status": 400,
+            "tool_message_support": "unresolved documentation conflict: Chat API schema allows tool image parts; Vision guide says images are supported in user messages only"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "messages[].content[].image_url.detail": {
+          "state": "supported",
+          "constraints": {
+            "enum": [
+              "low",
+              "high",
+              "original",
+              "auto"
+            ],
+            "low": "downsample to 512x512",
+            "high": "equivalent to original",
+            "original": "retain original image before general model preprocessing",
+            "auto": "currently equivalent to original",
+            "default": "not explicitly stated"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "messages[].content[].file": {
+          "state": "conditional",
+          "constraints": {
+            "type": "file",
+            "input_fields": [
+              "file_id",
+              "file_data"
+            ],
+            "mutually_exclusive": [
+              "file_id",
+              "file_data"
+            ],
+            "filename_only_with": "file_data",
+            "file_id_prefix": "file-api-",
+            "file_id_max_image_bytes": 67108864,
+            "subject_to_file_upload_lifecycle": true,
+            "supported_user_messages": true,
+            "tool_message_support": "same unresolved documentation conflict as image_url"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "vision.request_limits": {
+          "state": "conditional",
+          "constraints": {
+            "max_images": 600,
+            "max_total_image_bytes_without_file_id": 67108864,
+            "max_total_image_bytes_including_file_id": 209715200,
+            "max_dimension_per_side": 8192,
+            "max_dimension_per_side_at_15_or_more_images": 4096,
+            "max_image_tokens": 1024,
+            "limits_apply_to": "image input"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/vision/"
+          ]
+        },
+        "parallel_tool_calls": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented as a Chat request parameter. Responses API always-on parallel behavior must not be copied to this API form."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "seed": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented by current Chat reference; omission is not proof of rejection."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "n": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented by current Chat reference; omission is not proof of rejection."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "logit_bias": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented by current Chat reference; omission is not proof of rejection."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "max_completion_tokens": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "The documented output-budget field is max_tokens; no alias behavior is established."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        }
+      },
+      "protocol_constraints": {
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "method": "POST",
+        "content_type": "application/json",
+        "response_facts": {
+          "non_stream_object": "chat.completion",
+          "stream_object": "chat.completion.chunk",
+          "visible_output_path": "choices[].message.content",
+          "reasoning_output_path": "choices[].message.reasoning_content",
+          "usage_paths": [
+            "usage.prompt_tokens",
+            "usage.completion_tokens",
+            "usage.total_tokens",
+            "usage.prompt_cache_hit_tokens",
+            "usage.prompt_cache_miss_tokens",
+            "usage.prompt_tokens_details.cached_tokens",
+            "usage.completion_tokens_details.reasoning_tokens"
+          ],
+          "finish_reasons": [
+            "stop",
+            "length",
+            "content_filter",
+            "tool_calls",
+            "insufficient_system_resource",
+            "aborted"
+          ],
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        }
+      }
+    },
+    "deepseek_beta_chat_prefix": {
+      "parameters": {
+        "model": {
+          "state": "supported",
+          "constraints": {
+            "value": "deepseek-flash"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/quick_start/pricing/",
+            "https://api-docs.deepseek.com/zh-cn/guides/chat_prefix_completion/"
+          ]
+        },
+        "messages[-1].role": {
+          "state": "conditional",
+          "constraints": {
+            "required_value": "assistant"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/chat_prefix_completion/"
+          ]
+        },
+        "messages[-1].prefix": {
+          "state": "conditional",
+          "constraints": {
+            "required_value": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/chat_prefix_completion/",
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "messages[-1].content": {
+          "state": "conditional",
+          "constraints": {
+            "type": "string",
+            "meaning": "assistant content prefix to continue"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/guides/chat_prefix_completion/"
+          ]
+        },
+        "messages[-1].reasoning_content": {
+          "state": "conditional",
+          "constraints": {
+            "nullable": true,
+            "requires_prefix": true,
+            "meaning": "optional reasoning prefix for thinking mode"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/"
+          ]
+        },
+        "stop": {
+          "state": "supported",
+          "constraints": {
+            "types": [
+              "string",
+              "array of strings"
+            ],
+            "max_sequences": 16
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/guides/chat_prefix_completion/"
+          ]
+        },
+        "thinking": {
+          "state": "supported",
+          "constraints": {
+            "type_enum": [
+              "enabled",
+              "disabled"
+            ],
+            "notes": "Pricing lists prefix capability for the model; Chat schema documents reasoning_content for thinking-mode prefix input."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-chat-completion/",
+            "https://api-docs.deepseek.com/quick_start/pricing/"
+          ]
+        }
+      },
+      "protocol_constraints": {
+        "endpoint": "https://api.deepseek.com/beta/chat/completions",
+        "method": "POST",
+        "content_type": "application/json",
+        "inherits_api_form": "openai_chat_completions",
+        "inheritance_scope": "Same Chat Completions request format; beta-specific constraints below override the base form. No live behavior is implied."
+      }
+    },
+    "openai_fim_completions_beta": {
+      "parameters": {
+        "model": {
+          "state": "supported",
+          "constraints": {
+            "type": "string",
+            "required": true,
+            "value": "deepseek-flash"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/",
+            "https://api-docs.deepseek.com/guides/fim_completion/"
+          ]
+        },
+        "prompt": {
+          "state": "supported",
+          "constraints": {
+            "type": "string",
+            "required": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "suffix": {
+          "state": "conditional",
+          "constraints": {
+            "type": "string",
+            "nullable": true,
+            "incompatible_with_echo": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "echo": {
+          "state": "conditional",
+          "constraints": {
+            "type": "boolean",
+            "nullable": true,
+            "incompatible_with": [
+              "suffix",
+              "logprobs"
+            ]
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "logprobs": {
+          "state": "conditional",
+          "constraints": {
+            "type": "integer",
+            "maximum": 20,
+            "incompatible_with_echo": true,
+            "minimum": "not explicitly stated",
+            "output_includes_sampled_token": true,
+            "max_returned_entries": "logprobs + 1"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "max_tokens": {
+          "state": "supported",
+          "constraints": {
+            "type": "integer",
+            "maximum": 4096,
+            "maximum_source": "FIM guide states 4K; use model-specific FIM bound rather than Chat maximum.",
+            "minimum": "not explicitly stated",
+            "default": "not explicitly stated"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/",
+            "https://api-docs.deepseek.com/guides/fim_completion/"
+          ]
+        },
+        "stop": {
+          "state": "supported",
+          "constraints": {
+            "types": [
+              "string",
+              "array of strings"
+            ],
+            "max_sequences": 16,
+            "returned_text_excludes_stop_sequence": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "stream": {
+          "state": "supported",
+          "constraints": {
+            "type": "boolean",
+            "wire_format": "server-sent events",
+            "terminator": "data: [DONE]"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "stream_options": {
+          "state": "conditional",
+          "constraints": {
+            "requires": {
+              "stream": true
+            },
+            "non_stream_error_status": 400
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "stream_options.include_usage": {
+          "state": "conditional",
+          "constraints": {
+            "type": "boolean",
+            "requires": {
+              "stream": true
+            },
+            "true_behavior": "Intermediate chunks carry usage:null; final finish_reason chunk carries total usage.",
+            "false_or_omitted_behavior": "Intermediate chunks omit usage; final finish_reason chunk still carries total usage.",
+            "separate_usage_only_chunk": false,
+            "final_choices_count": 1,
+            "terminator": "data: [DONE]"
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "temperature": {
+          "state": "supported",
+          "constraints": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 2,
+            "default": 1
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "top_p": {
+          "state": "supported",
+          "constraints": {
+            "type": "number",
+            "exclusive_minimum": 0,
+            "maximum": 1,
+            "default": 1,
+            "notes": "FIM reference states normal nucleus sampling; do not import Chat non-thinking top_p ignore rule without FIM-specific evidence."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "frequency_penalty": {
+          "state": "ignored",
+          "constraints": {
+            "deprecated": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "presence_penalty": {
+          "state": "ignored",
+          "constraints": {
+            "deprecated": true
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "thinking": {
+          "state": "unsupported",
+          "constraints": {
+            "reason": "Model pricing explicitly restricts FIM to non-thinking mode; behavior when a thinking request field is sent is not documented."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/quick_start/pricing/",
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "reasoning_effort": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented as a FIM request parameter; FIM is non-thinking only."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/quick_start/pricing/",
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "tools": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented as a FIM request parameter."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "response_format": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented as a FIM request parameter."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        },
+        "seed": {
+          "state": "unknown",
+          "constraints": {
+            "reason": "Not documented as a FIM request parameter."
+          },
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        }
+      },
+      "protocol_constraints": {
+        "endpoint": "https://api.deepseek.com/beta/completions",
+        "method": "POST",
+        "content_type": "application/json",
+        "response_facts": {
+          "object": "text_completion",
+          "visible_output_path": "choices[].text",
+          "finish_reasons": [
+            "stop",
+            "length",
+            "content_filter",
+            "insufficient_system_resource",
+            "aborted"
+          ],
+          "official_sources": [
+            "https://api-docs.deepseek.com/api/create-completion/"
+          ]
+        }
+      }
+    }
+  },
+  "uncertainties": [
+    {
+      "topic": "Search index snapshots",
+      "resolution": "Prefer current trailing-slash API pages showing deepseek-flash. Some non-trailing-slash search snapshots remain two months old.",
+      "examples": [
+        "Old FIM snapshot only listed deepseek-v4-pro and a separate usage-only chunk; current FIM reference lists deepseek-flash and final content-chunk usage."
+      ]
+    },
+    {
+      "topic": "Tool-message images in Chat",
+      "sources": [
+        "https://api-docs.deepseek.com/api/create-chat-completion/",
+        "https://api-docs.deepseek.com/guides/vision/"
+      ],
+      "resolution": "Retain unknown tool-message vision support; user-message vision is explicitly supported by both."
+    },
+    {
+      "topic": "Thinking tool_choice",
+      "sources": [
+        "https://api-docs.deepseek.com/api/create-chat-completion/",
+        "https://api-docs.deepseek.com/quick_start/agent_integrations/oh_my_pi/"
+      ],
+      "resolution": "Use the current Chat API restriction on required/named choices; older integration advice forbidding all tool_choice is broader."
+    },
+    {
+      "topic": "Pro retirement",
+      "sources": [
+        "https://api-docs.deepseek.com/quick_start/pricing/",
+        "https://api-docs.deepseek.com/updates/",
+        "https://api-docs.deepseek.com/news/news260910/"
+      ],
+      "resolution": "Out of scope for the Flash profile; do not create a Pro alias migration."
+    }
+  ]
+}

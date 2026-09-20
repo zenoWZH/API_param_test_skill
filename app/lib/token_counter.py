@@ -13,6 +13,7 @@ def count_semantic_tokens(
     model: str | None,
     input_text: str,
     output_text: str,
+    transport: str | None = None,
 ) -> dict[str, Any]:
     spec = _counter_spec(config, provider, model)
     if not spec:
@@ -38,11 +39,22 @@ def count_semantic_tokens(
         for item in spec.get("exact_dimensions", [])
         if str(item) in {"input", "output"}
     }
+    exact_transport = _transport_exactness_is_declared(spec, transport)
     return {
         "source": source,
         "kind": str(spec.get("kind") or "unknown"),
-        "input": _count_dimension(counter, input_text, "input" in exact_dimensions),
-        "output": _count_dimension(counter, output_text, "output" in exact_dimensions),
+        "input": _count_dimension(
+            counter,
+            input_text,
+            exact="input" in exact_dimensions and exact_transport,
+            note=_evidence_note("input", exact_dimensions, transport, exact_transport),
+        ),
+        "output": _count_dimension(
+            counter,
+            output_text,
+            exact="output" in exact_dimensions and exact_transport,
+            note=_evidence_note("output", exact_dimensions, transport, exact_transport),
+        ),
     }
 
 
@@ -100,14 +112,59 @@ def _load_counter(
 
 
 def _count_dimension(
-    counter: Callable[[str], int], text: str, exact: bool
+    counter: Callable[[str], int],
+    text: str,
+    *,
+    exact: bool,
+    note: str | None,
 ) -> dict[str, Any]:
-    tokens = int(counter(text)) if text else 0
+    try:
+        tokens = counter(text) if text else 0
+    except Exception as exc:
+        return _unavailable(
+            f"token counter failed: {exc.__class__.__name__}: {exc}"
+        )
+    if isinstance(tokens, bool) or not isinstance(tokens, int) or tokens < 0:
+        return _unavailable(
+            "token counter returned an invalid value; expected a non-negative int, "
+            f"got {type(tokens).__name__}"
+        )
     return {
         "tokens": tokens,
         "evidence_level": "exact" if exact else "estimate",
-        "note": None if exact else "counter does not include a declared exact protocol template",
+        "note": None if exact else note,
     }
+
+
+def _transport_exactness_is_declared(
+    spec: dict[str, Any], transport: str | None
+) -> bool:
+    # Calls made before transport-aware auditing keep their historical behavior.
+    if transport is None:
+        return True
+    configured = spec.get("exact_transports", [])
+    if isinstance(configured, str):
+        configured = [configured]
+    if not isinstance(configured, (list, tuple, set)):
+        return False
+    declared = {str(item).strip().lower() for item in configured}
+    return "*" in declared or transport.strip().lower() in declared
+
+
+def _evidence_note(
+    dimension: str,
+    exact_dimensions: set[str],
+    transport: str | None,
+    exact_transport: bool,
+) -> str | None:
+    if dimension not in exact_dimensions:
+        return "counter does not include a declared exact protocol template"
+    if transport is not None and not exact_transport:
+        return (
+            f"counter exactness is not declared for transport {transport!r}; "
+            "exact_transports must include that transport or '*'"
+        )
+    return None
 
 
 def _unavailable(note: str) -> dict[str, Any]:

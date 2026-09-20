@@ -4,11 +4,13 @@
 
 压测用于回答容量和稳定性问题。运行前必须先确认模型、Route、API Form 与 model profile 已注册；压测请求会应用该组合的参数约束，但不会替代完整参数矩阵。
 
+压测只适用于 `text` 模态。所有 `image` 和 `video` 模型永久排除在 Quick、Staircase、Soak、Locust 与 Cache 压力流量之外；Profile、Provider overlay、手工 Job Spec 或前端缺失字段都不能重新开启。图片参数矩阵仍可按用例顺序执行真实请求，但它不是并发、速率或持续时间压力测试，并会拒绝压力形状字段。
+
 ## 选择运行模式
 
 | 模式 | 目的 | 典型时长 | 主要结论 |
 |---|---|---:|---|
-| Smoke / Preflight | 最小真实请求验证鉴权、模型、请求构造和关键 profile | 分钟级 | 能否开始正式测试 |
+| Smoke 套件 | 遍历吞吐与兼容性 profile，并运行完整缓存套件 | 取决于模型和全部用例 | 各类请求及缓存控制是否通过 |
 | Quick | 固定并发或 RPM/TPM cap 下快速观察 | 1–10 分钟 | 当前设置是否安全、配置是否合理 |
 | Staircase | 逐阶提高并发直到达到目标或质量失败 | 每阶数分钟 | 最高合格阶梯和目标能否达到 |
 | Streaming | 等长流式请求测 TTFT/TPOT/E2E | 视样本量 | 首 token 与持续生成体验 |
@@ -24,7 +26,7 @@
 
 | Workload | 请求分布 | 适用问题 |
 |---|---|---|
-| `throughput_rpm` | 短、中 prompt 为主 | 最大化 RPM、验证请求调度 |
+| `throughput_rpm` | 8 种固定请求体的短任务混合，要求 `fixed` | 验证固定工作负载的 RPM 与调度 |
 | `throughput_balanced` | 短、中、约 8k 和较长上下文混合 | 综合业务基线 |
 | `throughput_tpm` | 长上下文权重更高，超限项按模型上下文过滤 | 提高 TPM、观察长输入能力 |
 | `throughput_streaming` | 三个近似等长流式请求 | TTFT、TPOT、E2E 延迟 |
@@ -35,9 +37,11 @@ Staircase 和 Soak 只接受确定性的 `throughput*`，拒绝 `mixed_compat`�
 
 ## 请求模式与缓存污染
 
-普通压测默认 `request_mode=unique`：在首个 user 内容前注入 nonce，降低 Provider prompt cache 对容量的虚增。
+直接 Locust 的默认模式是 `request_mode=unique`：在首个 user 内容前注入 nonce，降低 Provider prompt cache 对容量的影响。选用 `throughput_rpm` 时必须显式设置 `LOADTEST_REQUEST_MODE=fixed`；Web 选择该 workload 且未指定模式时会使用 `fixed`。
 
-`fixed` 只用于明确研究固定请求复用的场景。若使用 fixed，应在报告中披露，因为结果不等同于真实变化请求的吞吐。
+`fixed` 也是标准 RPM 工作负载的请求模式，不能只把它理解为缓存实验。报告须披露 workload 和请求模式；固定请求可能命中缓存，其吞吐不等同于变化请求的吞吐。
+
+Staircase/Soak 的默认 warmup 使用 `throughput_rpm`，执行器只为这个预热子进程设置 `fixed`。测量阶段保留调用方的请求模式；若测量 workload 也是 `throughput_rpm`，仍须选择 `fixed`，不兼容的 `unique` 会被拒绝。
 
 缓存机制本身应由[缓存测试](cache_testing.md)用正负控制验证，不要从压测延迟推断缓存。
 
@@ -48,6 +52,10 @@ Staircase 和 Soak 只接受确定性的 `throughput*`，拒绝 `mixed_compat`�
 
 当 RPM 和 TPM 都大于 0 时，系统按 `TPM / RPM` 计算平均 token 目标，并用 0.5x / 1.0x / 1.5x 三档混合请求。实际 usage 会校正估算。请求仍受模型上下文窗口 95% 安全边界限制。
 
+Quick 的 RPM 调度使用 Locust `constant_throughput`：每个 user 的目标速率为 `RPM / (60 × users)`。这是等待响应后继续发送的闭环调度；响应变慢或并发不足时，实际发送量可以低于 cap。
+
+Web 中 RPM 大于 0 时，`duration` 表示测量窗口，启动时另加一轮预热（`60 × users / RPM` 秒），窗口结束后等待在途请求，最长为任务的 timeout。启动速率须满足 `spawn_rate ≥ RPM / 60`。CLI 若需要相同口径，必须同时设置 users、预热/测量窗口和 `--stop-timeout`，见下面的完整示例。
+
 ## Profile 如何影响压测请求
 
 每条压力路径先解析：
@@ -57,6 +65,7 @@ model → family → route → API Form → model profile → request
 ```
 
 - 未注册模型、Route、当前 Route 下的 API Form 或 model profile 会在启动前失败。
+- 只有 `modality=text` 且 runtime Profile 明确 `pressure_test_enabled=true` 时，压力任务才可运行；image/video 及其它状态全部 fail closed。
 - `pressure_profiles` 决定 `mixed_compat` 可选择的场景。
 - `pressure_omit_params` 删除模型不支持或高风险的参数。
 - `pressure_parameter_aliases` 把通用字段改为该模型的字段名。
@@ -123,11 +132,15 @@ Web 会把 Provider、Model、Route、API Form、workload、门槛和 Quick/Stai
 
 ### CLI
 
-最小冒烟：
+完整冒烟套件：
 
 ```bash
 LOADTEST_PROVIDER=<provider> LOADTEST_MODEL=<model> python scripts/smoke_test.py
 ```
+
+这不是单请求 preflight。当前公共配置会遍历 18 个 `throughput_profiles`，再遍历所选模型批准的兼容性 profile（工具用例可能有 follow-up），最后执行完整缓存套件。默认缓存部分的计划为 60 次请求；总执行量还包含模型列表请求、前面的生成及可能的 token 核对请求，失败或预算中断时实际数量会变化。运行前应确认这些范围都符合本次计划。
+
+缓存子套件仍会应用 Pro 排除、工具 profile 和控制组门槛，因此普通生成可用不代表整个 Smoke 通过。Smoke 主结果在默认报告根目录的 `smoke/` 下（可由 `LOADTEST_REPORT_DIR` 修改），其缓存部分另写该根目录的 `cache/`，不随 Smoke 的输出覆盖项移动。
 
 直接 Locust Quick：
 
@@ -137,9 +150,35 @@ LOADTEST_MODEL=<model> \
 LOADTEST_ROUTE_PROFILE=<route> \
 LOADTEST_API_FORM=<api-form> \
 LOADTEST_WORKLOAD=throughput_balanced \
+LOADTEST_REQUEST_MODE=unique \
+LOADTEST_REPORT_DIR=reports/quick/balanced-example \
 locust -f locustfile.py --headless -u 10 -r 2 -t 2m \
-  --csv=reports/quick/run --html=reports/quick/report.html
+  --csv=reports/quick/balanced-example/locust \
+  --html=reports/quick/balanced-example/report.html
 ```
+
+带 RPM cap 和明确测量窗口的 Quick（每次运行使用新的输出目录）：
+
+```bash
+LOADTEST_PROVIDER=<provider> \
+LOADTEST_MODEL=<model> \
+LOADTEST_ROUTE_PROFILE=<route> \
+LOADTEST_API_FORM=<api-form> \
+LOADTEST_WORKLOAD=throughput_rpm \
+LOADTEST_REQUEST_MODE=fixed \
+LOADTEST_USERS=10 \
+LOADTEST_TARGET_RPM=60 \
+LOADTEST_TARGET_TPM=0 \
+LOADTEST_WARMUP_SEC=10 \
+LOADTEST_MEASURE_DURATION_SEC=120 \
+LOADTEST_REPORT_DIR=reports/quick/rpm-60-example \
+locust -f locustfile.py --headless -u 10 -r 2 -t 130s \
+  --stop-timeout=120 \
+  --csv=reports/quick/rpm-60-example/locust \
+  --html=reports/quick/rpm-60-example/report.html
+```
+
+这里计划在 120 秒测量窗口内发送 120 次请求；预热另计 10 秒，窗口关闭后最多等待 120 秒完成在途请求。设置正 RPM 时，`LOADTEST_USERS` 必须为正且与 `-u` 一致，仅写 `-u` 不够。该例关闭 TPM cap；若另设 TPM，请同时披露自适应请求长度。
 
 Staircase 与 Soak：
 
@@ -152,13 +191,28 @@ LOADTEST_PROVIDER=<provider> LOADTEST_MODEL=<model> python scripts/run_soak.py
 
 ## 结果文件
 
+App 的默认报告根目录是 `~/.config/llm-api-test/reports/`；设置 `LLM_API_TEST_REPORTS_DIR` 可直接指定根目录，或用 `LLM_API_TEST_DATA_DIR` 指定数据目录后取其 `reports/` 子目录。直接运行 Locust 使用下表单独列出的默认路径。
+
 | 模式 | 默认目录 | 首先查看 |
 |---|---|---|
-| Quick | Web Job 或显式 `LOADTEST_REPORT_DIR` | summary、`request_records.jsonl`、Locust HTML/CSV |
-| Staircase | `reports/staircase/` | `verdict.json`、`staircase_progress.json`、各 step 的 measure 目录 |
-| Soak | `reports/soak_1h/` | `verdict.json`、run summary、`history.jsonl`、Locust HTML |
+| Quick | 独立 CLI 默认 `reports/locust/`；可设 `LOADTEST_REPORT_DIR` | Web 的 `load_result.json`、`request_records.jsonl`、Locust HTML/CSV |
+| Staircase | 默认报告根目录的 `staircase/` | `verdict.json`、`staircase_progress.json`、各 step 的 measure 目录 |
+| Soak | 默认报告根目录的 `soak_1h/` | `verdict.json`、run summary、`history.jsonl`、Locust HTML |
 
-Web Job 统一写在 `reports/jobs/<job_id>/`，应先读 `job_spec.json` 确认本次实际配置，再读 verdict/summary，而不是根据页面记忆猜测。
+Web Job 统一写在默认报告根目录的 `jobs/<job_id>/`，应先读 `job_spec.json` 确认本次实际配置，再读 verdict/summary，而不是根据页面记忆猜测。
+
+带 RPM cap 且设置测量窗口时还应读取 `load_window.json` 和 `request_attempts.jsonl`。只有 HTML/CSV 改了路径时，项目自己的 JSONL 仍使用 `LOADTEST_REPORT_DIR` 或上述默认目录。
+
+| 窗口字段 | 含义 |
+|---|---|
+| `planned_start_count` | RPM × 测量秒数 / 60 的计划发送量 |
+| `started_request_count` | 实际进入发送的请求数；用于 attempted RPM |
+| `completed_request_count` | 已完成的请求数，包含失败 |
+| `successful_request_count` | 成功完成的请求数；用于 business RPM |
+| `unfinished_after_drain_count` | 等待在途请求结束后仍未完成的数量 |
+| `unscheduled_count` | 计划量减去实际发送量的正差 |
+
+同时核对 `admission_conservation_ok` 和 `completion_conservation_ok`：已准入请求须能分解为已发送、发送前取消及未解决项，已发送请求须能分解为已完成及仍未完成项。进程结束本身不能证明计划量已发送或请求均已完成。
 
 ## 停止和安全边界
 

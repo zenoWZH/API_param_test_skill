@@ -1,0 +1,6 @@
+interface:
+  display_name: "LLM API Test"
+  short_description: "多供应商参数、缓存、媒体、定速压力测试与准入审计工作流"
+  default_prompt: "Use $llm-api-test to audit this provider and model, then run only the explicitly approved tests."
+policy:
+  allow_implicit_invocation: true

@@ -23,7 +23,8 @@
 
 ## 模型级能力合同
 
-`model_capability_profiles.yaml` 现在把三套家族矩阵与具体模型 profile 分开：
+当前 MPDB 以 source-scoped Profile、Interface、Contract 与 Test Binding 把三套家族
+矩阵和具体模型分开：
 
 - GPT Image 2 将 `size`、`quality`、`output_format`、`output_compression`、`background`、`moderation` 与 `n` 记为支持；透明背景及五类尺寸/背景负例记为不支持，正确拒绝才通过。
 - Gemini 3.1 Flash Image 使用官方 Interactions transport、`x-goog-api-key` 和 `response_format`；原生输出按当前合同固定 `image/jpeg`，并只解析最终 `model_output` step 中的 image，避免把 thought image 当最终输出。兼容网关仍可选择 `chat-completions`，但必须与官方 native transport 分开比较。
@@ -47,15 +48,15 @@
 | Gemini 3.1 Flash Image | XinyunAI | 2 / 2 | 旧 Chat 兼容矩阵的 1K/2K 像素匹配 |
 | Gemini 3.1 Flash Image | Mayi EUR | 2 / 2 | 旧 Chat 兼容矩阵的 1K/2K 像素匹配 |
 
-对应证据：
+对应证据位于源仓库的历史运行报告中，本 skill 按迁移安全策略不分发这些可能含供应商运营上下文的文件，因此这里只保留源相对路径，不能把它们当作本 skill 内可点击的证据：
 
-- [OpenAI GPT Image 2 summary](../reports/image_param/openai_official-gpt-image-2-resolution/summary.json)
-- [Mayi GPT Image 2 summary](../reports/image_param/mayi_eur_gpt-image-2_resolution/summary.json)
-- [4sAPI GPT Image 2 results](../reports/image_param/4sapi_gpt-image-2_resolution/case_results.json)
-- [Buaga GPT Image 2 retry2 results](../reports/image_param/buaga-gpt-image-2-resolution-retry2/case_results.json)
-- [xAI Grok Imagine results](../reports/jobs/20260729T222945Z_image_param_xai_official_grok-imagine-image_resolution/case_results.json)
-- [Mayi Grok Imagine retry results](../reports/jobs/20260729T223133Z_image_param_mayi_eur_grok_grok-imagine-image_resolution_retry/case_results.json)
-- [XinyunAI Gemini image results](../reports/image_param/20260720T144840Z-gemini-3.1-flash-image/case_results.json)
-- [Mayi Gemini image results](../reports/image_param/mayi_eur_gemini-3.1-flash-image_resolution/case_results.json)
+- `reports/image_param/openai_official-gpt-image-2-resolution/summary.json`
+- `reports/image_param/mayi_eur_gpt-image-2_resolution/summary.json`
+- `reports/image_param/4sapi_gpt-image-2_resolution/case_results.json`
+- `reports/image_param/buaga-gpt-image-2-resolution-retry2/case_results.json`
+- `reports/jobs/20260729T222945Z_image_param_xai_official_grok-imagine-image_resolution/case_results.json`
+- `reports/jobs/20260729T223133Z_image_param_mayi_eur_grok_grok-imagine-image_resolution_retry/case_results.json`
+- `reports/image_param/20260720T144840Z-gemini-3.1-flash-image/case_results.json`
+- `reports/image_param/mayi_eur_gemini-3.1-flash-image_resolution/case_results.json`
 
 旧 GPT 矩阵只有 8 项，旧 Gemini 矩阵只有两个尺寸项；它们证明体系能够发现像素改写、参数静默忽略、错误拒绝语义与通道权限差异，但不能冒充本次扩展矩阵的成绩。本阶段没有新增外部计费调用。若获得明确授权，应只重跑声明上述同名模型的供应商，并固定同一 family、model、transport 与 suite；Gemini native 与 Chat-compatible 结果不得混排。

@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "checked_at": "2026-09-20",
+  "fixtures": {
+    "zhipu_elephants": {
+      "kind": "video",
+      "url": "https://sfile.chatglm.cn/testpath/video/b844f8f1-5df9-556c-a515-3d3bfaa736e8_0.mp4",
+      "documentation_url": "https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4v-plus-0111.md",
+      "documentation_evidence": "The official video_url request example links this exact public MP4; retrieved by the parallel provider documentation review.",
+      "mime_type": "video/mp4",
+      "byte_length": 3220300,
+      "sha256": "c29bea4b8e3c8a2d837aa463cb7a27116525a99cd40c1934c2f8e65528d9fbf7",
+      "duration_seconds": 6.0,
+      "codec": "h264",
+      "width": 1440,
+      "height": 960,
+      "fps": 16,
+      "has_audio": false,
+      "expected_text": "elephants",
+      "expected_semantic": {
+        "main_animal_plural": "elephants",
+        "visible_animal_count": 3
+      },
+      "visual_review": "Decoded one frame per second across all six seconds. Three elephants remain visible while moving and splashing in water. Production origin (filmed or generated) is not established.",
+      "decode_verified": true,
+      "retrieval": {
+        "method": "GET",
+        "authentication": "none",
+        "http_status": 200,
+        "content_type": "video/mp4"
+      },
+      "licensing": {
+        "status": "official_documentation_example",
+        "redistribution_permission": "not established; original video bytes are not redistributed in the repository"
+      },
+      "local_evidence_policy": "The downloaded bytes were verified under /tmp; this manifest pins the observed public resource. A URL-only live run should recheck the source digest before freezing its evidence.",
+      "verification_commands": [
+        [
+          "ffprobe",
+          "-v",
+          "error",
+          "-show_entries",
+          "format=duration,size:stream=codec_name,codec_type,width,height,r_frame_rate",
+          "-of",
+          "json",
+          "/tmp/real-media-source-probe/zhipu_public.mp4"
+        ],
+        [
+          "ffmpeg",
+          "-v",
+          "error",
+          "-i",
+          "/tmp/real-media-source-probe/zhipu_public.mp4",
+          "-vf",
+          "fps=1,scale=320:-1,tile=3x2",
+          "-frames:v",
+          "1",
+          "/tmp/real-media-source-probe/zhipu_contact_all.png"
+        ]
+      ],
+      "evidence": [
+        "cn_glm4v_plus_0111_official_video_sample"
+      ]
+    }
+  },
+  "sources": {
+    "cn_glm4v_plus_0111_official_video_sample": {
+      "id": "cn_glm4v_plus_0111_official_video_sample",
+      "url": "https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4v-plus-0111.md",
+      "title": "GLM-4V-Plus-0111 official video_url sample",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The official request example uses the exact public sfile.chatglm.cn MP4 URL recorded in this fixture. This establishes sample provenance, not capability of other models."
+      ]
+    }
+  }
+}

@@ -19,10 +19,6 @@ os.environ.setdefault("LLM_API_TEST_DOTENV", str(_DATA_DIR / ".env"))
 os.environ.setdefault(
     "LLM_API_TEST_PROVIDERS_LOCAL", str(_DATA_DIR / "providers.local.yaml")
 )
-os.environ.setdefault(
-    "LLM_API_TEST_PROFILES_LOCAL",
-    str(_DATA_DIR / "model_capability_profiles.local.yaml"),
-)
 os.environ.setdefault("LLM_API_TEST_REPORTS_DIR", str(_DATA_DIR / "reports"))
 os.environ.setdefault(
     "LLM_API_TEST_UPSTREAM_CORPUS", str(_DATA_DIR / "upstream_fingerprints.json")

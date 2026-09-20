@@ -1,0 +1,4552 @@
+{
+  "sources": [
+    {
+      "id": "openai_images_vision",
+      "url": "https://developers.openai.com/api/docs/guides/images-vision",
+      "title": "OpenAI Images and vision",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "图片理解可用 Chat Completions 或 Responses；支持 URL、Base64 data URL、多图；Responses 还支持 Files API file_id。",
+        "可用 PNG、JPEG、WebP、非动画 GIF。当前总请求载荷上限 512 MB、单请求最多 1500 图。图像和文字仍受模型上下文限制。",
+        "detail 默认 auto；支持值与缩放规则按精确型号区分。GPT-5.2 不支持 original；GPT-5.4 三型号、GPT-5.5、GPT-5.6 三型号、GPT-6 Astra 列出 original。",
+        "patch 图像经型号与 detail 预处理后，每图超过 30000 patches 将拒绝；不是把图片自动缩到该拒绝上限。"
+      ]
+    },
+    {
+      "id": "openai_chat_reference",
+      "url": "https://developers.openai.com/api/reference/resources/chat",
+      "title": "OpenAI Chat API reference",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "图片消息内容项使用 type=image_url 与 image_url.url；URL 可为图片链接或 Base64 data URL。detail 放在 image_url 对象中。",
+        "通用 Chat 协议存在音频内容结构不代表任意模型支持音频；必须检查具体模型的模态表。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_4o",
+      "url": "https://developers.openai.com/api/docs/models/gpt-4o",
+      "title": "OpenAI gpt-4o model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-4o 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-4o-2024-11-20, gpt-4o-2024-08-06, gpt-4o-2024-05-13。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_4o_mini",
+      "url": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+      "title": "OpenAI gpt-4o-mini model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-4o-mini 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-4o-mini-2024-07-18。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5",
+      "title": "OpenAI gpt-5 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5-2025-08-07。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_mini",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-mini",
+      "title": "OpenAI gpt-5-mini model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5-mini 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5-mini-2025-08-07。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_nano",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-nano",
+      "title": "OpenAI gpt-5-nano model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5-nano 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5-nano-2025-08-07。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_1",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.1",
+      "title": "OpenAI gpt-5.1 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.1 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.1-2025-11-13。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_2",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.2",
+      "title": "OpenAI gpt-5.2 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.2 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.2-2025-12-11。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_4",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+      "title": "OpenAI gpt-5.4 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.4 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.4-2026-03-05。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_4_mini",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+      "title": "OpenAI gpt-5.4-mini model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.4-mini 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.4-mini-2026-03-17。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_4_nano",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4-nano",
+      "title": "OpenAI gpt-5.4-nano model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.4-nano 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.4-nano-2026-03-17。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_5",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+      "title": "OpenAI gpt-5.5 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.5 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.5-2026-04-23。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_6_luna",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+      "title": "OpenAI gpt-5.6-luna model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.6-luna 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.6-luna。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_6_sol",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "title": "OpenAI gpt-5.6-sol model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.6-sol 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.6-sol。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_6_terra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+      "title": "OpenAI gpt-5.6-terra model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.6-terra 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-5.6-terra。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_6_astra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "title": "OpenAI gpt-6-astra model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-6-astra 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "该型号官方支持端点同时包含 Chat Completions 与 Responses；分别建立本地已配置表单用例。",
+        "已打开官方模型页的Snapshots清单：gpt-6-astra。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_pro",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-pro",
+      "title": "OpenAI gpt-5-pro model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5-pro 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "本地使用的 Responses API 在该型号支持端点中；不改用 Chat Completions。",
+        "已打开官方模型页的Snapshots清单：gpt-5-pro-2025-10-06。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_3_codex",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.3-codex",
+      "title": "OpenAI gpt-5.3-codex model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.3-codex 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "本地使用的 Responses API 在该型号支持端点中；不改用 Chat Completions。",
+        "已打开官方模型页的Snapshots清单：gpt-5.3-codex。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "openai_model_gpt_5_5_pro",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.5-pro",
+      "title": "OpenAI gpt-5.5-pro model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确型号 gpt-5.5-pro 的输入包含文字、图片，输出为文字；HTML 模态表明确标记 Audio 为 Not supported。",
+        "本地使用的 Responses API 在该型号支持端点中；不改用 Chat Completions。",
+        "已打开官方模型页的Snapshots清单：gpt-5.5-pro-2026-04-23。仅将这些精确ID纳入返回身份允许集。"
+      ]
+    },
+    {
+      "id": "anthropic_vision",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/vision",
+      "title": "Anthropic Vision",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "原生 Messages image 内容项支持 base64 source、公开 URL source、已上传 Files API file_id；允许多图。",
+        "JPEG、PNG、GIF、WebP；动画只读取第一帧。直连每图 base64 编码后至多 10 MB、请求至多 32 MB、单图维度至多 8000×8000。",
+        "200k 上下文型号每请求至多 100 图，其余型号 600 图；超过 20 图时每图还有更严格尺寸校验，跨平台保守使用不超过 2000px。",
+        "Claude 4.7 及更新型号高分辨率上限为长边 2576px/4784 visual tokens，其余为1568px/1568 visual tokens；自动下采样。",
+        "图片通常放在文字前；可以比较多图及在多轮重新发送历史图像。"
+      ]
+    },
+    {
+      "id": "anthropic_openai_compat",
+      "url": "https://platform.claude.com/docs/en/cli-sdks-libraries/libraries/openai-sdk",
+      "title": "Anthropic OpenAI SDK compatibility",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方兼容层使用 api.anthropic.com/v1/chat/completions 与 Claude model ID。",
+        "完整 HTML 的 User role 字段表（网页读取器默认折叠）明确 image_url.url 完全支持；image_url.detail 被忽略。",
+        "音频输入被忽略并从输入剥离；input_audio、顶层 audio、modalities 都被忽略。HTTP 200 不能作为音频理解通过，负向也不能要求一定 4xx。",
+        "兼容接口 user file 内容项被忽略；不把原生 file_id 图片流程套入 Chat。"
+      ]
+    },
+    {
+      "id": "anthropic_model_haiku_4_5",
+      "url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview",
+      "title": "Anthropic claude-haiku-4-5-20251001 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-haiku-4-5-20251001；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 200k tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_opus_4_5",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-5/overview",
+      "title": "Anthropic claude-opus-4-5-20251101 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-opus-4-5-20251101；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 200k tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_opus_4_6",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-6/overview",
+      "title": "Anthropic claude-opus-4-6 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-opus-4-6；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_opus_4_7",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-7/overview",
+      "title": "Anthropic claude-opus-4-7 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-opus-4-7；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_opus_4_8",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-8/overview",
+      "title": "Anthropic claude-opus-4-8 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-opus-4-8；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_opus_5",
+      "url": "https://platform.claude.com/docs/en/models/opus-5/overview",
+      "title": "Anthropic claude-opus-5 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-opus-5；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_sonnet_4_5",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-4-5/overview",
+      "title": "Anthropic claude-sonnet-4-5-20250929 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-sonnet-4-5-20250929；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 200k tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_sonnet_4_6",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-4-6/overview",
+      "title": "Anthropic claude-sonnet-4-6 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-sonnet-4-6；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_sonnet_5",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-5/overview",
+      "title": "Anthropic claude-sonnet-5 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-sonnet-5；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_fable_5",
+      "url": "https://platform.claude.com/docs/en/models/fable-5/overview",
+      "title": "Anthropic claude-fable-5 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-fable-5；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "anthropic_model_fable_5_1",
+      "url": "https://platform.claude.com/docs/en/models/fable-5-1/overview",
+      "title": "Anthropic claude-fable-5-1 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确 Claude API ID 为 claude-fable-5-1；Capabilities 的完整 Input → output 规格为文字和图片输入、文字输出。",
+        "上下文为 1M tokens。音频结论依据完整输入模态规格，不是把普通文档未提及直接当成不支持。"
+      ]
+    },
+    {
+      "id": "xai_image_understanding",
+      "url": "https://docs.x.ai/developers/model-capabilities/images/understanding",
+      "title": "xAI Image Understanding",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "Responses 使用 input_image/image_url（字符串）及 input_text；图片可为公开 URL 或 Base64 data URL。",
+        "每图最多20MiB，只列JPEG/PNG；未设图像数量硬上限但上下文和请求限额仍适用。",
+        "官方建议图片请求关闭服务器历史保存；图片理解可多图且图片/文字顺序灵活。"
+      ]
+    },
+    {
+      "id": "xai_chat_images",
+      "url": "https://docs.x.ai/developers/model-capabilities/legacy/chat-completions",
+      "title": "xAI Chat Completions image input",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "Chat 图片项为 image_url 对象，其中 url 可为公开 URL 或 Base64 data URL；与 Responses 的 input_image 结构不同。",
+        "detail 有 auto（默认）、low、high；每图20MiB；格式限 JPEG/PNG。"
+      ]
+    },
+    {
+      "id": "xai_multi_agent",
+      "url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+      "title": "xAI Multi Agent",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "grok-4.20-multi-agent-0309 使用 Responses；官方明确不支持 Chat Completions。",
+        "不支持客户端自定义 function tools；不为图片用例引入额外工具。"
+      ]
+    },
+    {
+      "id": "xai_speech_to_text",
+      "url": "https://docs.x.ai/developers/models/speech-to-text",
+      "title": "xAI Speech to Text",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "语音转录使用 grok-voice-transcribe-1.0 或 grok-voice-transcribe-2.0，属于独立 Speech to Text API；不等同于本地 Grok 文字模型的音频输入。"
+      ]
+    },
+    {
+      "id": "xai_model_grok_4_20_non_reasoning",
+      "url": "https://docs.x.ai/developers/models/grok-4.20-non-reasoning",
+      "title": "xAI grok-4.20-0309-non-reasoning model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方精确模型名称 grok-4.20-0309-non-reasoning，完整 Modalities 列表为文字和图片输入、文字输出。",
+        "音频结论依据完整输入模态规格；语音模型/接口的能力不自动赋予该型号。"
+      ]
+    },
+    {
+      "id": "xai_model_grok_4_20",
+      "url": "https://docs.x.ai/developers/models/grok-4.20",
+      "title": "xAI grok-4.20-0309-reasoning model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方精确模型名称 grok-4.20-0309-reasoning，完整 Modalities 列表为文字和图片输入、文字输出。",
+        "音频结论依据完整输入模态规格；语音模型/接口的能力不自动赋予该型号。"
+      ]
+    },
+    {
+      "id": "xai_model_grok_4_3",
+      "url": "https://docs.x.ai/developers/models/grok-4.3",
+      "title": "xAI grok-4.3 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方精确模型名称 grok-4.3，完整 Modalities 列表为文字和图片输入、文字输出。",
+        "音频结论依据完整输入模态规格；语音模型/接口的能力不自动赋予该型号。"
+      ]
+    },
+    {
+      "id": "xai_model_grok_4_5",
+      "url": "https://docs.x.ai/developers/models/grok-4.5",
+      "title": "xAI grok-4.5 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方精确模型名称 grok-4.5，完整 Modalities 列表为文字和图片输入、文字输出。",
+        "音频结论依据完整输入模态规格；语音模型/接口的能力不自动赋予该型号。"
+      ]
+    },
+    {
+      "id": "xai_model_grok_4_20_multi_agent_0309",
+      "url": "https://docs.x.ai/developers/models/grok-4.20-multi-agent-0309",
+      "title": "xAI grok-4.20-multi-agent-0309 model",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方精确模型名称 grok-4.20-multi-agent-0309，完整 Modalities 列表为文字和图片输入、文字输出。",
+        "音频结论依据完整输入模态规格；语音模型/接口的能力不自动赋予该型号。"
+      ]
+    },
+    {
+      "id": "openai_video_frames_20260920",
+      "url": "https://developers.openai.com/cookbook/examples/gpt4o/introduction_to_gpt4o",
+      "title": "OpenAI GPT-4o cookbook - video processing",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方示例说明无法直接把视频交给该API，先抽取视频帧，再把各帧当图片发送给GPT-4o进行视觉分析。",
+        "示例中的视频音轨由独立Whisper转写，再将转写文本交给文字模型；这不证明GPT-4o或GPT-4o-mini直接接受音频或原生视频。",
+        "抽帧采样、时间戳、丢失音轨与未采样片段属于客户端预处理的证明边界。"
+      ]
+    },
+    {
+      "id": "anthropic_video_frames_20260920",
+      "url": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+      "title": "Anthropic prompting - video as frames",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方Opus 4.5/4.6视觉建议说明，视频分析可通过把视频拆成帧实现。",
+        "送到模型的内容仍是图像序列；不能把成功识别视频抽帧当作Messages原生video内容块或视频文件输入支持。"
+      ]
+    },
+    {
+      "id": "xai_native_video_schema_20260920",
+      "url": "https://docs.x.ai/openapi.json",
+      "title": "xAI OpenAPI - text endpoint content types and separate video operations",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "ChatRequest.messages的ContentPart.type文档枚举为text、image_url、text_file、file；没有原生video_url内容类型。",
+        "ModelRequest.input的ModelInputContentItem闭合oneOf为input_text、output_text、input_image、input_file；没有原生input_video/video_url内容类型。",
+        "VideoUrl schema明确用于视频editing和extension请求；其MP4/H.264/H.265/AV1、URL/Base64/file_id规定不属于文字模型的Chat或Responses输入协议。",
+        "通用file或input_file内容项不能单独证明视频文件会以原生视频模态进入文字模型。"
+      ]
+    },
+    {
+      "id": "xai_x_search_video_20260920",
+      "url": "https://docs.x.ai/developers/tools/x-search",
+      "title": "xAI X Search - video understanding boundary",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "enable_video_understanding开启的是X Search发现的帖子视频分析，限定X Search而非Web Search。",
+        "这是服务器搜索工具的能力，不是把客户端MP4字节或video_url直接发送到文字模型消息的接口能力。"
+      ]
+    },
+    {
+      "id": "xai_chat_content_scope_20260920",
+      "url": "https://docs.x.ai/developers/rest-api-reference/inference/chat-completions",
+      "title": "xAI Chat Completions input scope",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方端点说明限定文字/图片聊天请求；视频生成、编辑、延长属于独立Videos接口。"
+      ]
+    },
+    {
+      "id": "xai_responses_content_scope_20260920",
+      "url": "https://docs.x.ai/developers/rest-api-reference/inference/responses",
+      "title": "xAI Responses input scope",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方端点说明从文字或图片提示生成文字响应；请求输入的具体类型由OpenAPI ModelInputContentItem定义。"
+      ]
+    },
+    {
+      "id": "xai_multi_agent_video_scope_20260920",
+      "url": "https://docs.x.ai/developers/model-capabilities/text/multi-agent",
+      "title": "xAI Multi Agent - API and video-tool boundary",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "multi-agent型号使用Responses或xAI SDK，官方明确不支持Chat Completions。",
+        "支持部分服务器工具并不意味着额外支持原生视频消息；不能为multi-agent补造Chat视频路线。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_4o",
+      "url": "https://developers.openai.com/api/docs/models/gpt-4o",
+      "title": "OpenAI gpt-4o model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-4o官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_4o_mini",
+      "url": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+      "title": "OpenAI gpt-4o-mini model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-4o-mini官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5",
+      "title": "OpenAI gpt-5 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_mini",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-mini",
+      "title": "OpenAI gpt-5-mini model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5-mini官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_nano",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-nano",
+      "title": "OpenAI gpt-5-nano model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5-nano官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_1",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.1",
+      "title": "OpenAI gpt-5.1 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.1官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_2",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.2",
+      "title": "OpenAI gpt-5.2 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.2官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_4",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4",
+      "title": "OpenAI gpt-5.4 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.4官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_4_mini",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4-mini",
+      "title": "OpenAI gpt-5.4-mini model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.4-mini官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_4_nano",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.4-nano",
+      "title": "OpenAI gpt-5.4-nano model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.4-nano官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_5",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.5",
+      "title": "OpenAI gpt-5.5 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.5官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_6_luna",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-luna",
+      "title": "OpenAI gpt-5.6-luna model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.6-luna官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_6_sol",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-sol",
+      "title": "OpenAI gpt-5.6-sol model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.6-sol官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_6_terra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.6-terra",
+      "title": "OpenAI gpt-5.6-terra model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.6-terra官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_6_astra",
+      "url": "https://developers.openai.com/api/docs/models/gpt-6-astra",
+      "title": "OpenAI gpt-6-astra model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-6-astra官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_pro",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5-pro",
+      "title": "OpenAI gpt-5-pro model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5-pro官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_3_codex",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.3-codex",
+      "title": "OpenAI gpt-5.3-codex model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.3-codex官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_openai_model_gpt_5_5_pro",
+      "url": "https://developers.openai.com/api/docs/models/gpt-5.5-pro",
+      "title": "OpenAI gpt-5.5-pro model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号gpt-5.5-pro官方模型页，模态表明确Video为Not supported。",
+        "图片输入支持不改变原生视频输入结论；视频抽帧后发送图片属于不同请求与证明范围。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_haiku_4_5",
+      "url": "https://platform.claude.com/docs/en/models/haiku-4-5/overview",
+      "title": "Anthropic claude-haiku-4-5-20251001 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-haiku-4-5-20251001官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_opus_4_5",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-5/overview",
+      "title": "Anthropic claude-opus-4-5-20251101 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-opus-4-5-20251101官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_opus_4_6",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-6/overview",
+      "title": "Anthropic claude-opus-4-6 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-opus-4-6官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_opus_4_7",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-7/overview",
+      "title": "Anthropic claude-opus-4-7 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-opus-4-7官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_opus_4_8",
+      "url": "https://platform.claude.com/docs/en/models/opus-4-8/overview",
+      "title": "Anthropic claude-opus-4-8 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-opus-4-8官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_opus_5",
+      "url": "https://platform.claude.com/docs/en/models/opus-5/overview",
+      "title": "Anthropic claude-opus-5 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-opus-5官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_sonnet_4_5",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-4-5/overview",
+      "title": "Anthropic claude-sonnet-4-5-20250929 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-sonnet-4-5-20250929官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_sonnet_4_6",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-4-6/overview",
+      "title": "Anthropic claude-sonnet-4-6 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-sonnet-4-6官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_sonnet_5",
+      "url": "https://platform.claude.com/docs/en/models/sonnet-5/overview",
+      "title": "Anthropic claude-sonnet-5 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-sonnet-5官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_fable_5",
+      "url": "https://platform.claude.com/docs/en/models/fable-5/overview",
+      "title": "Anthropic claude-fable-5 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-fable-5官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_anthropic_model_fable_5_1",
+      "url": "https://platform.claude.com/docs/en/models/fable-5-1/overview",
+      "title": "Anthropic claude-fable-5-1 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新读取精确型号claude-fable-5-1官方完整Input → output规格，输入为文字和图片，输出为文字。",
+        "该完整模态规格不包含原生视频输入；视频抽帧后走image/image_url属于图片序列。"
+      ]
+    },
+    {
+      "id": "video_20260920_xai_model_grok_4_20_non_reasoning",
+      "url": "https://docs.x.ai/developers/models/grok-4.20-non-reasoning",
+      "title": "xAI grok-4.20-0309-non-reasoning model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号grok-4.20-0309-non-reasoning官方模型页，完整模态规格为文字和图片输入、文字输出。",
+        "结合Chat/Responses官方OpenAPI输入类型，原生视频不属于该文字模型接口；独立Imagine视频接口和X Search工具不能替代此结论。"
+      ]
+    },
+    {
+      "id": "video_20260920_xai_model_grok_4_20",
+      "url": "https://docs.x.ai/developers/models/grok-4.20",
+      "title": "xAI grok-4.20-0309-reasoning model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号grok-4.20-0309-reasoning官方模型页，完整模态规格为文字和图片输入、文字输出。",
+        "结合Chat/Responses官方OpenAPI输入类型，原生视频不属于该文字模型接口；独立Imagine视频接口和X Search工具不能替代此结论。"
+      ]
+    },
+    {
+      "id": "video_20260920_xai_model_grok_4_3",
+      "url": "https://docs.x.ai/developers/models/grok-4.3",
+      "title": "xAI grok-4.3 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号grok-4.3官方模型页，完整模态规格为文字和图片输入、文字输出。",
+        "结合Chat/Responses官方OpenAPI输入类型，原生视频不属于该文字模型接口；独立Imagine视频接口和X Search工具不能替代此结论。"
+      ]
+    },
+    {
+      "id": "video_20260920_xai_model_grok_4_5",
+      "url": "https://docs.x.ai/developers/models/grok-4.5",
+      "title": "xAI grok-4.5 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号grok-4.5官方模型页，完整模态规格为文字和图片输入、文字输出。",
+        "结合Chat/Responses官方OpenAPI输入类型，原生视频不属于该文字模型接口；独立Imagine视频接口和X Search工具不能替代此结论。"
+      ]
+    },
+    {
+      "id": "video_20260920_xai_model_grok_4_20_multi_agent_0309",
+      "url": "https://docs.x.ai/developers/models/grok-4.20-multi-agent-0309",
+      "title": "xAI grok-4.20-multi-agent-0309 model - native video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "2026-09-20重新打开精确型号grok-4.20-multi-agent-0309官方模型页，完整模态规格为文字和图片输入、文字输出。",
+        "结合Chat/Responses官方OpenAPI输入类型，原生视频不属于该文字模型接口；独立Imagine视频接口和X Search工具不能替代此结论。"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "source_id": "openai",
+      "model": "gpt-4o",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_4o",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_4o"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-4o",
+        "gpt-4o-2024-11-20",
+        "gpt-4o-2024-08-06",
+        "gpt-4o-2024-05-13"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_4o",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-4o-mini",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_4o_mini",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_4o_mini"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-4o-mini",
+        "gpt-4o-mini-2024-07-18"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_4o_mini",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5",
+        "gpt-5-2025-08-07"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5-mini",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_mini",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_mini"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5-mini",
+        "gpt-5-mini-2025-08-07"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_mini",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5-nano",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_nano",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_nano"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5-nano",
+        "gpt-5-nano-2025-08-07"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_nano",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.1",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_1",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_1"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.1",
+        "gpt-5.1-2025-11-13"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_1",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.2",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_2",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "unsupported_parameters": {
+          "detail": [
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_2"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.2",
+        "gpt-5.2-2025-12-11"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_2",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.4",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_4",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_high",
+          "low_max_dimension": 2048,
+          "low_patch_budget": 6144,
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_4"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.4",
+        "gpt-5.4-2026-03-05"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_4",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.4-mini",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_4_mini",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_high",
+          "low_max_dimension": 2048,
+          "low_patch_budget": 6144,
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_4_mini"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.4-mini",
+        "gpt-5.4-mini-2026-03-17"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_4_mini",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.4-nano",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_4_nano",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_high",
+          "low_max_dimension": 2048,
+          "low_patch_budget": 6144,
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_4_nano"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.4-nano",
+        "gpt-5.4-nano-2026-03-17"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_4_nano",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_5",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_5"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.5",
+        "gpt-5.5-2026-04-23"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_5",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.6-luna",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_6_luna",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimensions": [
+            2048,
+            2048
+          ],
+          "high_patch_budget": 2500,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_6_luna"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.6-luna"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_6_luna",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.6-sol",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_6_sol",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimensions": [
+            2048,
+            2048
+          ],
+          "high_patch_budget": 2500,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_6_sol"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.6-sol"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_6_sol",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.6-terra",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_6_terra",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimensions": [
+            2048,
+            2048
+          ],
+          "high_patch_budget": 2500,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_6_terra"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.6-terra"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_6_terra",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-6-astra",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_6_astra",
+          "openai_images_vision",
+          "openai_chat_reference"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_patch_budget": 2500,
+          "high_max_dimension": 65535,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_6_astra"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-6-astra"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_6_astra",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5-pro",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_pro",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_pro"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5-pro",
+        "gpt-5-pro-2025-10-06"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_pro",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.3-codex",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_3_codex",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_3_codex"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.3-codex"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_3_codex",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.5-pro",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_5_pro",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和本地 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_5_pro"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.5-pro",
+        "gpt-5.5-pro-2026-04-23"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_5_pro",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_haiku_4_5",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 100,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_haiku_4_5"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-haiku-4-5-20251001"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_haiku_4_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-haiku-4-5-20251001",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_haiku_4_5",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 100,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_haiku_4_5",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-haiku-4-5-20251001"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_haiku_4_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-5-20251101",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_5",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 100,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_5"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-5-20251101"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-5-20251101",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_5",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 100,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_5",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-5-20251101"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-6",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_6",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_6"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-6"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_6",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-6",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_6",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_6",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-6"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_6",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-7",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_7",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_7"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-7"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_7",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-7",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_7",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_7",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-7"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_7",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-8",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_8",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_8"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-8"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_8",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-4-8",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_4_8",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_4_8",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-opus-4-8"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_4_8",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-5",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_5",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_5"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-opus-5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-opus-5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_opus_5",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_opus_5",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-opus-5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_opus_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_sonnet_4_5",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 100,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_sonnet_4_5"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-sonnet-4-5-20250929"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_sonnet_4_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-sonnet-4-5-20250929",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_sonnet_4_5",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 100,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_sonnet_4_5",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-sonnet-4-5-20250929"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_sonnet_4_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_sonnet_4_6",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_sonnet_4_6"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-sonnet-4-6"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_sonnet_4_6",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-sonnet-4-6",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_sonnet_4_6",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 1568,
+          "native_visual_tokens": 1568
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_sonnet_4_6",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-sonnet-4-6"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_sonnet_4_6",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-sonnet-5",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_sonnet_5",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_sonnet_5"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-sonnet-5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_sonnet_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-sonnet-5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_sonnet_5",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_sonnet_5",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-sonnet-5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_sonnet_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-fable-5",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_fable_5",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_fable_5"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-fable-5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_fable_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-fable-5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_fable_5",
+          "anthropic_vision",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层 image_url.url 支持；detail 被忽略，不能据 HTTP 成功认定该参数生效。",
+        "parameters": {
+          "detail": []
+        },
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_fable_5",
+          "anthropic_openai_compat"
+        ],
+        "notes": "官方兼容层明确音频输入会被忽略并剥离；input_audio/audio/modalities 不是可验证的音频输入能力。不强制构造预期 4xx。"
+      },
+      "allowed_response_models": [
+        "claude-fable-5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_fable_5",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "anthropic",
+      "model": "claude-fable-5-1",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "anthropic_model_fable_5_1",
+          "anthropic_vision"
+        ],
+        "notes": "使用原生 image source 结构；不套用 OpenAI image_url/detail 字段。",
+        "parameters": {
+          "source_type": [
+            "base64",
+            "url",
+            "file"
+          ]
+        },
+        "limits": {
+          "max_base64_encoded_image_mb": 10,
+          "max_request_payload_mb": 32,
+          "max_image_dimensions": [
+            8000,
+            8000
+          ],
+          "max_images_per_request": 600,
+          "many_image_threshold": 20,
+          "many_image_safe_max_dimension": 2000,
+          "native_long_edge": 2576,
+          "native_visual_tokens": 4784
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "anthropic_model_fable_5_1"
+        ],
+        "notes": "完整型号 Input → output 规格限定文字和图片输入；不支持原生音频输入。不要把工具处理音频文件或 Claude App 语音入口当成本 Messages 型号能力。"
+      },
+      "allowed_response_models": [
+        "claude-fable-5-1"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_anthropic_model_fable_5_1",
+          "anthropic_video_frames_20260920"
+        ],
+        "notes": "精确型号完整输入模态限定文字和图片，因此原生视频不支持。官方视频分析方法为拆成图片帧；Messages image.source或兼容Chat image_url只承载各帧，不是video内容块。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.20-0309-non-reasoning",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_20_non_reasoning",
+          "xai_chat_images"
+        ],
+        "notes": "使用官方 Chat 图片协议。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_20_non_reasoning",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.20-0309-non-reasoning"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_20_non_reasoning",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_chat_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.20-0309-reasoning",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_20",
+          "xai_chat_images"
+        ],
+        "notes": "使用官方 Chat 图片协议。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_20",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.20-0309-reasoning"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_20",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_chat_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.3",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_3",
+          "xai_chat_images"
+        ],
+        "notes": "使用官方 Chat 图片协议。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_3",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.3"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_3",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_chat_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_5",
+          "xai_chat_images"
+        ],
+        "notes": "使用官方 Chat 图片协议。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_5",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_5",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_chat_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.20-multi-agent-0309",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_20_multi_agent_0309",
+          "xai_image_understanding",
+          "xai_multi_agent"
+        ],
+        "notes": "多代理型号使用 Responses；图片请求 store=false。",
+        "parameters": {
+          "detail": [
+            "high"
+          ]
+        },
+        "parameters_unknown": {
+          "detail": [
+            "auto",
+            "low"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_20_multi_agent_0309",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.20-multi-agent-0309"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_20_multi_agent_0309",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_responses_content_scope_20260920",
+          "xai_multi_agent_video_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-4o",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_4o",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_4o"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-4o",
+        "gpt-4o-2024-11-20",
+        "gpt-4o-2024-08-06",
+        "gpt-4o-2024-05-13"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_4o",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-4o-mini",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_4o_mini",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_4o_mini"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-4o-mini",
+        "gpt-4o-mini-2024-07-18"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_4o_mini",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5",
+        "gpt-5-2025-08-07"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5-mini",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_mini",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_mini"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5-mini",
+        "gpt-5-mini-2025-08-07"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_mini",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5-nano",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_nano",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。 当前 guide 未为该型号单列 detail 范围；只纳入通用默认 auto，不把同家族的 original/low/high 直接继承。",
+        "parameters": {
+          "detail": [
+            "auto"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "low",
+            "high",
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_nano"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5-nano",
+        "gpt-5-nano-2025-08-07"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_nano",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.1",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_1",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_1"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.1",
+        "gpt-5.1-2025-11-13"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_1",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.2",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_2",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "unsupported_parameters": {
+          "detail": [
+            "original"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_2"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.2",
+        "gpt-5.2-2025-12-11"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_2",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.4",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_4",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_high",
+          "low_max_dimension": 2048,
+          "low_patch_budget": 6144,
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_4"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.4",
+        "gpt-5.4-2026-03-05"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_4",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.4-mini",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_4_mini",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_high",
+          "low_max_dimension": 2048,
+          "low_patch_budget": 6144,
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_4_mini"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.4-mini",
+        "gpt-5.4-mini-2026-03-17"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_4_mini",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.4-nano",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_4_nano",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_high",
+          "low_max_dimension": 2048,
+          "low_patch_budget": 6144,
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_4_nano"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.4-nano",
+        "gpt-5.4-nano-2026-03-17"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_4_nano",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.5",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_5",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimension": 2048,
+          "high_patch_budget": 2500,
+          "original_max_dimension": 6000,
+          "original_patch_budget": 10000
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_5"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.5",
+        "gpt-5.5-2026-04-23"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_5",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.6-luna",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_6_luna",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimensions": [
+            2048,
+            2048
+          ],
+          "high_patch_budget": 2500,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_6_luna"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.6-luna"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_6_luna",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.6-sol",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_6_sol",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimensions": [
+            2048,
+            2048
+          ],
+          "high_patch_budget": 2500,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_6_sol"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.6-sol"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_6_sol",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-5.6-terra",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_5_6_terra",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_max_dimensions": [
+            2048,
+            2048
+          ],
+          "high_patch_budget": 2500,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_5_6_terra"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-5.6-terra"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_5_6_terra",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "openai",
+      "model": "gpt-6-astra",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "openai_model_gpt_6_astra",
+          "openai_images_vision"
+        ],
+        "notes": "图片理解输出文字；按精确型号和选定 API form 建立用例。",
+        "parameters": {
+          "detail": [
+            "auto",
+            "low",
+            "high",
+            "original"
+          ]
+        },
+        "limits": {
+          "max_request_payload_mb": 512,
+          "max_images_per_request": 1500,
+          "max_processed_patches_per_image": 30000,
+          "patch_limit_scope": "仅 patch-based 图像编码；仍须遵循型号/detail 缩放与上下文上限。"
+        },
+        "detail_behavior": {
+          "auto": "same_as_original",
+          "low_max_dimensions": [
+            512,
+            512
+          ],
+          "high_patch_budget": 2500,
+          "high_max_dimension": 65535,
+          "original_max_dimension": 65535,
+          "original_patch_budget": null
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "openai_model_gpt_6_astra"
+        ],
+        "notes": "该精确型号官方模态表明确 Audio: Not supported；不从 gpt-audio、Realtime、GPT-Live 或转录型号继承能力。不据此假定特定 HTTP 错误码。"
+      },
+      "allowed_response_models": [
+        "gpt-6-astra"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_openai_model_gpt_6_astra",
+          "openai_video_frames_20260920"
+        ],
+        "notes": "原生视频输入不支持，依据精确型号Video: Not supported。可以在客户端抽帧后发送图片序列，但该流程只验证图像理解及抽帧时序，不验证视频容器、原生视频解码或音轨。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.20-0309-non-reasoning",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_20_non_reasoning",
+          "xai_image_understanding"
+        ],
+        "notes": "使用官方 Responses 图片协议；图片请求 store=false。",
+        "parameters": {
+          "detail": [
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "auto",
+            "low"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_20_non_reasoning",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.20-0309-non-reasoning"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_20_non_reasoning",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_responses_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.20-0309-reasoning",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_20",
+          "xai_image_understanding"
+        ],
+        "notes": "使用官方 Responses 图片协议；图片请求 store=false。",
+        "parameters": {
+          "detail": [
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "auto",
+            "low"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_20",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.20-0309-reasoning"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_20",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_responses_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.3",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_3",
+          "xai_image_understanding"
+        ],
+        "notes": "使用官方 Responses 图片协议；图片请求 store=false。",
+        "parameters": {
+          "detail": [
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "auto",
+            "low"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_3",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.3"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_3",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_responses_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    },
+    {
+      "source_id": "xai",
+      "model": "grok-4.5",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "xai_model_grok_4_5",
+          "xai_image_understanding"
+        ],
+        "notes": "使用官方 Responses 图片协议；图片请求 store=false。",
+        "parameters": {
+          "detail": [
+            "high"
+          ]
+        },
+        "limits": {
+          "max_image_bytes": 20971520,
+          "max_images_per_request": null,
+          "max_images_note": "官方未设数量硬上限；仍受上下文与整体请求限制。"
+        },
+        "parameters_unknown": {
+          "detail": [
+            "auto",
+            "low"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "xai_model_grok_4_5",
+          "xai_speech_to_text"
+        ],
+        "notes": "该精确型号完整输入模态列表仅文字和图片；不将独立语音转录/实时语音接口纳入此型号。未指定音频错误码，默认不自动发送负向音频请求。"
+      },
+      "allowed_response_models": [
+        "grok-4.5"
+      ],
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "video_20260920_xai_model_grok_4_5",
+          "xai_native_video_schema_20260920",
+          "xai_x_search_video_20260920",
+          "xai_responses_content_scope_20260920"
+        ],
+        "notes": "原生视频输入不支持：精确型号完整模态表仅text/image，当前官方Chat内容类型与Responses闭合内容枚举均无视频类型。video_url/VideoUrl属于Imagine编辑/延长；X Search视频分析属于工具，不能当作客户端视频输入支持。",
+        "native_input": false,
+        "alternative_input": "image_sequence"
+      }
+    }
+  ],
+  "protocols": [
+    {
+      "api_form": "openai_chat_completions",
+      "source_id": "openai",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_path": "messages[].content[]",
+        "type": "image_url",
+        "url_path": "image_url.url",
+        "transport": [
+          "https_url",
+          "base64_data_url"
+        ],
+        "detail": "以 models[].image.parameters.detail 的精确型号清单为准",
+        "count": [
+          "single",
+          "multiple"
+        ]
+      },
+      "audio_parameters": {},
+      "limits": {
+        "max_request_payload_mb": 512,
+        "max_images_per_request": 1500
+      },
+      "notes": "file_id 涉及独立上传生命周期，应与无状态内联/URL矩阵分开。支持者需校验图像语义，不以200或描述存在作成功。负向建议非法data/base64/MIME、无效detail枚举；不把模型unknown参数预期为必定4xx。",
+      "evidence": [
+        "openai_images_vision",
+        "openai_chat_reference"
+      ],
+      "video_formats": [],
+      "video_sources": [],
+      "video_parameters": {
+        "native_video_content_types": [],
+        "native_video_input_supported": false,
+        "frame_sequence_uses_image_parameters": true
+      },
+      "video_evidence": [
+        "openai_video_frames_20260920"
+      ],
+      "video_notes": "本协议的图片序列可承载客户端提取的视频帧；本地这些OpenAI文字型号不接受原生video输入。不给file_id或MP4 MIME自动赋予video支持。"
+    },
+    {
+      "api_form": "openai_responses",
+      "source_id": "openai",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_path": "input[].content[]",
+        "type": "input_image",
+        "url_path": "image_url",
+        "transport": [
+          "https_url",
+          "base64_data_url",
+          "file_id"
+        ],
+        "detail": "以 models[].image.parameters.detail 的精确型号清单为准",
+        "count": [
+          "single",
+          "multiple"
+        ]
+      },
+      "audio_parameters": {},
+      "limits": {
+        "max_request_payload_mb": 512,
+        "max_images_per_request": 1500
+      },
+      "notes": "file_id 涉及独立上传生命周期，应与无状态内联/URL矩阵分开。支持者需校验图像语义，不以200或描述存在作成功。负向建议非法data/base64/MIME、无效detail枚举；不把模型unknown参数预期为必定4xx。",
+      "evidence": [
+        "openai_images_vision"
+      ],
+      "video_formats": [],
+      "video_sources": [],
+      "video_parameters": {
+        "native_video_content_types": [],
+        "native_video_input_supported": false,
+        "frame_sequence_uses_image_parameters": true
+      },
+      "video_evidence": [
+        "openai_video_frames_20260920"
+      ],
+      "video_notes": "本协议的图片序列可承载客户端提取的视频帧；本地这些OpenAI文字型号不接受原生video输入。不给file_id或MP4 MIME自动赋予video支持。"
+    },
+    {
+      "api_form": "anthropic_messages",
+      "source_id": "anthropic",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_path": "messages[].content[]",
+        "type": "image",
+        "transport": [
+          "base64",
+          "https_url",
+          "file_id"
+        ],
+        "base64_fields": [
+          "source.type=base64",
+          "source.media_type",
+          "source.data"
+        ],
+        "url_fields": [
+          "source.type=url",
+          "source.url"
+        ],
+        "file_fields": [
+          "source.type=file",
+          "source.file_id"
+        ],
+        "count": [
+          "single",
+          "multiple"
+        ],
+        "detail": []
+      },
+      "audio_parameters": {},
+      "limits": {
+        "max_base64_encoded_image_mb": 10,
+        "max_request_payload_mb": 32,
+        "max_image_dimensions": [
+          8000,
+          8000
+        ]
+      },
+      "notes": "source.data 使用纯Base64而非data URL；file_id属于单独上传生命周期。负向建议MIME与字节不匹配、非法base64；边界数量/体积测试不作为默认轻量用例。动画仅首帧。",
+      "evidence": [
+        "anthropic_vision"
+      ],
+      "video_formats": [],
+      "video_sources": [],
+      "video_parameters": {
+        "native_video_content_types": [],
+        "native_video_input_supported": false,
+        "frame_sequence_uses_image_parameters": true
+      },
+      "video_evidence": [
+        "anthropic_video_frames_20260920"
+      ],
+      "video_notes": "视频需先在客户端转换成图片序列，并遵循image/image_url的格式与张数限制；无原生video内容项。"
+    },
+    {
+      "api_form": "openai_chat_completions",
+      "source_id": "anthropic",
+      "image_formats": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_path": "messages[].content[]",
+        "type": "image_url",
+        "url_path": "image_url.url",
+        "transport": [
+          "https_url",
+          "base64_data_url"
+        ],
+        "detail": [],
+        "ignored_parameters": [
+          "image_url.detail"
+        ],
+        "count": [
+          "single",
+          "multiple"
+        ]
+      },
+      "audio_parameters": {
+        "ignored_parameters": [
+          "messages[].content[].input_audio",
+          "audio",
+          "modalities"
+        ]
+      },
+      "limits": {
+        "max_base64_encoded_image_mb": 10,
+        "max_request_payload_mb": 32
+      },
+      "notes": "兼容层图片url支持、detail忽略；音频输入忽略且剥离，不能假设4xx或把200当支持。file内容块被忽略。",
+      "evidence": [
+        "anthropic_openai_compat",
+        "anthropic_vision"
+      ],
+      "video_formats": [],
+      "video_sources": [],
+      "video_parameters": {
+        "native_video_content_types": [],
+        "native_video_input_supported": false,
+        "frame_sequence_uses_image_parameters": true
+      },
+      "video_evidence": [
+        "anthropic_video_frames_20260920"
+      ],
+      "video_notes": "视频需先在客户端转换成图片序列，并遵循image/image_url的格式与张数限制；无原生video内容项。"
+    },
+    {
+      "api_form": "openai_chat_completions",
+      "source_id": "xai",
+      "image_formats": [
+        "image/jpeg",
+        "image/png"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_path": "messages[].content[]",
+        "type": "image_url",
+        "url_path": "image_url.url",
+        "transport": [
+          "https_url",
+          "base64_data_url"
+        ],
+        "detail": [
+          "auto",
+          "low",
+          "high"
+        ],
+        "count": [
+          "single",
+          "multiple"
+        ]
+      },
+      "audio_parameters": {},
+      "limits": {
+        "max_image_bytes": 20971520,
+        "max_images_per_request": null
+      },
+      "notes": "不从OpenAI兼容外观推导WebP/GIF或音频；官方仅列JPEG/PNG。未设图像数量硬上限不等于上下文无限。Responses的high由图片示例直接支持，其它detail值待该表单精确字段证据。",
+      "evidence": [
+        "xai_chat_images"
+      ],
+      "video_formats": [],
+      "video_sources": [],
+      "video_parameters": {
+        "native_video_content_types": [],
+        "native_video_input_supported": false,
+        "frame_sequence_uses_image_parameters": true
+      },
+      "video_evidence": [
+        "xai_native_video_schema_20260920",
+        "xai_x_search_video_20260920",
+        "xai_chat_content_scope_20260920"
+      ],
+      "video_notes": "不接受原生视频内容类型。当前官方video_url/VideoUrl仅是Imagine视频操作的协议；X Search.enable_video_understanding不属于客户端视频输入矩阵。"
+    },
+    {
+      "api_form": "openai_responses",
+      "source_id": "xai",
+      "image_formats": [
+        "image/jpeg",
+        "image/png"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_path": "input[].content[]",
+        "type": "input_image",
+        "url_path": "image_url",
+        "transport": [
+          "https_url",
+          "base64_data_url"
+        ],
+        "detail": [
+          "high"
+        ],
+        "count": [
+          "single",
+          "multiple"
+        ],
+        "store": false
+      },
+      "audio_parameters": {},
+      "limits": {
+        "max_image_bytes": 20971520,
+        "max_images_per_request": null
+      },
+      "notes": "不从OpenAI兼容外观推导WebP/GIF或音频；官方仅列JPEG/PNG。未设图像数量硬上限不等于上下文无限。Responses的high由图片示例直接支持，其它detail值待该表单精确字段证据。",
+      "evidence": [
+        "xai_image_understanding",
+        "xai_multi_agent"
+      ],
+      "video_formats": [],
+      "video_sources": [],
+      "video_parameters": {
+        "native_video_content_types": [],
+        "native_video_input_supported": false,
+        "frame_sequence_uses_image_parameters": true
+      },
+      "video_evidence": [
+        "xai_native_video_schema_20260920",
+        "xai_x_search_video_20260920",
+        "xai_responses_content_scope_20260920"
+      ],
+      "video_notes": "不接受原生视频内容类型。当前官方video_url/VideoUrl仅是Imagine视频操作的协议；X Search.enable_video_understanding不属于客户端视频输入矩阵。"
+    }
+  ]
+}

@@ -1,0 +1,343 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yibu.example/schemas/model-profile-db/source-catalog-v3.json",
+  "title": "Yibu Model Profile Database Source Catalog",
+  "type": "object",
+  "required": [
+    "mpdb_schema_version",
+    "catalog_version",
+    "identity_contract",
+    "provenance_schema_version",
+    "provenance_records",
+    "modalities",
+    "sources",
+    "families",
+    "canonical_models",
+    "contracts",
+    "profiles"
+  ],
+  "properties": {
+    "mpdb_schema_version": {"const": 3},
+    "catalog_version": {"type": "string", "minLength": 1},
+    "released_at": {"type": "string"},
+    "identity_contract": {"$ref": "#/$defs/identityContract"},
+    "provenance_schema_version": {"const": 1},
+    "provenance_records": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/provenanceRecord"}
+    },
+    "modalities": {
+      "type": "object",
+      "required": ["text", "image", "video"],
+      "properties": {
+        "text": {"$ref": "#/$defs/modality"},
+        "image": {
+          "allOf": [
+            {"$ref": "#/$defs/modality"},
+            {"properties": {"pressure_test_enabled": {"const": false}}}
+          ]
+        },
+        "video": {
+          "allOf": [
+            {"$ref": "#/$defs/modality"},
+            {"properties": {"pressure_test_enabled": {"const": false}}}
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {"type": "object", "additionalProperties": {"$ref": "#/$defs/source"}},
+    "families": {"type": "object", "additionalProperties": {"$ref": "#/$defs/family"}},
+    "canonical_models": {"type": "object", "additionalProperties": {"$ref": "#/$defs/canonicalModel"}},
+    "contracts": {"type": "object", "additionalProperties": {"$ref": "#/$defs/contract"}},
+    "profiles": {"type": "object", "additionalProperties": {"$ref": "#/$defs/profile"}},
+    "route_templates": {"type": "object", "additionalProperties": {"$ref": "#/$defs/routeTemplate"}},
+    "legacy_aliases": {"type": "object", "additionalProperties": {"type": "string"}}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "identityContract": {
+      "type": "object",
+      "required": ["hierarchy", "profile_id_template", "interface_id_template", "api_form_scope", "source_semantics"],
+      "properties": {
+        "hierarchy": {"const": ["modality", "source_id", "family_id", "model_slug"]},
+        "profile_id_template": {"const": "{modality}/{source_id}/{family_id}/{model_slug}"},
+        "interface_id_template": {"const": "{profile_id}#{interface_slug}"},
+        "api_form_scope": {"const": "interface"},
+        "source_semantics": {"const": "official_reference_origin"}
+      },
+      "additionalProperties": false
+    },
+    "modality": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {
+        "label": {"type": "string"},
+        "status": {"type": "string"},
+        "description": {"type": "string"},
+        "pressure_test_enabled": {"type": "boolean"}
+      },
+      "additionalProperties": true
+    },
+    "source": {
+      "type": "object",
+      "required": ["label", "source_type", "authority", "official_sources", "official_domains", "request_model_id_semantics", "provenance_record_id"],
+      "properties": {
+        "label": {"type": "string"},
+        "source_type": {"enum": ["official_direct", "cloud_managed", "platform_marketplace"]},
+        "authority": {"enum": ["origin_vendor", "managed_cloud", "managed_platform_marketplace"]},
+        "official_sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^https://"}, "uniqueItems": true},
+        "official_domains": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^(?:[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\\.)+[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$"}, "uniqueItems": true},
+        "official_url_prefixes": {"type": "array", "items": {"type": "string", "format": "uri", "pattern": "^https://[^/?#]+/.+/$"}, "uniqueItems": true},
+        "operator": {"type": "string"},
+        "evidence": {"type": "string"},
+        "provenance_record_id": {"type": "string", "minLength": 1},
+        "request_model_id_semantics": {"enum": ["exact_source_model_id", "azure_deployment_model_identity"]}
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": {"properties": {"source_type": {"const": "official_direct"}}, "required": ["source_type"]},
+          "then": {"properties": {"authority": {"const": "origin_vendor"}}}
+        },
+        {
+          "if": {"properties": {"source_type": {"const": "cloud_managed"}}, "required": ["source_type"]},
+          "then": {"properties": {"authority": {"const": "managed_cloud"}}}
+        },
+        {
+          "if": {"properties": {"source_type": {"const": "platform_marketplace"}}, "required": ["source_type"]},
+          "then": {"properties": {"authority": {"const": "managed_platform_marketplace"}}}
+        }
+      ]
+    },
+    "family": {
+      "type": "object",
+      "required": ["label"],
+      "properties": {"label": {"type": "string"}},
+      "additionalProperties": true
+    },
+    "canonicalModel": {
+      "type": "object",
+      "required": ["family_id", "owner_source_id", "model_slug", "modalities", "official_sources", "verification_status", "provenance_record_id"],
+      "properties": {
+        "family_id": {"type": "string"},
+        "owner_source_id": {"type": "string"},
+        "model_slug": {"type": "string"},
+        "api_form": false,
+        "modalities": {"type": "array", "items": {"enum": ["text", "image", "video"]}, "uniqueItems": true},
+        "aliases": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "official_sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^https://"}, "uniqueItems": true},
+        "verification_status": {"const": "exact_official_model_id"},
+        "provenance_record_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "contract": {
+      "type": "object",
+      "required": ["label", "api_form", "source_id", "source_ids", "official_sources", "verification_status", "provenance_record_id"],
+      "properties": {
+        "label": {"type": "string"},
+        "family_id": {"type": "string"},
+        "api_form": {"type": "string"},
+        "source_id": {"type": "string", "minLength": 1},
+        "source_ids": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string"}, "uniqueItems": true},
+        "official_sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^https://"}, "uniqueItems": true},
+        "verification_status": {"const": "exact_official_api_contract"},
+        "test_binding_status": {"enum": ["required", "access_restricted", "retired", "not_certified"], "default": "required"},
+        "extends": {"type": "string"},
+        "parameter_capabilities": {"type": "object"},
+        "provenance_record_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true
+    },
+    "profile": {
+      "type": "object",
+      "required": ["modality", "source_id", "family_id", "model_slug", "canonical_model_id", "request_model_ids", "official_sources", "verification_status", "request_model_id_semantics", "interfaces", "provenance_record_id"],
+      "properties": {
+        "modality": {"enum": ["text", "image", "video"]},
+        "source_id": {"type": "string"},
+        "source_authority": {"enum": ["origin_vendor", "managed_cloud", "managed_platform_marketplace"]},
+        "family_id": {"type": "string"},
+        "model_slug": {"type": "string"},
+        "api_form": false,
+        "profile_state": {"enum": ["executable", "identity_only"], "default": "executable"},
+        "canonical_model_id": {"type": "string"},
+        "request_model_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "official_sources": {"type": "array", "minItems": 1, "items": {"type": "string", "pattern": "^https://"}, "uniqueItems": true},
+        "verification_status": {"const": "exact_official_source_model_id"},
+        "request_model_id_semantics": {"enum": ["exact_source_model_id", "azure_deployment_model_identity"]},
+        "provenance_record_id": {"type": "string", "minLength": 1},
+        "interfaces": {"type": "object", "additionalProperties": {"$ref": "#/$defs/interface"}}
+      },
+      "additionalProperties": true,
+      "allOf": [
+        {
+          "if": {
+            "required": ["profile_state"],
+            "properties": {"profile_state": {"const": "identity_only"}}
+          },
+          "else": {"properties": {"interfaces": {"minProperties": 1}}}
+        }
+      ]
+    },
+    "interface": {
+      "type": "object",
+      "required": ["api_form", "routing_mode", "contract_ids", "default_contract_id", "provenance_record_id"],
+      "properties": {
+        "api_form": {"type": "string"},
+        "routing_mode": {"type": "string"},
+        "contract_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "default_contract_id": {"type": "string"},
+        "request_model_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+        "test_binding_status": {"enum": ["required", "access_restricted", "retired", "not_certified"], "default": "required"},
+        "default_api_version": {"type": "string", "minLength": 1},
+        "api_versions": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"$ref": "#/$defs/apiVersionVariant"}
+        },
+        "enabled": {"type": "boolean"},
+        "executable": {"type": "boolean"},
+        "disabled_reason": {"type": ["string", "null"]}
+        ,"provenance_record_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": true,
+      "not": {"required": ["safety_binding"]},
+      "dependentRequired": {
+        "default_api_version": ["api_versions"],
+        "api_versions": ["default_api_version"]
+      }
+    },
+    "apiVersionVariant": {
+      "type": "object",
+      "required": ["stability"],
+      "properties": {
+        "stability": {"enum": ["stable", "beta"]},
+        "path_template": {"type": "string", "pattern": "^/"}
+      },
+      "not": {
+        "anyOf": [
+          {"required": ["endpoint"]},
+          {"required": ["base_url"]},
+          {"required": ["api_endpoint"]}
+        ]
+      },
+      "additionalProperties": true
+    },
+    "routeTemplate": {
+      "type": "object",
+      "required": ["modality", "family_id", "routing_mode", "api_forms"],
+      "properties": {
+        "modality": {"enum": ["text", "image", "video"]},
+        "family_id": {"type": "string"},
+        "routing_mode": {"type": "string"},
+        "api_forms": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": "object",
+            "required": ["contract_ids", "default_contract_id"],
+            "properties": {
+              "transport_adapter_id": {"type": "string"},
+              "contract_ids": {"type": "array", "items": {"type": "string"}, "minItems": 1, "uniqueItems": true},
+              "default_contract_id": {"type": "string"}
+            },
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "provenanceRecord": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "authority",
+        "authority_domains",
+        "official_urls",
+        "retrieved_at",
+        "target",
+        "exact_identity",
+        "api_form",
+        "parameters",
+        "section_summary",
+        "content_version"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "authority": {"enum": ["origin_vendor", "managed_cloud", "managed_platform_marketplace"]},
+        "authority_domains": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "official_urls": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^https://"},
+          "uniqueItems": true
+        },
+        "retrieved_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "target": {
+          "type": "object",
+          "required": ["type", "id", "fields"],
+          "properties": {
+            "type": {"enum": ["source", "canonical_model", "profile", "interface", "contract"]},
+            "id": {"type": "string", "minLength": 1},
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1},
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "exact_identity": {"type": "object", "minProperties": 1},
+        "api_form": {"type": ["string", "null"]},
+        "parameters": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "section_summary": {"type": "string", "minLength": 1},
+        "content_version": {"$ref": "#/$defs/contentVersion"}
+      },
+      "additionalProperties": false
+    },
+    "contentVersion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {"const": "official_version"},
+            "value": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "sha256"],
+          "properties": {
+            "kind": {"const": "content_sha256"},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "snapshot_date", "page_content_sha256_available"],
+          "properties": {
+            "kind": {"const": "unversioned_retrieval_snapshot"},
+            "snapshot_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+            "page_content_sha256_available": {"const": false}
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

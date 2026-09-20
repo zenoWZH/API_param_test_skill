@@ -1,0 +1,1989 @@
+{
+  "sources": [
+    {
+      "id": "cn_deepseek_vision",
+      "url": "https://api-docs.deepseek.com/guides/vision/",
+      "title": "DeepSeek Vision",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "deepseek-flash 接受图片；Chat 使用 image_url 或 file content block。支持 JPEG/PNG/GIF/WebP，按文件内容识别格式。",
+        "支持 Base64 Data URL、公开 HTTP(S) URL、Files API file_id；detail 可选 low/high/original/auto。",
+        "每请求最多600张；普通单图32MiB，body 48MiB；长边8192像素，15张以上降至4096。文件上传另有上限。",
+        "Chat 图片仅限 user；Files API 涉及单独上传生命周期，不能作为无状态样例自动执行。"
+      ]
+    },
+    {
+      "id": "cn_deepseek_pricing",
+      "url": "https://api-docs.deepseek.com/quick_start/pricing",
+      "title": "DeepSeek Models and Pricing",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "当前 deepseek-flash 对应 V4.1-Flash，Vision 支持；deepseek-v4-pro 对应 V4-Pro-0813，Vision 明确不支持。",
+        "本页未声明原生音频输入能力。"
+      ]
+    },
+    {
+      "id": "cn_kimi_models",
+      "url": "https://platform.kimi.ai/docs/models",
+      "title": "Kimi Model List",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "K3、K2.7-Code、K2.6 列为多模态模型。",
+        "kimi-k2.5 于2026-08-31停用。停服与历史模态能力分别记录。"
+      ]
+    },
+    {
+      "id": "cn_kimi_vision",
+      "url": "https://platform.kimi.ai/docs/guide/use-kimi-vision-model",
+      "title": "Configure Kimi Vision Models",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "K3/K2.7-Code/K2.6 支持视觉输入；消息content须为数组。",
+        "图片支持 JPEG/PNG/GIF/WebP/BMP/HEIC/HEIF；SVG明确拒绝。",
+        "限制章节明确不支持HTTP(S)图片URL，只支持Base64与上传文件ID；文首概述有URLs字样，以明确限制为准。",
+        "支持多图，无固定张数上限但请求body不超过100M；建议分辨率不超过4096×2160，不是硬性像素上限。"
+      ]
+    },
+    {
+      "id": "cn_kimi_chat",
+      "url": "https://platform.kimi.ai/docs/api/chat",
+      "title": "Kimi Chat Completions API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "图片用 image_url.url 的Data URL或 ms://file_id；也允许image_url直接字符串。",
+        "content type 枚举列text/image_url/video_url，未找到原生音频请求格式或明确音频不支持声明；音频标unknown，不据此生成正向用例。"
+      ]
+    },
+    {
+      "id": "cn_kimi_k25",
+      "url": "https://github.com/MoonshotAI/Kimi-K2.5",
+      "title": "MoonshotAI Kimi-K2.5 model card",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "官方模型卡确认K2.5具有原生视觉语言能力。该证据仅保存历史模型能力，不覆盖当前官方API停服状态。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_3",
+      "url": "https://docs.z.ai/guides/llm/glm-5.3.md",
+      "title": "Z.ai GLM-5.3",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "Feature Changes明确GLM-5.3当前仅支持文字输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_2",
+      "url": "https://docs.z.ai/guides/llm/glm-5.2.md",
+      "title": "Z.ai GLM-5.2",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "该精确型号模型卡Input Modalities声明为Text。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_1",
+      "url": "https://docs.z.ai/guides/llm/glm-5.1",
+      "title": "Z.ai GLM-5.1",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "该精确型号模型卡Input Modalities声明为Text。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5",
+      "url": "https://docs.z.ai/guides/llm/glm-5",
+      "title": "Z.ai GLM-5",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "该精确型号模型卡Input Modalities声明为Text。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_4_7",
+      "url": "https://docs.z.ai/guides/llm/glm-4.7.md",
+      "title": "Z.ai GLM-4.7",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "该精确型号模型卡Input Modalities声明为Text。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_4_6",
+      "url": "https://docs.z.ai/guides/llm/glm-4.6.md",
+      "title": "Z.ai GLM-4.6",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "该精确型号模型卡Input Modalities声明为Text。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_4_5",
+      "url": "https://docs.z.ai/guides/llm/glm-4.5.md",
+      "title": "Z.ai GLM-4.5",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "该精确型号模型卡Input Modalities声明为Text。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_3_flash",
+      "url": "https://docs.z.ai/guides/vlm/glm-5.3-flash",
+      "title": "Z.ai GLM-5.3-Flash",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "Flash与GLM-5.3是不同型号：Flash原生支持图片、视频、文件和文字。",
+        "图片使用messages[].content[]中image_url，url接收外部URL或Base64 Data URL；多个block表示多图。",
+        "未给出独立音频content block或格式；Agent视频处理提到speech不能推断原生音频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_chat",
+      "url": "https://docs.z.ai/api-reference/llm/chat-completion.md",
+      "title": "Z.ai Chat Completion OpenAPI",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "VisionMultimodalContentItem支持图片URL或Base64，图片格式JPG/PNG/JPEG，每图小于5M，像素不超过6000×6000。",
+        "通用简介提audio，但视觉schema列text/image/video/file；不据通用描述给GLM-5.3-Flash开启独立音频测试。",
+        "GLM-5V/4.6V/4.5V的图片张数限制不外推到GLM-5.3-Flash。"
+      ]
+    },
+    {
+      "id": "cn_minimax_openai",
+      "url": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+      "title": "MiniMax OpenAI SDK",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "MiniMax-M3支持文字、图片、视频输入；图片image_url支持URL或Base64。",
+        "图片JPEG/PNG/GIF/WebP，单图10MB，body64MB。detail=low/default/high，默认default；max_long_side_pixel控制长边。",
+        "重要说明明确原生音频输入当前不支持。"
+      ]
+    },
+    {
+      "id": "cn_minimax_anthropic",
+      "url": "https://platform.minimax.io/docs/api-reference/text-anthropic-api",
+      "title": "MiniMax Anthropic SDK",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "MiniMax-M2.7/M2.5/M2.1/M2仅支持text和tool-call内容，不支持图片/视频；M3单独支持图片。",
+        "该模型能力限制用于解释M2系列，不给当前OpenAI路线生成Anthropic请求。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_qwen37",
+      "url": "https://help.aliyun.com/zh/model-studio/qwen3-7-max",
+      "title": "Alibaba Cloud qwen3.7-max",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "精确ID qwen3.7-max 等同2026-05-20快照，仅开放文字输入。",
+        "2026-06-08快照新增视觉能力，但不能将快照能力套给未带日期ID。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_glm5",
+      "url": "https://help.aliyun.com/zh/model-studio/glm-9",
+      "title": "Alibaba Cloud glm-5",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "glm-5 由阿里云百炼推理，输入模态为Text。文档URL glm-9 对应标题和精确型号 glm-5。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_glm51",
+      "url": "https://help.aliyun.com/zh/model-studio/glm-5-1",
+      "title": "Alibaba Cloud glm-5.1",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "glm-5.1 由阿里云百炼推理，输入模态为Text。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_glm52",
+      "url": "https://help.aliyun.com/zh/model-studio/glm-5-2",
+      "title": "Alibaba Cloud glm-5.2",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "glm-5.2 各地区模型能力表输入模态为Text。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_kimi26",
+      "url": "https://help.aliyun.com/zh/model-studio/kimi-k2-6",
+      "title": "Alibaba Cloud kimi-k2.6",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "百炼部署kimi-k2.6明确支持文字、图片、视频；未找到独立音频输入说明。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_kimi27",
+      "url": "https://help.aliyun.com/zh/model-studio/kimi-k2-7-code",
+      "title": "Alibaba Cloud kimi-k2.7-code",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "百炼部署kimi-k2.7-code明确支持文字、图片、视频；未找到独立音频输入说明。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_kimi_api",
+      "url": "https://help.aliyun.com/zh/model-studio/kimi-api",
+      "title": "Alibaba Cloud Kimi API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "百炼Kimi支持外部HTTP(S)图片URL和多图；本地文件经OpenAI兼容接口需Base64 Data URL。",
+        "示例图片为JPEG/PNG；不要从Moonshot来源继承HTTP URL禁用规则。",
+        "官方业务空间域名形如{WorkspaceId}.cn-beijing.maas.aliyuncs.com，是百炼正式服务接入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_deepseek_api",
+      "url": "https://help.aliyun.com/zh/model-studio/deepseek-api",
+      "title": "Alibaba Cloud DeepSeek API",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "FAQ声明该来源DeepSeek模型仅支持文字输入，不支持图片/文档。",
+        "文档列deepseek-v3.2将于2026-10-10下架；本地MPDB已停用的接口保持停用。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_deepseek_flash",
+      "url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-flash",
+      "title": "Alibaba Cloud deepseek-v4-flash",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "百炼精确型号deepseek-v4-flash输入模态Text，不继承DeepSeek直连deepseek-flash新别名的视觉能力。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_deepseek_pro",
+      "url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+      "title": "Alibaba Cloud deepseek-v4-pro",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "百炼精确型号deepseek-v4-pro输入模态Text。"
+      ]
+    },
+    {
+      "id": "cn_deepseek_responses_media",
+      "url": "https://api-docs.deepseek.com/guides/responses_api/",
+      "title": "DeepSeek responses API and image input",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The official compatibility guide defines this API form; the Vision guide explicitly documents image parts for deepseek-flash on the same form."
+      ]
+    },
+    {
+      "id": "cn_deepseek_anthropic_media",
+      "url": "https://api-docs.deepseek.com/guides/anthropic_api/",
+      "title": "DeepSeek anthropic API and image input",
+      "checked_at": "2026-09-19",
+      "facts": [
+        "The official compatibility guide defines this API form; the Vision guide explicitly documents image parts for deepseek-flash on the same form."
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_3-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-5.3.md",
+      "title": "Z.ai GLM-5.3 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_2-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-5.2.md",
+      "title": "Z.ai GLM-5.2 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5_1-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-5.1",
+      "title": "Z.ai GLM-5.1 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_5-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-5",
+      "title": "Z.ai GLM-5 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_4_7-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-4.7.md",
+      "title": "Z.ai GLM-4.7 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_4_6-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-4.6.md",
+      "title": "Z.ai GLM-4.6 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_zai_glm_4_5-video-20260920",
+      "url": "https://docs.z.ai/guides/llm/glm-4.5.md",
+      "title": "Z.ai GLM-4.5 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_qwen37-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/qwen3-7-max",
+      "title": "Alibaba Cloud qwen3.7-max - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_glm5-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/glm-9",
+      "title": "Alibaba Cloud glm-5 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_glm51-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/glm-5-1",
+      "title": "Alibaba Cloud glm-5.1 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_glm52-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/glm-5-2",
+      "title": "Alibaba Cloud glm-5.2 - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_deepseek_api-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/deepseek-api",
+      "title": "Alibaba Cloud DeepSeek API - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_deepseek_flash-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-flash",
+      "title": "Alibaba Cloud deepseek-v4-flash - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_deepseek_pro-video-20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/deepseek-v4-pro",
+      "title": "Alibaba Cloud deepseek-v4-pro - video input check",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "精确型号官方输入模态为文字或明确仅支持文字输入，因此不支持原生视频输入。"
+      ]
+    },
+    {
+      "id": "cn_kimi_video_20260920",
+      "url": "https://platform.kimi.ai/docs/guide/use-kimi-vision-model",
+      "title": "Kimi video input guide",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "K3、K2.7-Code、K2.6明确支持视频内容。视频可以先以purpose=video上传，再以ms://文件ID引用。",
+        "支持MP4/MPEG/MOV/AVI/FLV/MPG/WebM/WMV/3GPP；推荐视频不超过FHD，这属于建议，不是硬上限。",
+        "动态图片的可能视频计费不等于原生视频输入验证。没有文档化fps或视频帧数组请求参数，不额外设置。"
+      ]
+    },
+    {
+      "id": "cn_kimi_video_chat_20260920",
+      "url": "https://platform.kimi.ai/docs/api/chat",
+      "title": "Kimi Chat video content schema",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "video_url.url明确支持data:video/mp4;base64,...和ms://文件ID；content必须为数组。",
+        "video_url可用对象或直接字符串。只声明文档明确的Base64与file_id，不虚构HTTP视频URL支持。"
+      ]
+    },
+    {
+      "id": "cn_kimi_k25_video_20260920",
+      "url": "https://github.com/MoonshotAI/Kimi-K2.5",
+      "title": "Kimi K2.5 official video example",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方README提供video_url.url=data:video/mp4;base64,...的完整Chat Completions视频例子。",
+        "该例只证明历史模型与请求形状；官方API已停用的lifecycle单独保留。"
+      ]
+    },
+    {
+      "id": "cn_zai_flash_video_20260920",
+      "url": "https://docs.z.ai/guides/vlm/glm-5.3-flash",
+      "title": "GLM 5.3 Flash input modalities",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "GLM-5.3-Flash型号卡将Video列为输入模态，并链接Chat Completion API。",
+        "视频能力不得传给非Flash的GLM-5.3，也不改变现有coding/general路线执行门禁。"
+      ]
+    },
+    {
+      "id": "cn_zai_video_schema_20260920",
+      "url": "https://docs.z.ai/api-reference/llm/chat-completion.md",
+      "title": "Z.ai Chat video schema",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "Video内容块为type=video_url，video_url.url为视频URL；大小限200MB，格式MP4/MKV/MOV。",
+        "此视频字段没有明确Base64视频说明；不从图片或通用file_data字段推断它支持Base64视频。",
+        "其他GLM-V系列的1/2个视频限制不自动套给GLM-5.3-Flash。"
+      ]
+    },
+    {
+      "id": "cn_minimax_video_20260920",
+      "url": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+      "title": "MiniMax OpenAI video input",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "MiniMax-M3支持video_url视频内容块，可URL或Base64；格式为MP4/AVI/MOV/MKV。",
+        "URL或Base64视频最大50MB，body最大64MB；上传Files API后mm_file://可引用512MB视频。",
+        "video_url对象例子明确detail=default；文档detail枚举low/default/high。fps范围0.2–5默认1，但兼容示例未展示fps放置位置，基线不猜测该位置。"
+      ]
+    },
+    {
+      "id": "cn_minimax_m2_video_20260920",
+      "url": "https://platform.minimax.io/docs/api-reference/text-anthropic-api",
+      "title": "MiniMax M2 series modality limits",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方明确M2.7和M2.5系列仅支持文字与工具内容，不支持图片或视频输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_kimi_video_20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/kimi-api",
+      "title": "Alibaba Cloud Kimi video understanding",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "百炼K2.7-Code/K2.6/K2.5支持直接视频文件和帧列表；本地文件可用data:video/mp4;base64,...，远程可用HTTP(S)URL。",
+        "直接视频content.type=video_url；fps在content块顶层，范围0.1–10，默认2。max_frames只在DashScope SDK可设置。",
+        "帧列表使用type=video、video=[图片URL或Data URL]，与原生视频文件用例分开；百炼此页明确K3暂不支持视频，不能用Moonshot来源结论覆盖。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_kimi26_video_20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/kimi-k2-6",
+      "title": "Alibaba kimi-k2.6 input modalities",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "该精确百炼型号明确列出Video/Image/Text输入。"
+      ]
+    },
+    {
+      "id": "cn_aliyun_kimi27_video_20260920",
+      "url": "https://help.aliyun.com/zh/model-studio/kimi-k2-7-code",
+      "title": "Alibaba kimi-k2.7-code input modalities",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "该精确百炼型号明确列出Text/Image/Video输入。"
+      ]
+    },
+    {
+      "id": "cn_deepseek_video_chat_20260920",
+      "url": "https://api-docs.deepseek.com/api/create-chat-completion",
+      "title": "DeepSeek chat native video review",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "当前官方字段与说明未定义原生视频文件输入或video内容块；支持图片不等于支持原生视频。",
+        "没有找到精确API原生视频支持或明确不支持的声明，因此使用unknown，不发臆造视频请求。"
+      ]
+    },
+    {
+      "id": "cn_deepseek_video_responses_20260920",
+      "url": "https://api-docs.deepseek.com/guides/responses_api/",
+      "title": "DeepSeek responses native video review",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "当前官方字段与说明未定义原生视频文件输入或video内容块；支持图片不等于支持原生视频。",
+        "没有找到精确API原生视频支持或明确不支持的声明，因此使用unknown，不发臆造视频请求。"
+      ]
+    },
+    {
+      "id": "cn_deepseek_video_anthropic_20260920",
+      "url": "https://api-docs.deepseek.com/guides/anthropic_api/",
+      "title": "DeepSeek anthropic native video review",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "当前官方字段与说明未定义原生视频文件输入或video内容块；支持图片不等于支持原生视频。",
+        "没有找到精确API原生视频支持或明确不支持的声明，因此使用unknown，不发臆造视频请求。"
+      ]
+    },
+    {
+      "id": "cn_zai_video_public_fixture_20260920",
+      "url": "https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4.6v.md",
+      "title": "Zhipu official video_url fixture example",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "当前官方Chat请求示例仍用video_url.url=https://cdn.bigmodel.cn/agent-demos/lark/113123.mov。",
+        "该文档用于确定公开示例URL与wire形状，不把GLM-4.6V模型能力转移到其他型号；fixture字节和视频内容需独立下载核验。"
+      ]
+    },
+    {
+      "id": "cn_glm4v_plus_0111_official_video_sample",
+      "url": "https://docs.bigmodel.cn/cn/guide/models/vlm/glm-4v-plus-0111.md",
+      "title": "Official GLM video_url public sample",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "官方video_url请求示例引用https://sfile.chatglm.cn/testpath/video/b844f8f1-5df9-556c-a515-3d3bfaa736e8_0.mp4。",
+        "这里只记录公开视频样本来源，不新增GLM-4V-Plus-0111可执行能力，也不将旧型号能力传给其他型号。"
+      ]
+    }
+  ],
+  "models": [
+    {
+      "source_id": "deepseek",
+      "model": "deepseek-flash",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_deepseek_vision",
+          "cn_deepseek_pricing"
+        ],
+        "notes": "仅直连当前Flash；型号必须精确匹配。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "detail": [
+            "low",
+            "high",
+            "original",
+            "auto"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "官方文档未确认独立音频输入，不从视觉支持外推。"
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_video_chat_20260920"
+        ],
+        "notes": "未找到该精确API原生视频carrier；多张图片不当作原生视频。",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "deepseek",
+      "model": "deepseek-v4-pro",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "Vision行明确Not supported。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "没有独立音频支持或禁止的匹配声明。"
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_video_chat_20260920"
+        ],
+        "notes": "未找到该精确API原生视频carrier；多张图片不当作原生视频。",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "moonshot",
+      "model": "kimi-k3",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_models",
+          "cn_kimi_vision",
+          "cn_kimi_chat"
+        ],
+        "notes": "仅Base64和ms://文件引用；HTTP图片URL不支持。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_kimi_chat"
+        ],
+        "notes": "缺少独立音频输入官方说明。"
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_video_20260920",
+          "cn_kimi_video_chat_20260920"
+        ],
+        "notes": "原生视频文件为video_url Data URL；文件ID是独立上传路径。K2.5保留已有retired门禁。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "moonshot",
+      "model": "kimi-k2.7-code",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_models",
+          "cn_kimi_vision",
+          "cn_kimi_chat"
+        ],
+        "notes": "仅Base64和ms://文件引用；HTTP图片URL不支持。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_kimi_chat"
+        ],
+        "notes": "缺少独立音频输入官方说明。"
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_video_20260920",
+          "cn_kimi_video_chat_20260920"
+        ],
+        "notes": "原生视频文件为video_url Data URL；文件ID是独立上传路径。K2.5保留已有retired门禁。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "moonshot",
+      "model": "kimi-k2.6",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_models",
+          "cn_kimi_vision",
+          "cn_kimi_chat"
+        ],
+        "notes": "仅Base64和ms://文件引用；HTTP图片URL不支持。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_kimi_chat"
+        ],
+        "notes": "缺少独立音频输入官方说明。"
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_video_20260920",
+          "cn_kimi_video_chat_20260920"
+        ],
+        "notes": "原生视频文件为video_url Data URL；文件ID是独立上传路径。K2.5保留已有retired门禁。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "moonshot",
+      "model": "kimi-k2.5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_k25"
+        ],
+        "notes": "保留历史原生视觉能力，当前官方API已停用。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_kimi_chat",
+          "cn_kimi_models"
+        ],
+        "notes": "未确认独立音频；当前接口停用。"
+      },
+      "lifecycle": {
+        "status": "retired",
+        "retired_at": "2026-08-31",
+        "evidence": [
+          "cn_kimi_models"
+        ]
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_kimi_k25_video_20260920"
+        ],
+        "notes": "原生视频文件为video_url Data URL；文件ID是独立上传路径。K2.5保留已有retired门禁。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "file_id"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-5.3",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_3"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_3"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_3-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-5.2",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_2"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_2"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_2-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-5.1",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_1"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_1"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5_1-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_5-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-4.7",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_7"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_7"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_7-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-4.6",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_6"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_6"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_6-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-4.5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_5"
+        ],
+        "notes": "精确型号官方声明仅文字输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_5"
+        ],
+        "notes": "精确型号官方声明仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_zai_glm_4_5-video-20260920"
+        ],
+        "notes": "精确型号仅文字输入。"
+      }
+    },
+    {
+      "source_id": "zhipu",
+      "model": "glm-5.3-flash",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_zai_glm_5_3_flash",
+          "cn_zai_chat"
+        ],
+        "notes": "原生图片URL/Base64/多图，不能套给GLM-5.3。 官方型号页同时明确 Coding Plan 已开放该原生多模态型号；执行仍须匹配目录中的 Coding 接口及其现有门禁。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_zai_glm_5_3_flash",
+          "cn_zai_chat"
+        ],
+        "notes": "通用API简介与具体视觉schema粒度不同，独立音频待官方型号说明。"
+      },
+      "endpoint_classes": [
+        "official_direct",
+        "zai_coding"
+      ],
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_zai_flash_video_20260920",
+          "cn_zai_video_schema_20260920"
+        ],
+        "notes": "型号支持视频，但当前闭合协议仅外部URL；Base64视频输入未确认。",
+        "parameters": {
+          "sources": [
+            "url"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "carrier": "video_url",
+          "inline_base64_status": "unknown"
+        }
+      }
+    },
+    {
+      "source_id": "minimax",
+      "model": "MiniMax-M3",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_minimax_openai"
+        ],
+        "notes": "URL/Base64，多图按content数组组织。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url"
+          ],
+          "detail": [
+            "low",
+            "default",
+            "high"
+          ],
+          "max_long_side_pixel": "documented_without_range"
+        }
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_openai"
+        ],
+        "notes": "OpenAI SDK文档明确audio input当前不支持。"
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_minimax_video_20260920"
+        ],
+        "notes": "原生video_url支持Base64或URL，使用MP4基线，不猜测fps字段位置。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "detail": [
+            "low",
+            "default",
+            "high"
+          ],
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "minimax",
+      "model": "MiniMax-M2.7",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_anthropic"
+        ],
+        "notes": "官方M2系列模型限制为text/tool内容，未开放原生图片输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_openai",
+          "cn_minimax_anthropic"
+        ],
+        "notes": "OpenAI兼容API明确不支持音频，M2内容只限text/tool。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_m2_video_20260920"
+        ],
+        "notes": "官方明确M2系列不支持视频。"
+      }
+    },
+    {
+      "source_id": "minimax",
+      "model": "MiniMax-M2.5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_anthropic"
+        ],
+        "notes": "官方M2系列模型限制为text/tool内容，未开放原生图片输入。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_openai",
+          "cn_minimax_anthropic"
+        ],
+        "notes": "OpenAI兼容API明确不支持音频，M2内容只限text/tool。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_minimax_m2_video_20260920"
+        ],
+        "notes": "官方明确M2系列不支持视频。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "qwen3.7-max",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_qwen37"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_qwen37"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_qwen37-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "glm-5",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm5"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm5"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm5-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "glm-5.1",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm51"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm51"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm51-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "glm-5.2",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm52"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm52"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_glm52-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "deepseek-v3.2",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_api"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_api"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_api-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "deepseek-v4-flash",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_flash"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_flash"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_flash-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "deepseek-v4-pro",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_pro"
+        ],
+        "notes": "百炼精确型号官方声明文字输入；不继承原厂或其他快照模态。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_pro"
+        ],
+        "notes": "百炼精确型号仅文字输入。"
+      },
+      "video": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_aliyun_deepseek_pro-video-20260920"
+        ],
+        "notes": "百炼此精确ID仅文字输入，其他来源/快照能力不外推。"
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "kimi-k2.6",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_aliyun_kimi26",
+          "cn_aliyun_kimi_api"
+        ],
+        "notes": "百炼API支持HTTP(S) URL/Base64，与Moonshot直连分开。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_aliyun_kimi26",
+          "cn_aliyun_kimi_api"
+        ],
+        "notes": "未找到百炼此精确型号独立音频输入说明。"
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_aliyun_kimi26_video_20260920",
+          "cn_aliyun_kimi_video_20260920"
+        ],
+        "notes": "百炼来源原生视频文件与帧列表有不同carrier；本矩阵原生文件使用video_url。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "fps": {
+            "field": "messages[].content[].fps",
+            "minimum": 0.1,
+            "maximum": 10,
+            "default": 2
+          },
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "aliyun_maas",
+      "model": "kimi-k2.7-code",
+      "api_form": "openai_chat_completions",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_aliyun_kimi27",
+          "cn_aliyun_kimi_api"
+        ],
+        "notes": "百炼API支持HTTP(S) URL/Base64，与Moonshot直连分开。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_aliyun_kimi27",
+          "cn_aliyun_kimi_api"
+        ],
+        "notes": "未找到百炼此精确型号独立音频输入说明。"
+      },
+      "video": {
+        "status": "supported",
+        "evidence": [
+          "cn_aliyun_kimi27_video_20260920",
+          "cn_aliyun_kimi_video_20260920"
+        ],
+        "notes": "百炼来源原生视频文件与帧列表有不同carrier；本矩阵原生文件使用video_url。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url"
+          ],
+          "content_type": "video_url",
+          "url_field": "video_url.url",
+          "fps": {
+            "field": "messages[].content[].fps",
+            "minimum": 0.1,
+            "maximum": 10,
+            "default": 2
+          },
+          "carrier": "video_url"
+        }
+      }
+    },
+    {
+      "source_id": "deepseek",
+      "model": "deepseek-flash",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_deepseek_vision",
+          "cn_deepseek_pricing",
+          "cn_deepseek_responses_media"
+        ],
+        "notes": "仅直连当前Flash；型号必须精确匹配。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "detail": [
+            "low",
+            "high",
+            "original",
+            "auto"
+          ]
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "官方文档未确认独立音频输入，不从视觉支持外推。"
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_video_responses_20260920"
+        ],
+        "notes": "未找到该精确API原生视频carrier；多张图片不当作原生视频。",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "deepseek",
+      "model": "deepseek-v4-pro",
+      "api_form": "openai_responses",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_deepseek_pricing",
+          "cn_deepseek_responses_media"
+        ],
+        "notes": "Vision行明确Not supported。",
+        "parameters": {}
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "没有独立音频支持或禁止的匹配声明。"
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_video_responses_20260920"
+        ],
+        "notes": "未找到该精确API原生视频carrier；多张图片不当作原生视频。",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "deepseek",
+      "model": "deepseek-flash",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "supported",
+        "evidence": [
+          "cn_deepseek_vision",
+          "cn_deepseek_pricing",
+          "cn_deepseek_anthropic_media"
+        ],
+        "notes": "仅直连当前Flash；型号必须精确匹配。",
+        "parameters": {
+          "sources": [
+            "base64",
+            "url",
+            "file_id"
+          ],
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "官方文档未确认独立音频输入，不从视觉支持外推。"
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_video_anthropic_20260920"
+        ],
+        "notes": "未找到该精确API原生视频carrier；多张图片不当作原生视频。",
+        "parameters": {
+          "sources": []
+        }
+      }
+    },
+    {
+      "source_id": "deepseek",
+      "model": "deepseek-v4-pro",
+      "api_form": "anthropic_messages",
+      "image": {
+        "status": "unsupported",
+        "evidence": [
+          "cn_deepseek_pricing",
+          "cn_deepseek_anthropic_media"
+        ],
+        "notes": "Vision行明确Not supported。",
+        "parameters": {
+          "detail": []
+        }
+      },
+      "audio": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_pricing"
+        ],
+        "notes": "没有独立音频支持或禁止的匹配声明。"
+      },
+      "video": {
+        "status": "unknown",
+        "evidence": [
+          "cn_deepseek_video_anthropic_20260920"
+        ],
+        "notes": "未找到该精确API原生视频carrier；多张图片不当作原生视频。",
+        "parameters": {
+          "sources": []
+        }
+      }
+    }
+  ],
+  "protocols": [
+    {
+      "source_id": "deepseek",
+      "api_form": "openai_chat_completions",
+      "image_sources": [
+        "base64",
+        "url",
+        "file_id"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_type": "image_url",
+        "url": "image_url.url",
+        "detail": [
+          "low",
+          "high",
+          "original",
+          "auto"
+        ],
+        "file_content_type": "file",
+        "file_id": "file_id",
+        "file_data": "file_data",
+        "max_images": 600,
+        "max_inline_image_bytes": 33554432,
+        "max_request_body_bytes": 50331648,
+        "allowed_roles": [
+          "user"
+        ]
+      },
+      "audio_parameters": {},
+      "notes": "Files API上传是独立生命周期；当前矩阵不能自动创造file_id。低分辨率detail不改变图片语义判断要求。",
+      "evidence": [
+        "cn_deepseek_vision",
+        "cn_deepseek_video_chat_20260920"
+      ],
+      "video_formats": [],
+      "video_parameters": [],
+      "video_sources": []
+    },
+    {
+      "source_id": "moonshot",
+      "api_form": "openai_chat_completions",
+      "image_sources": [
+        "base64",
+        "file_id"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "image/bmp",
+        "image/heic",
+        "image/heif"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_type": "image_url",
+        "url": "image_url.url",
+        "file_reference_prefix": "ms://",
+        "detail": [],
+        "unsupported_sources": [
+          "url"
+        ],
+        "unsupported_formats": [
+          "image/svg+xml"
+        ],
+        "multi_image": true
+      },
+      "audio_parameters": {},
+      "notes": "不设置未文档化detail；动态GIF/WebP可能按视频计算；无图片张数固定上限不等于无body大小限制。",
+      "evidence": [
+        "cn_kimi_vision",
+        "cn_kimi_chat",
+        "cn_kimi_video_20260920",
+        "cn_kimi_video_chat_20260920"
+      ],
+      "video_formats": [
+        "video/mp4",
+        "video/mpeg",
+        "video/mov",
+        "video/avi",
+        "video/x-flv",
+        "video/mpg",
+        "video/webm",
+        "video/wmv",
+        "video/3gpp"
+      ],
+      "video_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].video_url.url"
+      ],
+      "video_sources": [
+        "base64",
+        "file_id"
+      ],
+      "video_examples": [
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "data:video/mp4;base64,<BASE64_VIDEO_BYTES>"
+          }
+        },
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "ms://<file_id>"
+          }
+        }
+      ],
+      "video_carrier": "video_url"
+    },
+    {
+      "source_id": "zhipu",
+      "api_form": "openai_chat_completions",
+      "image_sources": [
+        "base64",
+        "url"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_type": "image_url",
+        "url": "image_url.url",
+        "detail": [],
+        "multi_image": true,
+        "max_image_size_documented": "under 5M",
+        "max_width": 6000,
+        "max_height": 6000
+      },
+      "audio_parameters": {},
+      "notes": "只用于明确支持图片的GLM-5.3-Flash。GLM5V等其他型号的张数限制不外推。",
+      "evidence": [
+        "cn_zai_glm_5_3_flash",
+        "cn_zai_chat",
+        "cn_zai_flash_video_20260920",
+        "cn_zai_video_schema_20260920",
+        "cn_zai_video_public_fixture_20260920"
+      ],
+      "video_formats": [
+        "mp4",
+        "mkv",
+        "mov"
+      ],
+      "video_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].video_url.url"
+      ],
+      "video_sources": [
+        "url"
+      ],
+      "video_examples": [
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "https://cdn.bigmodel.cn/agent-demos/lark/113123.mov"
+          }
+        }
+      ],
+      "video_constraints": {
+        "max_video_size_documented": "200 MB",
+        "base64_support": "unknown",
+        "applies_to_models": [
+          "glm-5.3-flash"
+        ]
+      },
+      "video_carrier": "video_url"
+    },
+    {
+      "source_id": "minimax",
+      "api_form": "openai_chat_completions",
+      "image_sources": [
+        "base64",
+        "url"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_type": "image_url",
+        "url": "image_url.url",
+        "detail": [
+          "low",
+          "default",
+          "high"
+        ],
+        "max_long_side_pixel": "documented_without_range",
+        "max_image_size_documented": "10 MB",
+        "max_request_size_documented": "64 MB"
+      },
+      "audio_parameters": {},
+      "notes": "图片参数仅MiniMax-M3；音频明确不支持。无max_long_side_pixel数值范围不发极值探测。",
+      "evidence": [
+        "cn_minimax_openai",
+        "cn_minimax_video_20260920"
+      ],
+      "video_formats": [
+        "mp4",
+        "avi",
+        "mov",
+        "mkv"
+      ],
+      "video_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].video_url.url",
+        "messages[].content[].video_url.detail"
+      ],
+      "video_sources": [
+        "base64",
+        "url",
+        "file_id"
+      ],
+      "video_examples": [
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "data:video/mp4;base64,<BASE64_VIDEO_BYTES>"
+          }
+        },
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "mm_file://<file_id>",
+            "detail": "default"
+          }
+        }
+      ],
+      "video_constraints": {
+        "max_inline_video_size_documented": "50 MB",
+        "max_request_size_documented": "64 MB",
+        "fps_range": [
+          0.2,
+          5
+        ],
+        "fps_default": 1,
+        "fps_wire_location": "not_explicit_in_openai_example",
+        "applies_to_models": [
+          "MiniMax-M3"
+        ]
+      },
+      "video_carrier": "video_url"
+    },
+    {
+      "source_id": "aliyun_maas",
+      "api_form": "openai_chat_completions",
+      "image_sources": [
+        "base64",
+        "url"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png"
+      ],
+      "audio_formats": [],
+      "image_parameters": {
+        "content_type": "image_url",
+        "url": "image_url.url",
+        "detail": [],
+        "multi_image": true
+      },
+      "audio_parameters": {},
+      "notes": "此协议条目仅覆盖本地Kimi配置支持的图片路径；格式仅列文档示例已证实JPEG/PNG，不声称其余格式不支持。Qwen/GLM/DeepSeek按模型判定门禁。",
+      "evidence": [
+        "cn_aliyun_kimi_api",
+        "cn_aliyun_kimi_video_20260920"
+      ],
+      "video_formats": [
+        "video/mp4"
+      ],
+      "video_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].video_url.url",
+        "messages[].content[].fps"
+      ],
+      "video_sources": [
+        "base64",
+        "url"
+      ],
+      "video_examples": [
+        {
+          "type": "video_url",
+          "video_url": {
+            "url": "data:video/mp4;base64,<BASE64_VIDEO_BYTES>"
+          },
+          "fps": 2
+        }
+      ],
+      "video_constraints": {
+        "fps_range": [
+          0.1,
+          10
+        ],
+        "fps_default": 2,
+        "applies_to_models": [
+          "kimi-k2.6",
+          "kimi-k2.7-code"
+        ],
+        "max_frames": "DashScope SDK only; do not send through Chat Completions",
+        "other_formats": "unknown; MP4 is the explicit example"
+      },
+      "video_carrier": "video_url"
+    },
+    {
+      "source_id": "deepseek",
+      "api_form": "openai_responses",
+      "image_sources": [
+        "base64",
+        "url",
+        "file_id"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp"
+      ],
+      "audio_formats": [],
+      "image_parameters": [
+        "input[].content[].type",
+        "input[].content[].image_url",
+        "input[].content[].file_id",
+        "input[].content[].detail"
+      ],
+      "audio_parameters": {},
+      "notes": "Source-local image encodings and limits follow the official Vision guide. File references require a separate upload lifecycle; ordinary disabled V4.1 policies remain disabled.",
+      "evidence": [
+        "cn_deepseek_vision",
+        "cn_deepseek_responses_media",
+        "cn_deepseek_video_responses_20260920"
+      ],
+      "video_formats": [],
+      "video_parameters": [],
+      "video_sources": []
+    },
+    {
+      "source_id": "deepseek",
+      "api_form": "anthropic_messages",
+      "image_sources": [
+        "base64",
+        "url",
+        "file_id"
+      ],
+      "image_formats": [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp"
+      ],
+      "audio_formats": [],
+      "image_parameters": [
+        "messages[].content[].type",
+        "messages[].content[].source.type",
+        "messages[].content[].source.media_type",
+        "messages[].content[].source.data",
+        "messages[].content[].source.url",
+        "messages[].content[].source.file_id"
+      ],
+      "audio_parameters": {},
+      "notes": "Source-local image encodings and limits follow the official Vision guide. File references require a separate upload lifecycle; ordinary disabled V4.1 policies remain disabled.",
+      "evidence": [
+        "cn_deepseek_vision",
+        "cn_deepseek_anthropic_media",
+        "cn_deepseek_video_anthropic_20260920"
+      ],
+      "video_formats": [],
+      "video_parameters": [],
+      "video_sources": []
+    }
+  ]
+}

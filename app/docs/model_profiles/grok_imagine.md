@@ -1,6 +1,6 @@
 # Grok Imagine 模型家族 Profile 说明
 
-<!-- 由 scripts/generate_test_docs.py 从 schema v4 生成，请勿手工维护表格。 -->
+<!-- 由 scripts/generate_test_docs.py 从 Model Profile Database 与测试扩展生成，请勿手工维护表格。 -->
 
 覆盖 1K/2K、宽高比、批量数量、URL/b64 交付与越界拒绝。
 
@@ -23,15 +23,15 @@
 
 | 规范模型 | 显式 alias |
 |---|---|
-| `grok-imagine-image` | `grok-imagine-image-2026-03-02` |
+| `grok-imagine-image` | — |
+| `grok-imagine-image-2.0` | — |
 | `grok-imagine-image-quality` | — |
 
 ## Route 与 API Form
 
-| Route Profile | API Form | 内部 transport | 已注册模型数 | Reference Source |
+| Route Profile | API Form | 内部 transport | 已注册模型数 | Reference Contract |
 |---|---|---|---:|---|
-| `vendor_direct` | `openai_images_generations` | `images-generations` | 2 | — |
-| `dynamic_aggregator` | `openai_images_generations` | `images-generations` | 2 | — |
+| `vendor_direct` | `openai_images_generations` | `images-generations` | 3 | `xai_grok_imagine_image_2_0_resolution_quality`<br>`xai_images_generation` |
 
 ## 全部图片 Case / Profile
 

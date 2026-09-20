@@ -1,0 +1,1580 @@
+{
+  "schema_version": 1,
+  "source_id": "google_ai_studio",
+  "archived_at": "2026-09-08",
+  "purpose": "Historical optional runner policies retained outside the core MPDB artifacts; original API-version labels are preserved.",
+  "interfaces": {
+    "image/google_ai_studio/banana/gemini-2.5-flash-image#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/image/google_ai_studio/banana/gemini-2.5-flash-image/gemini-generate-content-default"
+      ]
+    },
+    "image/google_ai_studio/banana/gemini-2.5-flash-image#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/image/google_ai_studio/banana/gemini-2.5-flash-image/gemini-interactions-default"
+      ]
+    },
+    "image/google_ai_studio/banana/gemini-3-pro-image#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "image/google_ai_studio/banana/gemini-3-pro-image#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "image/google_ai_studio/banana/gemini-3.1-flash-image#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/image/google_ai_studio/banana/gemini-3.1-flash-image/gemini-generate-content-default"
+      ]
+    },
+    "image/google_ai_studio/banana/gemini-3.1-flash-image#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/image/google_ai_studio/banana/gemini-3.1-flash-image/gemini-interactions-default"
+      ]
+    },
+    "image/google_ai_studio/banana/gemini-3.1-flash-lite-image#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/image/google_ai_studio/banana/gemini-3.1-flash-lite-image/gemini-generate-content-default"
+      ]
+    },
+    "image/google_ai_studio/banana/gemini-3.1-flash-lite-image#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/image/google_ai_studio/banana/gemini-3.1-flash-lite-image/gemini-interactions-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-flash#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-flash#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-flash#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-2.5-flash/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-flash-lite#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-flash-lite#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-flash-lite#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-2.5-flash-lite/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-pro#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-pro#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-2.5-pro#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-2.5-pro/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3-flash#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-3-flash#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-3-flash#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3-flash/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3-pro#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-3-pro#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-3.1-flash-lite#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/gemini-generate-content-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.1-flash-lite#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/gemini-interactions-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.1-flash-lite#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.1-pro-preview#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-3.1-pro-preview#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": []
+    },
+    "text/google_ai_studio/gemini/gemini-3.1-pro-preview#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.1-pro-preview/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.5-flash#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.5-flash/gemini-generate-content-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.5-flash#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.5-flash/gemini-interactions-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.5-flash#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.5-flash/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.5-flash-lite#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/gemini-generate-content-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.5-flash-lite#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/gemini-interactions-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.5-flash-lite#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.6-flash#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.6-flash/gemini-generate-content-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.6-flash#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.6-flash/gemini-interactions-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.6-flash#openai-chat-default": {
+      "original_default_api_version": "unversioned",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.6-flash/openai-chat-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-generate-content-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.7-flash/gemini-generate-content-default"
+      ]
+    },
+    "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default": {
+      "original_default_api_version": "v1",
+      "policy_ids": [
+        "interface/text/google_ai_studio/gemini/gemini-3.7-flash/gemini-interactions-default"
+      ]
+    }
+  },
+  "policies": {
+    "interface/image/google_ai_studio/banana/gemini-2.5-flash-image/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "banana",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_image_generate_content",
+      "default_expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "default_parameter_expectations": {
+        "contents": "supported",
+        "generationConfig.imageConfig.aspectRatio": "supported",
+        "generationConfig.imageConfig.imageSize": "supported",
+        "generationConfig.responseModalities": "supported"
+      },
+      "default_reference_contract_id": "gemini_image_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/image/google_ai_studio/banana/gemini-2.5-flash-image/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "image/google_ai_studio/banana/gemini-2.5-flash-image#gemini-generate-content-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {
+        "contents": "supported",
+        "generationConfig.imageConfig.aspectRatio": "supported",
+        "generationConfig.imageConfig.imageSize": "supported",
+        "generationConfig.responseModalities": "supported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_image_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "banana",
+      "suite_family_id": "banana",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/image/google_ai_studio/banana/gemini-2.5-flash-image/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "banana",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_image_interactions",
+      "default_expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "default_parameter_expectations": {
+        "input": "supported",
+        "response_format.aspect_ratio": "supported",
+        "response_format.image_size": "supported",
+        "response_format.mime_type": "supported",
+        "response_format.type": "supported"
+      },
+      "default_reference_contract_id": "gemini_image_interactions",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/image/google_ai_studio/banana/gemini-2.5-flash-image/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "image/google_ai_studio/banana/gemini-2.5-flash-image#gemini-interactions-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {
+        "input": "supported",
+        "response_format.aspect_ratio": "supported",
+        "response_format.image_size": "supported",
+        "response_format.mime_type": "supported",
+        "response_format.type": "supported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_image_interactions"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "banana",
+      "suite_family_id": "banana",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/image/google_ai_studio/banana/gemini-3.1-flash-image/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "banana",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_image_generate_content",
+      "default_expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "default_parameter_expectations": {
+        "contents": "supported",
+        "generationConfig.imageConfig.aspectRatio": "supported",
+        "generationConfig.imageConfig.imageSize": "supported",
+        "generationConfig.responseModalities": "supported"
+      },
+      "default_reference_contract_id": "gemini_image_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/image/google_ai_studio/banana/gemini-3.1-flash-image/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "image/google_ai_studio/banana/gemini-3.1-flash-image#gemini-generate-content-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {
+        "contents": "supported",
+        "generationConfig.imageConfig.aspectRatio": "supported",
+        "generationConfig.imageConfig.imageSize": "supported",
+        "generationConfig.responseModalities": "supported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_image_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "banana",
+      "suite_family_id": "banana",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/image/google_ai_studio/banana/gemini-3.1-flash-image/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "banana",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_image_interactions",
+      "default_expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "default_parameter_expectations": {
+        "input": "supported",
+        "response_format.aspect_ratio": "supported",
+        "response_format.image_size": "supported",
+        "response_format.mime_type": "supported",
+        "response_format.type": "supported"
+      },
+      "default_reference_contract_id": "gemini_image_interactions",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/image/google_ai_studio/banana/gemini-3.1-flash-image/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "image/google_ai_studio/banana/gemini-3.1-flash-image#gemini-interactions-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {
+        "input": "supported",
+        "response_format.aspect_ratio": "supported",
+        "response_format.image_size": "supported",
+        "response_format.mime_type": "supported",
+        "response_format.type": "supported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_image_interactions"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "banana",
+      "suite_family_id": "banana",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/image/google_ai_studio/banana/gemini-3.1-flash-lite-image/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "banana",
+      "certification_scope": "safe_parameter_matrix_with_documented_deviation",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_3_1_flash_lite_image_generate_content",
+      "default_expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "default_parameter_expectations": {
+        "contents": "supported",
+        "generationConfig.imageConfig.aspectRatio": "supported",
+        "generationConfig.imageConfig.imageSize": "supported",
+        "generationConfig.responseModalities": "supported"
+      },
+      "default_reference_contract_id": "gemini_3_1_flash_lite_image_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_image_size_512_observation": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_lowercase_1k_observation": "supported",
+        "gemini_3_1_flash_lite_image_generate_content_reject_2k": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_reject_4k": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_reject_aspect_7_5": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/image/google_ai_studio/banana/gemini-3.1-flash-lite-image/gemini-generate-content-default",
+        "retrieved_at": "2026-09-06"
+      },
+      "interface_id": "image/google_ai_studio/banana/gemini-3.1-flash-lite-image#gemini-generate-content-default",
+      "model_expectations": {
+        "gemini_3_1_flash_lite_image_generate_content_image_size_512_observation": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_lowercase_1k_observation": "supported",
+        "gemini_3_1_flash_lite_image_generate_content_reject_2k": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_reject_4k": "unsupported",
+        "gemini_3_1_flash_lite_image_generate_content_reject_aspect_7_5": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.imageConfig.imageSize.1k": "supported",
+        "generationConfig.imageConfig.imageSize.2K": "unsupported",
+        "generationConfig.imageConfig.imageSize.4K": "unsupported",
+        "generationConfig.imageConfig.imageSize.512": "unsupported",
+        "generationConfig.thinkingConfig.thinkingLevel.LOW": "unsupported",
+        "generationConfig.thinkingConfig.thinkingLevel.MEDIUM": "unsupported"
+      },
+      "parameter_expectations": {
+        "contents": "supported",
+        "generationConfig.imageConfig.aspectRatio": "supported",
+        "generationConfig.imageConfig.imageSize": "supported",
+        "generationConfig.imageConfig.imageSize.1k": "supported",
+        "generationConfig.imageConfig.imageSize.2K": "unsupported",
+        "generationConfig.imageConfig.imageSize.4K": "unsupported",
+        "generationConfig.imageConfig.imageSize.512": "unsupported",
+        "generationConfig.responseModalities": "supported",
+        "generationConfig.thinkingConfig.thinkingLevel.LOW": "unsupported",
+        "generationConfig.thinkingConfig.thinkingLevel.MEDIUM": "unsupported"
+      },
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_3_1_flash_lite_image_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "banana",
+      "suite_family_id": "banana",
+      "test_scope": "safe_parameter_matrix",
+      "validation_date": "2026-08-24"
+    },
+    "interface/image/google_ai_studio/banana/gemini-3.1-flash-lite-image/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "banana",
+      "certification_scope": "live_observed_experimental",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_3_1_flash_lite_image_interactions",
+      "default_expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported"
+      },
+      "default_parameter_expectations": {
+        "input": "supported",
+        "response_format.aspect_ratio": "supported",
+        "response_format.image_size": "supported",
+        "response_format.mime_type": "supported",
+        "response_format.type": "supported"
+      },
+      "default_reference_contract_id": "gemini_3_1_flash_lite_image_interactions",
+      "disabled_reason": "parameter_contract_not_certified",
+      "enabled": false,
+      "excluded_test_profiles": [],
+      "executable": false,
+      "execution_state": "metadata_only_non_certified_parameter_cases",
+      "expectations": {
+        "banana_reject_aspect_ratio_7_5": "unsupported",
+        "banana_reject_lowercase_1k": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_image_size_512_observation": "supported",
+        "gemini_3_1_flash_lite_image_interactions_lowercase_1k_observation": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_reject_2k": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_reject_4k": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_reject_aspect_7_5": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/image/google_ai_studio/banana/gemini-3.1-flash-lite-image/gemini-interactions-default",
+        "retrieved_at": "2026-09-06"
+      },
+      "interface_id": "image/google_ai_studio/banana/gemini-3.1-flash-lite-image#gemini-interactions-default",
+      "model_expectations": {
+        "gemini_3_1_flash_lite_image_interactions_image_size_512_observation": "supported",
+        "gemini_3_1_flash_lite_image_interactions_lowercase_1k_observation": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_reject_2k": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_reject_4k": "unsupported",
+        "gemini_3_1_flash_lite_image_interactions_reject_aspect_7_5": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generation_config.thinking_level.low": "unsupported",
+        "generation_config.thinking_level.medium": "unsupported",
+        "response_format.image_size.1k": "unsupported",
+        "response_format.image_size.2K": "unsupported",
+        "response_format.image_size.4K": "unsupported",
+        "response_format.image_size.512": "supported"
+      },
+      "parameter_expectations": {
+        "generation_config.thinking_level.low": "unsupported",
+        "generation_config.thinking_level.medium": "unsupported",
+        "input": "supported",
+        "response_format.aspect_ratio": "supported",
+        "response_format.image_size": "supported",
+        "response_format.image_size.1k": "unsupported",
+        "response_format.image_size.2K": "unsupported",
+        "response_format.image_size.4K": "unsupported",
+        "response_format.image_size.512": "supported",
+        "response_format.mime_type": "supported",
+        "response_format.type": "supported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_3_1_flash_lite_image_interactions"
+      ],
+      "runner_enabled": false,
+      "source_id": "google_ai_studio",
+      "suite": "banana",
+      "suite_family_id": "banana",
+      "test_binding_status": "not_certified",
+      "test_scope": "safe_parameter_matrix",
+      "validation_date": "2026-08-24"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-2.5-flash/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_native_thinking_high": "unsupported",
+        "gemini_native_thinking_low": "unsupported",
+        "gemini_native_thinking_medium": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-2.5-flash/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-2.5-flash#openai-chat-default",
+      "model_expectations": {
+        "gemini_native_thinking_high": "unsupported",
+        "gemini_native_thinking_low": "unsupported",
+        "gemini_native_thinking_medium": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-2.5-flash-lite/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_native_thinking_high": "unsupported",
+        "gemini_native_thinking_low": "unsupported",
+        "gemini_native_thinking_medium": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-2.5-flash-lite/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-2.5-flash-lite#openai-chat-default",
+      "model_expectations": {
+        "gemini_native_thinking_high": "unsupported",
+        "gemini_native_thinking_low": "unsupported",
+        "gemini_native_thinking_medium": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-2.5-pro/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_native_thinking_high": "unsupported",
+        "gemini_native_thinking_low": "unsupported",
+        "gemini_native_thinking_medium": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-2.5-pro/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-2.5-pro#openai-chat-default",
+      "model_expectations": {
+        "gemini_native_thinking_high": "unsupported",
+        "gemini_native_thinking_low": "unsupported",
+        "gemini_native_thinking_medium": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3-flash/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3-flash/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3-flash#openai-chat-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_native_generate_content",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_native_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.1-flash-lite#gemini-generate-content-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_native_generate_content": [
+          "gemini_native_system_instruction",
+          "gemini_native_max_output_tokens",
+          "gemini_native_thinking_medium",
+          "gemini_native_thinking_high",
+          "gemini_native_tools"
+        ]
+      },
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_native_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_text_interactions",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_text_interactions",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.1-flash-lite#gemini-interactions-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_text_interactions"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.1-flash-lite/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.1-flash-lite#openai-chat-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.1-pro-preview/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.1-pro-preview/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.1-pro-preview#openai-chat-default",
+      "model_expectations": {
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.5-flash/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_native_generate_content",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_native_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.5-flash/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.5-flash#gemini-generate-content-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_native_generate_content": [
+          "gemini_native_system_instruction",
+          "gemini_native_max_output_tokens",
+          "gemini_native_thinking_medium",
+          "gemini_native_thinking_high",
+          "gemini_native_tools"
+        ]
+      },
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_native_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.5-flash/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_text_interactions",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_text_interactions",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.5-flash/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.5-flash#gemini-interactions-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_text_interactions"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.5-flash/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {},
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.5-flash/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.5-flash#openai-chat-default",
+      "model_expectations": {},
+      "model_parameter_expectations": {},
+      "parameter_expectations": {},
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_native_generate_content",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_native_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.5-flash-lite#gemini-generate-content-default",
+      "model_expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_native_generate_content": [
+          "gemini_native_system_instruction",
+          "gemini_native_max_output_tokens",
+          "gemini_native_thinking_medium",
+          "gemini_native_thinking_high",
+          "gemini_native_tools"
+        ]
+      },
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_native_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_text_interactions",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_text_interactions",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.5-flash-lite#gemini-interactions-default",
+      "model_expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_text_interactions"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.5-flash-lite/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.5-flash-lite#openai-chat-default",
+      "model_expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.6-flash/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_native_generate_content",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_native_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.6-flash/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.6-flash#gemini-generate-content-default",
+      "model_expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_native_generate_content": [
+          "gemini_native_system_instruction",
+          "gemini_native_max_output_tokens",
+          "gemini_native_thinking_medium",
+          "gemini_native_thinking_high",
+          "gemini_native_tools"
+        ]
+      },
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_native_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.6-flash/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_text_interactions",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_text_interactions",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.6-flash/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.6-flash#gemini-interactions-default",
+      "model_expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_text_interactions"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-18"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.6-flash/openai-chat-default": {
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_openai_compat",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_openai_compat",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.6-flash/openai-chat-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.6-flash#openai-chat-default",
+      "model_expectations": {
+        "gemini_chat_candidate_count": "unsupported",
+        "gemini_n": "unsupported",
+        "gemini_native_candidate_count": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "n": "unsupported"
+      },
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [
+        "temperature",
+        "top_p",
+        "top_k"
+      ],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {
+        "gemini_openai_compat": [
+          "basic_stream",
+          "stream_with_usage",
+          "gemini_max_tokens",
+          "gemini_reasoning_medium",
+          "gemini_reasoning_high",
+          "json_output",
+          "gemini_tools"
+        ]
+      },
+      "pressure_test_enabled": true,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_openai_compat"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.7-flash/gemini-generate-content-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "raw_route_contract",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_3_7_flash_generate_content",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_3_7_flash_generate_content",
+      "disabled_reason": null,
+      "excluded_test_profiles": [],
+      "expectations": {
+        "gemini_native_candidate_count": "unsupported",
+        "gemini_native_frequency_penalty": "unsupported",
+        "gemini_native_logprobs": "unsupported",
+        "gemini_native_presence_penalty": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.7-flash/gemini-generate-content-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-generate-content-default",
+      "model_expectations": {
+        "gemini_native_candidate_count": "unsupported",
+        "gemini_native_frequency_penalty": "unsupported",
+        "gemini_native_logprobs": "unsupported",
+        "gemini_native_presence_penalty": "unsupported",
+        "gemini_native_thinking_minimal": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "generationConfig.frequencyPenalty": "unsupported",
+        "generationConfig.imageConfig": "unsupported",
+        "generationConfig.logprobs": "unsupported",
+        "generationConfig.presencePenalty": "unsupported",
+        "generationConfig.responseLogprobs": "unsupported",
+        "generationConfig.responseModalities.IMAGE": "unsupported",
+        "generationConfig.thinkingConfig.thinkingLevel.MINIMAL": "unsupported"
+      },
+      "parameter_expectations": {
+        "generationConfig.candidateCount": "unsupported",
+        "generationConfig.frequencyPenalty": "unsupported",
+        "generationConfig.imageConfig": "unsupported",
+        "generationConfig.logprobs": "unsupported",
+        "generationConfig.presencePenalty": "unsupported",
+        "generationConfig.responseLogprobs": "unsupported",
+        "generationConfig.responseModalities.IMAGE": "unsupported",
+        "generationConfig.thinkingConfig.thinkingLevel.MINIMAL": "unsupported"
+      },
+      "parameter_test_enabled": true,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_3_7_flash_generate_content"
+      ],
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_scope": "safe_parameter_matrix",
+      "validation_date": "2026-08-21"
+    },
+    "interface/text/google_ai_studio/gemini/gemini-3.7-flash/gemini-interactions-default": {
+      "api_version": "v1",
+      "canonical_family_id": "gemini",
+      "certification_scope": "v1_identity_smoke_only",
+      "compatibility_family_alias": false,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "default_expectations": {},
+      "default_parameter_expectations": {},
+      "default_reference_contract_id": "gemini_3_7_flash_interactions",
+      "disabled_reason": "parameter_contract_not_certified",
+      "enabled": false,
+      "excluded_test_profiles": [],
+      "executable": false,
+      "execution_state": "metadata_only_non_certified_parameter_cases",
+      "expectations": {
+        "gemini_3_7_flash_interactions_labels": "unsupported",
+        "gemini_3_7_flash_interactions_reject_thinking_minimal": "unsupported"
+      },
+      "extension_type": "model_test_policy",
+      "historical_provenance": {
+        "record_id": "test-binding/interface/text/google_ai_studio/gemini/gemini-3.7-flash/gemini-interactions-default",
+        "retrieved_at": "2026-09-02"
+      },
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "model_expectations": {
+        "gemini_3_7_flash_interactions_labels": "unsupported",
+        "gemini_3_7_flash_interactions_reject_thinking_minimal": "unsupported"
+      },
+      "model_parameter_expectations": {
+        "generation_config.thinking_level.minimal": "unsupported",
+        "labels": "unsupported"
+      },
+      "parameter_expectations": {
+        "generation_config.thinking_level.minimal": "unsupported",
+        "labels": "unsupported"
+      },
+      "parameter_test_enabled": false,
+      "pressure_omit_params": [],
+      "pressure_overrides": {},
+      "pressure_parameter_aliases": {},
+      "pressure_profiles": {},
+      "pressure_test_enabled": false,
+      "pressure_transport_overrides": {},
+      "reference_contract_ids": [
+        "gemini_3_7_flash_interactions"
+      ],
+      "runner_enabled": false,
+      "source_id": "google_ai_studio",
+      "suite": "gemini",
+      "suite_family_id": "gemini",
+      "test_binding_status": "not_certified",
+      "test_scope": "identity_smoke",
+      "validation_date": "2026-08-24"
+    }
+  }
+}

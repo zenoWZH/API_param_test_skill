@@ -215,15 +215,22 @@ def run_locust(
             "LOADTEST_STAIRCASE_STEP": str(staircase_step),
         }
     )
+    if phase == "warmup" and workload == "throughput_rpm":
+        # The standard RPM warmup uses fixed bodies. Keep the measurement
+        # request mode inherited from the caller unchanged.
+        env["LOADTEST_REQUEST_MODE"] = "fixed"
     if target_rpm is None:
         target_rpm = float(os.getenv("LOADTEST_TARGET_RPM", "0") or 0)
     if target_tpm is None:
         target_tpm = float(os.getenv("LOADTEST_TARGET_TPM", "0") or 0)
     # Staircase RPM/TPM values are qualification goals, not request-rate
     # limits. Keep their ratio below for adaptive sizing, but disable the
-    # Locust limiters so each step can expose the provider's attempted peak.
+    # Locust limiters and fixed-window gate so each step can expose the
+    # provider's attempted peak for its own configured duration.
     env.pop("LOADTEST_TARGET_RPM", None)
     env.pop("LOADTEST_TARGET_TPM", None)
+    env.pop("LOADTEST_WARMUP_SEC", None)
+    env.pop("LOADTEST_MEASURE_DURATION_SEC", None)
     if target_tokens_per_request is None:
         target_tokens_per_request = (
             target_tpm / target_rpm if target_rpm > 0 and target_tpm > 0 else 0.0

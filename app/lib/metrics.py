@@ -22,6 +22,9 @@ CACHE_CONTROL_NEGATIVE = "negative_unique_prefix"
 CACHE_CONTROL_ROLE_COLD = "cold"
 CACHE_CONTROL_ROLE_WARM = "warm"
 CACHE_CONTROL_ROLE_UNIQUE = "unique"
+PRESSURE_FAILURE_FINISH_REASONS = frozenset(
+    {"insufficient_system_resource", "content_filter", "refusal"}
+)
 
 
 @dataclass
@@ -33,6 +36,8 @@ class RequestRecord:
     method: str
     path: str
     success: bool
+    request_id: str | None = None
+    completed_at: float | None = None
     status_code: int | None = None
     latency_ms: float | None = None
     ttft_ms: float | None = None
@@ -65,6 +70,7 @@ class RunRecorder:
         history_interval_sec: int = 60,
         records_file: str = "request_records.jsonl",
         history_file: str = "history.jsonl",
+        attempts_file: str = "request_attempts.jsonl",
         business_request_prefix: str = "chat:",
         business_group: str | None = "throughput_profiles",
         cache_min_prompt_tokens: int = 4000,
@@ -73,6 +79,7 @@ class RunRecorder:
         self.report_dir.mkdir(parents=True, exist_ok=True)
         self.records_path = self.report_dir / records_file
         self.history_path = self.report_dir / history_file
+        self.attempts_path = self.report_dir / attempts_file
         self.history_interval_sec = int(history_interval_sec)
         self.business_request_prefix = business_request_prefix
         self.business_group = business_group
@@ -80,6 +87,65 @@ class RunRecorder:
         self._lock = threading.Lock()
         self._window_start = time.time()
         self._window_records: list[RequestRecord] = []
+
+    def record_attempt(
+        self,
+        *,
+        request_id: str,
+        timestamp: float,
+        task_name: str,
+        group: str,
+        profile: str,
+        method: str,
+        path: str,
+        is_warmup: bool,
+        admitted_elapsed_sec: float | None = None,
+        extra: dict[str, Any] | None = None,
+    ) -> None:
+        row = {
+            "schema_version": 1,
+            "event": "admitted",
+            "request_id": request_id,
+            "timestamp": timestamp,
+            "task_name": task_name,
+            "group": group,
+            "profile": profile,
+            "method": method,
+            "path": path,
+            "is_warmup": is_warmup,
+            "admitted_elapsed_sec": admitted_elapsed_sec,
+            "extra": extra or {},
+        }
+        self._record_attempt_row(row)
+
+    def record_attempt_cancelled_before_send(
+        self,
+        *,
+        request_id: str,
+        timestamp: float,
+        elapsed_sec: float | None,
+        reason: str = "measurement_window_closed",
+    ) -> None:
+        self._record_attempt_row(
+            {
+                "schema_version": 1,
+                "event": "cancelled_before_send",
+                "request_id": request_id,
+                "timestamp": timestamp,
+                "elapsed_sec": elapsed_sec,
+                "reason": reason,
+            }
+        )
+
+    def _record_attempt_row(self, row: dict[str, Any]) -> None:
+        with self._lock:
+            with self.attempts_path.open("a", encoding="utf-8") as fh:
+                fh.write(
+                    json.dumps(
+                        redact_secrets(row), ensure_ascii=False, sort_keys=True
+                    )
+                    + "\n"
+                )
 
     def record(self, record: RequestRecord) -> None:
         with self._lock:
@@ -136,6 +202,53 @@ def classify_failure(
     return None
 
 
+def classify_pressure_failure(
+    status_code: int | None = None,
+    finish_reason: str | None = None,
+    error_type: str | None = None,
+    failure_finish_reasons: Iterable[str] | None = None,
+) -> str | None:
+    """Classify transport errors plus terminal reasons unusable for load traffic."""
+    # Transport/parser errors remain global. Terminal business reasons are
+    # governed exclusively by the pressure policy below.
+    failure = classify_failure(status_code, None, error_type)
+    if failure is not None:
+        return failure
+    normalized = str(finish_reason or "").strip().casefold()
+    configured = (
+        PRESSURE_FAILURE_FINISH_REASONS
+        if failure_finish_reasons is None
+        else frozenset(
+            str(value).strip().casefold()
+            for value in failure_finish_reasons
+            if str(value).strip()
+        )
+    )
+    if normalized in configured:
+        return f"finish_reason:{normalized}"
+    return None
+
+
+def record_in_measurement_window(item: RequestRecord) -> bool:
+    """Return whether a record belongs to its configured half-open measure window."""
+    if item.is_warmup:
+        return False
+    extra = item.extra if isinstance(item.extra, dict) else {}
+    try:
+        measure_start = float(extra.get("measure_started_at"))
+    except (TypeError, ValueError):
+        measure_start = None
+    try:
+        measure_end = float(extra.get("measure_ended_at"))
+    except (TypeError, ValueError):
+        measure_end = None
+    if measure_start is not None and item.timestamp < measure_start:
+        return False
+    if measure_end is not None and item.timestamp >= measure_end:
+        return False
+    return True
+
+
 def summarize_records(
     records: Iterable[RequestRecord],
     business_prefix: str = "chat:",
@@ -144,14 +257,14 @@ def summarize_records(
     duration_sec: float | None = None,
 ) -> dict[str, Any]:
     record_list = list(records)
-    measured = [
+    business_candidates = [
         item
         for item in record_list
         if item.task_name.startswith(business_prefix)
-        and not item.is_warmup
         and not item.is_retry
         and (business_group is None or item.group == business_group)
     ]
+    measured = [item for item in business_candidates if record_in_measurement_window(item)]
     cache_audit_records = measured
     if business_group == "cache_profiles":
         measured = [
@@ -168,7 +281,15 @@ def summarize_records(
     successful_business = [item for item in measured if item.success]
 
     if duration_sec is None:
-        duration_sec = _duration_from_records(record_list)
+        configured_duration = _dominant_record_extra(
+            record_list, "measure_duration_sec"
+        )
+        try:
+            duration_sec = float(configured_duration)
+        except (TypeError, ValueError):
+            duration_sec = 0.0
+        if duration_sec <= 0:
+            duration_sec = _duration_from_records(record_list)
     minutes = max(duration_sec / 60.0, 1 / 60.0)
 
     latencies = [item.latency_ms for item in measured if item.latency_ms is not None]
@@ -185,6 +306,8 @@ def summarize_records(
     total_count = len(measured)
     success_count = len(successful_business)
     status_codes = [item.status_code for item in measured if item.status_code is not None]
+    http_request_count = len(status_codes)
+    http_2xx_count = sum(1 for code in status_codes if 200 <= code <= 299)
     input_token_count = 0
     output_token_count = 0
     total_token_count = 0
@@ -277,6 +400,16 @@ def summarize_records(
         and target_tokens_per_request > 0
         else None
     )
+    target_rpm = _dominant_record_extra(record_list, "target_rpm")
+    try:
+        target_rpm = float(target_rpm) if target_rpm is not None else None
+    except (TypeError, ValueError):
+        target_rpm = None
+    planned_request_count = (
+        target_rpm * duration_sec / 60.0
+        if target_rpm is not None and target_rpm > 0
+        else None
+    )
     if target_tokens_per_request is None:
         adaptive_controller_status = "disabled"
     elif token_usage_records < 20:
@@ -304,9 +437,43 @@ def summarize_records(
         "business_record_count": total_count,
         "business_success_count": success_count,
         "business_failure_count": max(total_count - success_count, 0),
+        "measurement_excluded_count": max(
+            len(business_candidates) - total_count, 0
+        ),
+        "http_request_count": http_request_count,
+        "http_2xx_count": http_2xx_count,
+        "http_2xx_rate": _ratio(http_2xx_count, http_request_count),
         "business_rpm": success_count / minutes,
         "attempted_business_rpm": total_count / minutes,
-        "total_rpm": len(record_list) / minutes,
+        "target_rpm": target_rpm,
+        "planned_request_count": planned_request_count,
+        "arrival_shortfall_count": (
+            max(planned_request_count - total_count, 0.0)
+            if planned_request_count is not None
+            else None
+        ),
+        "arrival_coverage": (
+            total_count / planned_request_count
+            if planned_request_count is not None and planned_request_count > 0
+            else None
+        ),
+        "arrival_overrun_count": (
+            max(total_count - planned_request_count, 0.0)
+            if planned_request_count is not None
+            else None
+        ),
+        "completed_business_request_count": total_count,
+        "completion_shortfall_count": (
+            max(planned_request_count - total_count, 0.0)
+            if planned_request_count is not None
+            else None
+        ),
+        "completion_coverage": (
+            total_count / planned_request_count
+            if planned_request_count is not None and planned_request_count > 0
+            else None
+        ),
+        "total_rpm": total_count / minutes,
         "input_tpm": input_token_count / minutes,
         "output_tpm": output_token_count / minutes,
         "total_tpm": total_token_count / minutes,
@@ -385,8 +552,11 @@ def apply_cache_token_audits(
     thresholds: dict[str, Any] | None = None,
 ) -> None:
     thresholds = thresholds or {}
-    positive_min = float(thresholds.get("positive_control_cached_ratio_min", 0.50))
-    negative_max = float(thresholds.get("negative_control_cached_ratio_max", 0.05))
+    if thresholds.get("control_evaluation") not in (None, "hit_expectations", "legacy_ratios"):
+        raise ValueError("Unsupported cache control_evaluation")
+    scenario_expectations = thresholds.get("control_evaluation") == "hit_expectations"
+    positive_min = 0.0 if scenario_expectations else float(thresholds.get("positive_control_cached_ratio_min", 0.50))
+    negative_max = 0.0 if scenario_expectations else float(thresholds.get("negative_control_cached_ratio_max", 0.05))
     positive_cold_prompts: dict[tuple[str, Any], int] = {}
     positive_cold_hits: dict[tuple[str, Any], int] = {}
     structure_probe_tokens: dict[str, int] = {}
@@ -396,6 +566,10 @@ def apply_cache_token_audits(
             continue
         scenario = str(record.extra.get("cache_scenario") or "")
         prompt = prompt_tokens_from_usage(record.usage or {})
+        if scenario_expectations:
+            from .cache_acceptance import cache_telemetry
+            observed = cache_telemetry(record.usage or {}, str(record.extra.get("transport") or ""))
+            prompt = observed["input_tokens"] if type(observed["input_tokens"]) is int else None
         if record.extra.get("cache_structure_probe") and prompt is not None:
             structure_probe_tokens[scenario] = prompt
         if (
@@ -406,6 +580,8 @@ def apply_cache_token_audits(
             control_key = (scenario, record.extra.get("control_pair"))
             positive_cold_prompts[control_key] = prompt
             cold_hit, _cold_miss = cache_tokens_from_usage(record.usage or {})
+            if scenario_expectations:
+                cold_hit = observed["cached_input_tokens"] if observed["status"] == "measured" else None
             if cold_hit is not None:
                 positive_cold_hits[control_key] = cold_hit
 
@@ -434,12 +610,19 @@ def apply_cache_token_audits(
         if prompt is not None and hit is not None and miss is not None and hit + miss != prompt:
             errors.append("cached plus uncached tokens do not equal input tokens")
 
+        if scenario_expectations:
+            from .cache_acceptance import cache_telemetry
+            observed = cache_telemetry(record.usage or {}, str(record.extra.get("transport") or ""))
+            prompt = observed["input_tokens"] if type(observed["input_tokens"]) is int and observed["input_tokens"] >= 0 else None
+            hit = observed["cached_input_tokens"] if type(observed["cached_input_tokens"]) is int and observed["cached_input_tokens"] >= 0 else None
+            errors.extend(observed["errors"])
         ratio = hit / prompt if hit is not None and prompt and prompt > 0 else None
         if (
             expected_reusable is not None
             and hit is not None
             and control not in {CACHE_CONTROL_NEGATIVE, CACHE_CONTROL_POSITIVE}
             and hit > expected_reusable
+            and not scenario_expectations
         ):
             errors.append("cached tokens exceed structurally reusable prefix tokens")
         if control == CACHE_CONTROL_POSITIVE and role == CACHE_CONTROL_ROLE_WARM:
@@ -474,7 +657,7 @@ def apply_cache_token_audits(
             if control_key not in positive_cold_hits:
                 unavailable_reasons.append("positive cold cached token telemetry is missing")
         elif control not in {CACHE_CONTROL_POSITIVE, CACHE_CONTROL_NEGATIVE}:
-            if expected_reusable is None:
+            if expected_reusable is None and not scenario_expectations:
                 unavailable_reasons.append("structurally reusable token ceiling is unavailable")
         status = (
             "fail"
@@ -485,6 +668,8 @@ def apply_cache_token_audits(
         )
         record.cache_token_audit = {
             "schema_version": 1,
+            "control_evaluation": "hit_expectations" if scenario_expectations else "legacy_ratios",
+            "official_numeric_reference_required": False if scenario_expectations else None,
             "status": status,
             "prompt_tokens": prompt,
             "reported_cached_tokens": hit,
@@ -997,7 +1182,7 @@ def build_time_series(
             item
             for item in records
             if item.task_name.startswith(business_prefix)
-            and not item.is_warmup
+            and record_in_measurement_window(item)
             and not item.is_retry
             and (business_group is None or item.group == business_group)
         ),

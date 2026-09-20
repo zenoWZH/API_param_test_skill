@@ -54,6 +54,8 @@ class AdaptiveLoadTest(unittest.TestCase):
 
     def test_context_unsafe_static_profiles_are_filtered(self) -> None:
         config = load_config()
+        config["active_provider"] = "yibu"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         entries = weighted_workload_profiles(config, "throughput_tpm")
         allowed, skipped = filter_context_unsafe_profiles(
             config,

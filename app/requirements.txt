@@ -1,3 +1,5 @@
+# Exact distribution pin; lib/model_profile_catalog.py also pins catalog and extension digests.
+yibu-model-profile-db==0.3.0
 locust>=2.29.0
 PyYAML>=6.0.1
 requests>=2.32.0

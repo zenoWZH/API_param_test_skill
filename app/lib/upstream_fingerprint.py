@@ -8,6 +8,10 @@ from typing import Any
 
 import requests
 
+from lib.gemini_api_version import (
+    build_gemini_api_url, is_ai_studio_origin, require_ai_studio_v1beta_url,
+)
+
 from lib.config import (
     get_api_key,
     get_provider_config,
@@ -47,8 +51,12 @@ def _chat_endpoint(config: dict[str, Any], provider: str) -> tuple[str, str]:
     base_url = str(provider_cfg.get("base_url") or "").rstrip("/")
     try:
         interface = get_provider_interface(config, "chat_completions", provider)
+        base_url = str(interface.get("base_url") or base_url).rstrip("/")
         path = str(interface.get("path") or "/chat/completions")
     except Exception:
+        raw_interface = (provider_cfg.get("api_interfaces") or {}).get("chat_completions") or {}
+        if is_ai_studio_origin(base_url) or is_ai_studio_origin(str(raw_interface.get("base_url") or "")):
+            raise
         path = "/chat/completions"
     return base_url, path
 
@@ -123,7 +131,9 @@ def _summarize_body(body_text: str) -> dict[str, Any]:
 
 
 def _probe_nonstream(url: str, headers: dict[str, str], body: dict[str, Any], timeout: int) -> dict[str, Any]:
-    response = requests.post(url, headers=headers, json=body, timeout=timeout)
+    require_ai_studio_v1beta_url(url)
+    response = requests.post(url, headers=headers, json=body, timeout=timeout,
+                             allow_redirects=not is_ai_studio_origin(url))
     summary = _summarize_body(response.text)
     summary["status"] = response.status_code
     summary["headers"] = _header_signature(response.headers)
@@ -136,6 +146,7 @@ def _probe_nonstream(url: str, headers: dict[str, str], body: dict[str, Any], ti
 
 
 def _probe_stream(url: str, headers: dict[str, str], body: dict[str, Any], timeout: int) -> dict[str, Any]:
+    require_ai_studio_v1beta_url(url)
     stream_body = dict(body)
     stream_body["stream"] = True
     result: dict[str, Any] = {
@@ -148,7 +159,8 @@ def _probe_stream(url: str, headers: dict[str, str], body: dict[str, Any], timeo
         "reasoning_field": None,
         "chunk_id_prefix": None,
     }
-    with requests.post(url, headers=headers, json=stream_body, timeout=timeout, stream=True) as response:
+    with requests.post(url, headers=headers, json=stream_body, timeout=timeout, stream=True,
+                       allow_redirects=not is_ai_studio_origin(url)) as response:
         result["status"] = response.status_code
         result["headers"] = _header_signature(response.headers)
         if response.status_code >= 400:
@@ -199,7 +211,7 @@ def collect_fingerprint(
     timeout: int = 120,
 ) -> dict[str, Any]:
     base_url, path = _chat_endpoint(config, provider)
-    url = f"{base_url}{path}"
+    url = build_gemini_api_url(base_url, path)
     api_key = get_api_key(config, provider)
     headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     basic_body = {

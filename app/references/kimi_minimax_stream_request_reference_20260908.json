@@ -1,0 +1,448 @@
+{
+  "approval_code": "R7-ALL-MODELS-EFFECT-PROOF",
+  "controls_per_model": [
+    "stream_default",
+    "usage_on",
+    "usage_off",
+    "invalid_stream_type",
+    "invalid_usage_type"
+  ],
+  "historical_nonstream_controls": 6,
+  "kind": "six_source_scoped_chat_stream_request_reference",
+  "limits": {
+    "empty_choices_usage_only_chunk_assumed": false,
+    "forced_type_rejection_assumed": false,
+    "full_parameter_matrix_verified": false,
+    "generic_parameter_cases_changed": false,
+    "minimax_raw_sse_terminal_shape_verified": false,
+    "obfuscation_requests": 0,
+    "output_caps_preserved": true,
+    "usage_false_or_omitted_absence_assumed": false
+  },
+  "new_minimax_raw_nonstream_controls": 3,
+  "new_requests_sent": 0,
+  "official_document_review": {
+    "kimi": {
+      "include_usage": "true documented to report usage on last chunk before DONE; no hard absence or empty choices rule inferred for false/omitted",
+      "obfuscation": "not found in reviewed page or current effective fields",
+      "official_route": "https://api.moonshot.ai/v1/chat/completions",
+      "stream": "SSE delta content, native stop and DONE documented",
+      "thinking": "K2.7-code always enabled and keep=all; K3 reasoning_effort low/high/max, default max; retained selected K3 baseline low",
+      "url": "https://platform.kimi.ai/docs/api/chat"
+    },
+    "minimax": {
+      "anthropic_form": {
+        "current_registered_interface": false,
+        "docs_url": "https://platform.minimax.io/docs/api-reference/text-anthropic-api",
+        "documented": true,
+        "not_equivalent_to_existing_chat_baselines": true,
+        "qualified_same_form_baseline": false
+      },
+      "include_usage": "SDK official reference documents true to include token usage; false/omitted behavior and terminal usage chunk shape require raw observation",
+      "obfuscation": "not declared in current effective fields or reviewed primary pages",
+      "official_route": "https://api.minimax.io/v1/chat/completions",
+      "reconstruction_note": "SDK stream example slices prior content length and assigns buffers, suggesting cumulative handling; this example is not raw SSE evidence. Capture and adjudicate actual source frames before imposing incremental or cumulative semantics.",
+      "sdk_url": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+      "stream": "boolean, default false; chunk output documented",
+      "thinking": "M3 supports adaptive/disabled; M2.x cannot disable; reasoning_split only changes representation",
+      "url": "https://platform.minimax.io/docs/api-reference/text-chat-openai"
+    },
+    "reviewed_at": "2026-09-08"
+  },
+  "planned_requests": 33,
+  "retained_raw_nonstream_controls_reused": 3,
+  "schema_version": 1,
+  "targets": [
+    {
+      "auth_mode": "bearer",
+      "baseline_body": {
+        "max_completion_tokens": 8192,
+        "messages": [
+          {
+            "content": "Public synthetic fixture: color is blue and count is 2. Return exactly the JSON object {\"color\":\"blue\",\"count\":2}, without markdown or other final-answer text.",
+            "role": "user"
+          }
+        ],
+        "model": "kimi-k3",
+        "reasoning_effort": "low",
+        "stream": false
+      },
+      "baseline_body_sha256": "33a0c818d4cfeb4c951d00b7f40956abe1aef1e7ddbfa2129d22a8927c99a0a7",
+      "credential_env": "KIMI_API_KEY",
+      "endpoint": "https://api.moonshot.ai/v1/chat/completions",
+      "expectation": {
+        "kind": "json",
+        "value": {
+          "color": "blue",
+          "count": 2
+        }
+      },
+      "historical_binding": {
+        "api_form": "openai_chat_completions",
+        "api_version": "v1",
+        "default_contract_id": "kimi_k3_openai_compat",
+        "interface_id": "text/moonshot/kimi/kimi-k3#openai-chat-default",
+        "parameter_test_binding_id": "parameter/kimi_k3_openai_compat",
+        "profile_id": "text/moonshot/kimi/kimi-k3",
+        "request_model_id": "kimi-k3",
+        "resolved_sha256": "9f3f076224babfab55bfb6d8c33920777f20815bbbe449d6e1651cfb56505951",
+        "source_id": "moonshot",
+        "test_binding_id": "interface/text/moonshot/kimi/kimi-k3/openai-chat-default"
+      },
+      "historical_exact_response_bytes_available": true,
+      "historical_observation_reference": {
+        "file_sha256": "e2bbc031c9d227e18bb12b3171d308d677b156d4222b375aafbc0ce2d89b1a23",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/08_m04_generate_observation.json"
+      },
+      "historical_response_canonical_sha256": "7c836c113751faf96794cc8aa30d53e9eec066fb2f55f224c047e6be3090050e",
+      "legacy_profile_caveat": "kimi_k3_stream/usage fix temperature=1,top_p=.95,max_completion_tokens=512,reasoning_effort=max; selected completed baseline retains cap8192 and low, so do not reuse old profile blindly.",
+      "output_cap": 8192,
+      "provider_id": "kimi_official",
+      "request_model_id": "kimi-k3",
+      "request_reference": {
+        "file_sha256": "3f6f56b7fbd1458109467a9030527318eaf37e17ca7a7231f01d144566e5520f",
+        "json_pointer": "/cases/7/body",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/request_package.json"
+      },
+      "requires_new_nonstream_bytes_baseline": false,
+      "response_reference": {
+        "file_sha256": "566bcacf9102f4f98208e84cf2e6a1beaa908589412458896c8b471a9bae8b28",
+        "native_bytes_sha256": "566bcacf9102f4f98208e84cf2e6a1beaa908589412458896c8b471a9bae8b28",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/08_m04_generate_response.txt"
+      },
+      "selection": {
+        "api_form": "openai_chat_completions",
+        "contract_id": "kimi_k3_openai_compat",
+        "interface_id": "text/moonshot/kimi/kimi-k3#openai-chat-default",
+        "parameter_test_binding_id": "parameter/kimi_k3_openai_compat",
+        "profile_id": "text/moonshot/kimi/kimi-k3",
+        "test_binding_id": "interface/text/moonshot/kimi/kimi-k3/openai-chat-default"
+      },
+      "source_id": "moonshot",
+      "target_key": "kimi_k3"
+    },
+    {
+      "auth_mode": "bearer",
+      "baseline_body": {
+        "max_tokens": 8192,
+        "messages": [
+          {
+            "content": "Public synthetic fixture: color is blue and count is 2. Return exactly the JSON object {\"color\":\"blue\",\"count\":2}, without markdown or other final-answer text.",
+            "role": "user"
+          }
+        ],
+        "model": "kimi-k2.7-code",
+        "stream": false
+      },
+      "baseline_body_sha256": "3a2dc6a956d9aa24265d1ae1384a03b3f53eb6e639748890a598f9beafcb4968",
+      "credential_env": "KIMI_API_KEY",
+      "endpoint": "https://api.moonshot.ai/v1/chat/completions",
+      "expectation": {
+        "kind": "json",
+        "value": {
+          "color": "blue",
+          "count": 2
+        }
+      },
+      "historical_binding": {
+        "api_form": "openai_chat_completions",
+        "api_version": "v1",
+        "default_contract_id": "kimi_openai_compat",
+        "interface_id": "text/moonshot/kimi/kimi-k2.7-code#openai-chat-default",
+        "parameter_test_binding_id": "parameter/kimi_openai_compat",
+        "profile_id": "text/moonshot/kimi/kimi-k2.7-code",
+        "request_model_id": "kimi-k2.7-code",
+        "resolved_sha256": "f433ccadc06cf66a7a930039017c664147e6bf46ab2121344b2099302dd70dcc",
+        "source_id": "moonshot",
+        "test_binding_id": "interface/text/moonshot/kimi/kimi-k2.7-code/openai-chat-default"
+      },
+      "historical_exact_response_bytes_available": true,
+      "historical_observation_reference": {
+        "file_sha256": "5f19d07b0c2b64ce32017ea2d17830103b5e39aa5d32c7042c35c11cd93e3cc5",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/06_m03_generate_observation.json"
+      },
+      "historical_response_canonical_sha256": "9dab8924424bd6ecdd81235ba9ac5b599a7347da1e898248562ca1bad0610fef",
+      "legacy_profile_caveat": "basic_stream/stream_with_usage force thinking.disabled but current Interface explicitly allows enabled only; reject this inherited profile. Selected one-turn baseline omits thinking and keep, using documented enabled/all defaults.",
+      "output_cap": 8192,
+      "provider_id": "kimi_official",
+      "request_model_id": "kimi-k2.7-code",
+      "request_reference": {
+        "file_sha256": "3f6f56b7fbd1458109467a9030527318eaf37e17ca7a7231f01d144566e5520f",
+        "json_pointer": "/cases/5/body",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/request_package.json"
+      },
+      "requires_new_nonstream_bytes_baseline": false,
+      "response_reference": {
+        "file_sha256": "066301ae2e77293efd3fdd4783a8948ef80a1672c112aa289fb1c94fbcb3a9ea",
+        "native_bytes_sha256": "066301ae2e77293efd3fdd4783a8948ef80a1672c112aa289fb1c94fbcb3a9ea",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/06_m03_generate_response.txt"
+      },
+      "selection": {
+        "api_form": "openai_chat_completions",
+        "contract_id": "kimi_openai_compat",
+        "interface_id": "text/moonshot/kimi/kimi-k2.7-code#openai-chat-default",
+        "parameter_test_binding_id": "parameter/kimi_openai_compat",
+        "profile_id": "text/moonshot/kimi/kimi-k2.7-code",
+        "test_binding_id": "interface/text/moonshot/kimi/kimi-k2.7-code/openai-chat-default"
+      },
+      "source_id": "moonshot",
+      "target_key": "kimi_k27_code"
+    },
+    {
+      "auth_mode": "bearer",
+      "baseline_body": {
+        "max_tokens": 4096,
+        "messages": [
+          {
+            "content": "Public synthetic fixture: color is blue and count is 2. Return exactly the JSON object {\"color\":\"blue\",\"count\":2}, without markdown or other final-answer text.",
+            "role": "user"
+          }
+        ],
+        "model": "kimi-k2.6",
+        "stream": false
+      },
+      "baseline_body_sha256": "a43a48052ffda65329b6752384db187f13878919295325abd6a70e17e502276a",
+      "credential_env": "KIMI_API_KEY",
+      "endpoint": "https://api.moonshot.ai/v1/chat/completions",
+      "expectation": {
+        "kind": "json",
+        "value": {
+          "color": "blue",
+          "count": 2
+        }
+      },
+      "historical_binding": {
+        "api_form": "openai_chat_completions",
+        "api_version": "v1",
+        "default_contract_id": "kimi_openai_compat",
+        "interface_id": "text/moonshot/kimi/kimi-k2.6#openai-chat-default",
+        "parameter_test_binding_id": "parameter/kimi_openai_compat",
+        "profile_id": "text/moonshot/kimi/kimi-k2.6",
+        "request_model_id": "kimi-k2.6",
+        "resolved_sha256": "2ed9325b7d33fd5236a93865413ec8d02c53d921e863df5d7095800cbfc1f263",
+        "source_id": "moonshot",
+        "test_binding_id": "interface/text/moonshot/kimi/kimi-k2.6/openai-chat-default"
+      },
+      "historical_exact_response_bytes_available": true,
+      "historical_observation_reference": {
+        "file_sha256": "d545f4e7e9b242ee6541439df8c463b4eea85844d18fad77c92670a1dcda01c7",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/04_m02_generate_observation.json"
+      },
+      "historical_response_canonical_sha256": "731750c23f1724e4790ae4db2fdf5995dc8422ce33a6f0c69bd2348b4ed4b1db",
+      "legacy_profile_caveat": "basic_stream/stream_with_usage force thinking.disabled; only use with exact matching disabled-thinking historical baseline, not the selected default-enabled baseline.",
+      "output_cap": 4096,
+      "provider_id": "kimi_official",
+      "request_model_id": "kimi-k2.6",
+      "request_reference": {
+        "file_sha256": "3f6f56b7fbd1458109467a9030527318eaf37e17ca7a7231f01d144566e5520f",
+        "json_pointer": "/cases/3/body",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/request_package.json"
+      },
+      "requires_new_nonstream_bytes_baseline": false,
+      "response_reference": {
+        "file_sha256": "f0ae1e0d8aa37ab39894ea68ffd29ae65b1090d1c35729c9b8fb1e335c3b8004",
+        "native_bytes_sha256": "f0ae1e0d8aa37ab39894ea68ffd29ae65b1090d1c35729c9b8fb1e335c3b8004",
+        "path": "reports/approved_live_20260907/kimi_20260907T100721Z/04_m02_generate_response.txt"
+      },
+      "selection": {
+        "api_form": "openai_chat_completions",
+        "contract_id": "kimi_openai_compat",
+        "interface_id": "text/moonshot/kimi/kimi-k2.6#openai-chat-default",
+        "parameter_test_binding_id": "parameter/kimi_openai_compat",
+        "profile_id": "text/moonshot/kimi/kimi-k2.6",
+        "test_binding_id": "interface/text/moonshot/kimi/kimi-k2.6/openai-chat-default"
+      },
+      "source_id": "moonshot",
+      "target_key": "kimi_k26"
+    },
+    {
+      "auth_mode": "bearer",
+      "baseline_body": {
+        "max_completion_tokens": 1024,
+        "messages": [
+          {
+            "content": "Reply exactly OK TOKEN CHECK COMPLETE.",
+            "role": "user"
+          }
+        ],
+        "model": "MiniMax-M3",
+        "reasoning_split": true,
+        "stream": false
+      },
+      "baseline_body_sha256": "8e0951202e500ba3b0eaec1cb713c8a64c56f23209d62b161f2acef503e2ebfc",
+      "credential_env": "MINIMAX_API_KEY",
+      "endpoint": "https://api.minimax.io/v1/chat/completions",
+      "expectation": {
+        "kind": "text",
+        "value": "OK TOKEN CHECK COMPLETE."
+      },
+      "historical_binding": {
+        "api_form": "openai_chat_completions",
+        "api_version": null,
+        "default_contract_id": "minimax_openai_compat",
+        "interface_id": "text/minimax/minimax/minimax-m3#openai-chat-default",
+        "profile_id": "text/minimax/minimax/minimax-m3",
+        "request_model_id": "MiniMax-M3",
+        "source_id": "minimax"
+      },
+      "historical_exact_response_bytes_available": false,
+      "historical_request_package_reference": {
+        "file_sha256": "2999e0df6e2e00dd6d672caf6f322db62aedf60f8ca4483b875b91598be8633d",
+        "json_pointer": "/requests/2/body",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/request_package.json"
+      },
+      "historical_response_canonical_sha256": "4d2e1a4c07288333776123fa391c60f6b8926744f814f443558602c2960e36a3",
+      "legacy_profile_caveat": "basic_stream/stream_with_usage force thinking.disabled; MiniMax M2.x Interface has no thinking.type capability, so do not insert it. M3 supports disabled/adaptive, but selected baseline omits thinking and retains reasoning_split=true.",
+      "output_cap": 1024,
+      "provider_id": "minimax_official",
+      "request_model_id": "MiniMax-M3",
+      "request_reference": {
+        "file_sha256": "0b01755a86e5324ff9efdfb70ebda6fbabce8b54122823e8de33eb18d607b351",
+        "json_pointer": "/body",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/03_MiniMax-M3_basic.json"
+      },
+      "requires_new_nonstream_bytes_baseline": true,
+      "response_reference": {
+        "file_sha256": "0b01755a86e5324ff9efdfb70ebda6fbabce8b54122823e8de33eb18d607b351",
+        "json_pointer": "/response",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/03_MiniMax-M3_basic.json"
+      },
+      "selection": {
+        "api_form": "openai_chat_completions",
+        "contract_id": "minimax_openai_compat",
+        "interface_id": "text/minimax/minimax/minimax-m3#openai-chat-default",
+        "parameter_test_binding_id": "parameter/minimax_openai_compat",
+        "profile_id": "text/minimax/minimax/minimax-m3",
+        "test_binding_id": "interface/text/minimax/minimax/minimax-m3/openai-chat-default"
+      },
+      "source_id": "minimax",
+      "target_key": "minimax_m3"
+    },
+    {
+      "auth_mode": "bearer",
+      "baseline_body": {
+        "max_completion_tokens": 1024,
+        "messages": [
+          {
+            "content": "Reply exactly OK TOKEN CHECK COMPLETE.",
+            "role": "user"
+          }
+        ],
+        "model": "MiniMax-M2.7",
+        "reasoning_split": true,
+        "stream": false
+      },
+      "baseline_body_sha256": "0b8b86838a923051fefbe57c3acb2d7aa4fb4b96444870009a8d23d6efbc6281",
+      "credential_env": "MINIMAX_API_KEY",
+      "endpoint": "https://api.minimax.io/v1/chat/completions",
+      "expectation": {
+        "kind": "text",
+        "value": "OK TOKEN CHECK COMPLETE."
+      },
+      "historical_binding": {
+        "api_form": "openai_chat_completions",
+        "api_version": null,
+        "default_contract_id": "minimax_openai_compat",
+        "interface_id": "text/minimax/minimax/minimax-m2.7#openai-chat-default",
+        "profile_id": "text/minimax/minimax/minimax-m2.7",
+        "request_model_id": "MiniMax-M2.7",
+        "source_id": "minimax"
+      },
+      "historical_exact_response_bytes_available": false,
+      "historical_request_package_reference": {
+        "file_sha256": "2999e0df6e2e00dd6d672caf6f322db62aedf60f8ca4483b875b91598be8633d",
+        "json_pointer": "/requests/9/body",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/request_package.json"
+      },
+      "historical_response_canonical_sha256": "e309f6ff5980f15e183e59ed0635166c6ff89b90e6dc96b2897b0ac9fb73d323",
+      "legacy_profile_caveat": "basic_stream/stream_with_usage force thinking.disabled; MiniMax M2.x Interface has no thinking.type capability, so do not insert it. M3 supports disabled/adaptive, but selected baseline omits thinking and retains reasoning_split=true.",
+      "output_cap": 1024,
+      "provider_id": "minimax_official",
+      "request_model_id": "MiniMax-M2.7",
+      "request_reference": {
+        "file_sha256": "d49b2c33c606cd13720446604489d920da1284d7e1903584ca16aa24ca7b1a56",
+        "json_pointer": "/body",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/10_MiniMax-M2.7_basic.json"
+      },
+      "requires_new_nonstream_bytes_baseline": true,
+      "response_reference": {
+        "file_sha256": "d49b2c33c606cd13720446604489d920da1284d7e1903584ca16aa24ca7b1a56",
+        "json_pointer": "/response",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/10_MiniMax-M2.7_basic.json"
+      },
+      "selection": {
+        "api_form": "openai_chat_completions",
+        "contract_id": "minimax_openai_compat",
+        "interface_id": "text/minimax/minimax/minimax-m2.7#openai-chat-default",
+        "parameter_test_binding_id": "parameter/minimax_openai_compat",
+        "profile_id": "text/minimax/minimax/minimax-m2.7",
+        "test_binding_id": "interface/text/minimax/minimax/minimax-m2.7/openai-chat-default"
+      },
+      "source_id": "minimax",
+      "target_key": "minimax_m27"
+    },
+    {
+      "auth_mode": "bearer",
+      "baseline_body": {
+        "max_completion_tokens": 1024,
+        "messages": [
+          {
+            "content": "Reply exactly OK TOKEN CHECK COMPLETE.",
+            "role": "user"
+          }
+        ],
+        "model": "MiniMax-M2.5",
+        "reasoning_split": true,
+        "stream": false
+      },
+      "baseline_body_sha256": "cf4de6df7fdff6a1a96bded70776d2355984cd919ccb255c9cc4fa2bef4a3e78",
+      "credential_env": "MINIMAX_API_KEY",
+      "endpoint": "https://api.minimax.io/v1/chat/completions",
+      "expectation": {
+        "kind": "text",
+        "value": "OK TOKEN CHECK COMPLETE."
+      },
+      "historical_binding": {
+        "api_form": "openai_chat_completions",
+        "api_version": null,
+        "default_contract_id": "minimax_openai_compat",
+        "interface_id": "text/minimax/minimax/minimax-m2.5#openai-chat-default",
+        "profile_id": "text/minimax/minimax/minimax-m2.5",
+        "request_model_id": "MiniMax-M2.5",
+        "source_id": "minimax"
+      },
+      "historical_exact_response_bytes_available": false,
+      "historical_request_package_reference": {
+        "file_sha256": "2999e0df6e2e00dd6d672caf6f322db62aedf60f8ca4483b875b91598be8633d",
+        "json_pointer": "/requests/16/body",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/request_package.json"
+      },
+      "historical_response_canonical_sha256": "1fa5c3af2bd4a836e44872da0560bcb11d0dbf67ce4259144e983cee79572837",
+      "legacy_profile_caveat": "basic_stream/stream_with_usage force thinking.disabled; MiniMax M2.x Interface has no thinking.type capability, so do not insert it. M3 supports disabled/adaptive, but selected baseline omits thinking and retains reasoning_split=true.",
+      "output_cap": 1024,
+      "provider_id": "minimax_official",
+      "request_model_id": "MiniMax-M2.5",
+      "request_reference": {
+        "file_sha256": "06a973fa57e6d398efe39f17a4aaa3b3ce121807f1c49d48028dbf19dcbb9728",
+        "json_pointer": "/body",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/17_MiniMax-M2.5_basic.json"
+      },
+      "requires_new_nonstream_bytes_baseline": true,
+      "response_reference": {
+        "file_sha256": "06a973fa57e6d398efe39f17a4aaa3b3ce121807f1c49d48028dbf19dcbb9728",
+        "json_pointer": "/response",
+        "path": "reports/approved_live_20260907/minimax_20260907T104016Z/17_MiniMax-M2.5_basic.json"
+      },
+      "selection": {
+        "api_form": "openai_chat_completions",
+        "contract_id": "minimax_openai_compat",
+        "interface_id": "text/minimax/minimax/minimax-m2.5#openai-chat-default",
+        "parameter_test_binding_id": "parameter/minimax_openai_compat",
+        "profile_id": "text/minimax/minimax/minimax-m2.5",
+        "test_binding_id": "interface/text/minimax/minimax/minimax-m2.5/openai-chat-default"
+      },
+      "source_id": "minimax",
+      "target_key": "minimax_m25"
+    }
+  ]
+}

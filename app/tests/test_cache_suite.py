@@ -11,9 +11,17 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from lib.cache_suite import _random_trajectory, run_cache_suite
+from lib.cache_suite import (
+    _prepare_cache_model_profile,
+    _random_trajectory,
+    run_cache_suite,
+)
 from lib.config import load_config
 from lib.deepseek_params import cache_tokens_from_usage
+from lib.model_profile_catalog import (
+    binding_from_database_snapshot,
+    database_snapshot,
+)
 
 
 class FakeCacheClient:
@@ -426,6 +434,174 @@ class FakeNativeCustomerCacheClient:
         )
 
 
+class FakeOpenAIResponsesCacheClient:
+    def __init__(self) -> None:
+        self.bodies: list[dict[str, object]] = []
+
+    def chat_completion(self, body: dict[str, object]) -> SimpleNamespace:
+        raise AssertionError(f"Responses cache request fell back to Chat: {body}")
+
+    def openai_responses(self, body: dict[str, object]) -> SimpleNamespace:
+        self.bodies.append(copy.deepcopy(body))
+        response_input = body.get("input")
+        serialized = json.dumps(response_input, ensure_ascii=False)
+        reasoning_output = []
+        if "reasoning.encrypted_content" in (body.get("include") or []):
+            reasoning_output = [
+                {
+                    "type": "reasoning",
+                    "id": f"reasoning_{len(self.bodies)}",
+                    "encrypted_content": f"encrypted_{len(self.bodies)}",
+                    "summary": [],
+                }
+            ]
+        has_tool_output = any(
+            isinstance(item, dict) and item.get("type") == "function_call_output"
+            for item in (response_input if isinstance(response_input, list) else [])
+        )
+        should_call_tool = (
+            bool(body.get("tools"))
+            and (
+                body.get("tool_choice") == "required"
+                or "get_weather" in serialized
+            )
+            and not has_tool_output
+        )
+        if should_call_tool:
+            output = reasoning_output + [
+                {
+                    "type": "function_call",
+                    "call_id": f"call_{len(self.bodies)}",
+                    "name": "get_weather",
+                    "arguments": '{"city":"杭州"}',
+                }
+            ]
+            text = ""
+        else:
+            text = f"responses answer {len(self.bodies)}"
+            output = reasoning_output + [
+                {
+                    "type": "message",
+                    "role": "assistant",
+                    "content": [{"type": "output_text", "text": text}],
+                }
+            ]
+        prompt_tokens = 5000 + 100 * (
+            len(response_input) if isinstance(response_input, list) else 1
+        )
+        cached_tokens = 0 if len(self.bodies) == 1 else max(prompt_tokens - 200, 0)
+        usage = {
+            "input_tokens": prompt_tokens,
+            "input_tokens_details": {"cached_tokens": cached_tokens},
+            "output_tokens": 10,
+            "total_tokens": prompt_tokens + 10,
+        }
+        response_json = {
+            "id": f"resp_{len(self.bodies)}",
+            "model": body.get("model"),
+            "output": output,
+            "usage": usage,
+        }
+        return SimpleNamespace(
+            timestamp=time.time(),
+            success=True,
+            status_code=200,
+            latency_ms=100,
+            ttft_ms=None,
+            text=text,
+            response_json=response_json,
+            response_length=100,
+            finish_reason="completed",
+            usage=usage,
+            error_type=None,
+            failure_classification=None,
+            cache_headers={},
+        )
+
+
+def _openai_responses_cache_config(scenario: str) -> dict[str, object]:
+    config = load_config()
+    provider = "openai_cache_test"
+    model = "gpt-5.6-sol"
+    config["active_provider"] = provider
+    config["providers"] = {
+        provider: {
+            "label": "OpenAI cache fixture",
+            "base_url": "https://example.invalid/v1",
+            "backend": "openai_compatible",
+            "default_transport": "openai_responses",
+            "api_interfaces": {
+                "openai_responses": {"path": "/responses", "auth": "bearer"}
+            },
+            "models": {
+                "default": model,
+                "candidates": [model],
+                "families": {model: "gpt"},
+                "transports": {model: "openai_responses"},
+                "routes": {
+                    model: {
+                        "vendor_direct": {
+                            "api_forms": {
+                                "openai_responses": {
+                                    "reference_contract_id": "openai_gpt56_responses"
+                                }
+                            }
+                        }
+                    }
+                },
+                "default_routes": {model: "vendor_direct"},
+                "default_api_forms": {
+                    model: {"vendor_direct": "openai_responses"}
+                },
+                "reference_source_ids": {model: "openai"},
+                "reference_model_ids": {model: model},
+            },
+        }
+    }
+    config["cache_test"] = {
+        **(config.get("cache_test") or {}),
+        "scenario": scenario,
+        "sessions": 1,
+        "rounds_per_session": 3,
+        "tool_stage": {"enabled": True, "round": 2},
+        "structure_probe": {"enabled": True},
+        "steps": 2,
+        "trajectory_mode": "scripted",
+        "warmup_requests": 1,
+        "measured_requests": 1,
+        "wait_after_seed_sec": 0,
+        "wait_after_warmup_sec": 0,
+        "controls": {
+            "mode": "custom",
+            "positive_long_prefix_pairs": 1,
+            "negative_unique_prefix_requests": 1,
+        },
+        "max_run_seconds": 60,
+        "consecutive_failure_limit": 3,
+        "seed": 17,
+    }
+    return config
+
+
+def _deepseek_shared_cache_config() -> dict[str, object]:
+    config = load_config()
+    config["active_provider"] = "yibu"
+    config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
+    config["cache_test"] = {
+        **(config.get("cache_test") or {}),
+        "scenario": "shared_prefix",
+        "warmup_requests": 1,
+        "measured_requests": 1,
+        "wait_after_warmup_sec": 0,
+        "controls": {
+            "mode": "custom",
+            "positive_long_prefix_pairs": 1,
+            "negative_unique_prefix_requests": 1,
+        },
+    }
+    return config
+
+
 class CacheSuiteTest(unittest.TestCase):
     def test_cache_usage_parsers_cover_claude_and_gemini(self) -> None:
         self.assertEqual(
@@ -454,11 +630,207 @@ class CacheSuiteTest(unittest.TestCase):
             (120, 0),
         )
 
+    def test_all_cache_scenarios_use_openai_responses_and_pin_mpdb(self) -> None:
+        for scenario in (
+            "shared_prefix",
+            "growing_conversation",
+            "progressive_customer_session",
+            "kilocode_agent_session",
+        ):
+            with self.subTest(scenario=scenario):
+                config = _openai_responses_cache_config(scenario)
+                client = FakeOpenAIResponsesCacheClient()
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    result = run_cache_suite(config, client, Path(temp_dir))
+
+                self.assertTrue(client.bodies)
+                self.assertTrue(all("input" in body for body in client.bodies))
+                self.assertTrue(all("messages" not in body for body in client.bodies))
+                self.assertTrue(all("temperature" not in body for body in client.bodies))
+                self.assertTrue(
+                    all(
+                        "reasoning.encrypted_content" in (body.get("include") or [])
+                        for body in client.bodies
+                    )
+                )
+                self.assertTrue(
+                    all(
+                        event["extra"]["request_endpoint"] == "/v1/responses"
+                        for event in result["events"]
+                    )
+                )
+                snapshot = result["model_profile_database"]
+                self.assertEqual(snapshot["snapshot_schema_version"], 1)
+                self.assertTrue(snapshot["snapshot_digest"])
+                self.assertIsInstance(snapshot["test_binding"], dict)
+                self.assertIsInstance(snapshot["reference_contract"], dict)
+                self.assertIsInstance(snapshot["execution_target"], dict)
+                self.assertIsNone(snapshot["parameter_test_binding"])
+                self.assertIsNone(snapshot["parameter_test_binding_id"])
+                self.assertEqual(snapshot["source_id"], "openai")
+                self.assertEqual(
+                    snapshot["api_form"]
+                    if "api_form" in snapshot
+                    else snapshot["interface"]["api_form"],
+                    "openai_responses",
+                )
+                self.assertEqual(result["transport"], "openai_responses")
+                self.assertEqual(result["source_id"], "openai")
+                self.assertTrue(result["test_binding_id"])
+                self.assertEqual(
+                    binding_from_database_snapshot(snapshot)["interface_id"],
+                    result["interface_id"],
+                )
+                if scenario in {
+                    "growing_conversation",
+                    "progressive_customer_session",
+                }:
+                    self.assertTrue(
+                        any(
+                            isinstance(item, dict)
+                            and item.get("type") == "reasoning"
+                            and bool(item.get("encrypted_content"))
+                            for body in client.bodies[1:]
+                            for item in (
+                                body.get("input")
+                                if isinstance(body.get("input"), list)
+                                else []
+                            )
+                        )
+                    )
+                if scenario in {
+                    "progressive_customer_session",
+                    "kilocode_agent_session",
+                }:
+                    self.assertTrue(
+                        any(
+                            isinstance(item, dict)
+                            and item.get("type") == "function_call_output"
+                            for body in client.bodies
+                            for item in (
+                                body.get("input")
+                                if isinstance(body.get("input"), list)
+                                else []
+                            )
+                        )
+                    )
+                    self.assertTrue(
+                        all(body.get("tool_choice") != "required" for body in client.bodies)
+                    )
+
+    def test_cache_reuses_snapshot_policy_without_reading_current_catalog(self) -> None:
+        config = _deepseek_shared_cache_config()
+        _prepare_cache_model_profile(config, "yibu", "deepseek-v4-flash", "deepseek")
+        client = FakeCacheClient()
+        with patch(
+            "lib.reference_specs.load_model_capability_profile",
+            side_effect=RuntimeError("TODAY_CATALOG_WAS_READ"),
+        ), tempfile.TemporaryDirectory() as temp_dir:
+            result = run_cache_suite(config, client, Path(temp_dir))
+
+        self.assertTrue(client.bodies)
+        self.assertEqual(
+            result["model_profile_database"]["execution_target"]["request_model_id"],
+            "deepseek-v4-flash",
+        )
+        self.assertTrue(result["model_profile_database"]["test_extension_digest"])
+
+    def test_cache_rejects_snapshot_target_mismatch_before_request(self) -> None:
+        config = _deepseek_shared_cache_config()
+        _prepare_cache_model_profile(config, "yibu", "deepseek-v4-flash", "deepseek")
+        config["providers"]["yibu"]["models"]["default"] = "glm-5.2"
+        client = FakeCacheClient()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaisesRegex(
+                ValueError, "Cache runtime conflicts with immutable MPDB snapshot"
+            ):
+                run_cache_suite(config, client, Path(temp_dir))
+        self.assertEqual(client.bodies, [])
+
+    def test_cache_rejects_snapshot_family_mismatch_before_request(self) -> None:
+        config = _deepseek_shared_cache_config()
+        _prepare_cache_model_profile(config, "yibu", "deepseek-v4-flash", "deepseek")
+        config["providers"]["yibu"]["models"]["families"][
+            "deepseek-v4-flash"
+        ] = "qwen"
+        client = FakeCacheClient()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with self.assertRaisesRegex(ValueError, "suite_family_id"):
+                run_cache_suite(config, client, Path(temp_dir))
+        self.assertEqual(client.bodies, [])
+
+    def test_cache_pressure_policy_is_independent_of_parameter_test_flag(self) -> None:
+        config = _deepseek_shared_cache_config()
+        _prepare_cache_model_profile(config, "yibu", "deepseek-v4-flash", "deepseek")
+        binding = binding_from_database_snapshot(config["_model_profile_database"])
+        policy_id = str(binding["test_binding_id"])
+        for row in binding["interface"]["test_bindings"]:
+            if row.get("test_binding_id") == policy_id:
+                row["parameter_test_enabled"] = False
+        config["_model_profile_database"] = database_snapshot(binding)
+        client = FakeCacheClient()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_cache_suite(config, client, Path(temp_dir))
+        self.assertTrue(client.bodies)
+
+    def test_cache_tool_stage_rejects_an_mpdb_unsupported_tool_profile(self) -> None:
+        for scenario in (
+            "progressive_customer_session",
+            "kilocode_agent_session",
+        ):
+            with self.subTest(scenario=scenario):
+                config = _openai_responses_cache_config(scenario)
+                _prepare_cache_model_profile(
+                    config, "openai_cache_test", "gpt-5.6-sol", "gpt"
+                )
+                binding = binding_from_database_snapshot(
+                    config["_model_profile_database"]
+                )
+                policy_id = str(binding["test_binding_id"])
+                for row in binding["interface"]["test_bindings"]:
+                    if row.get("test_binding_id") == policy_id:
+                        row["pressure_profiles"] = {
+                            "openai_gpt56_responses": ["openai_responses_tools"]
+                        }
+                        row.setdefault("expectations", {})[
+                            "openai_responses_tools"
+                        ] = "unsupported"
+                config["_model_profile_database"] = database_snapshot(
+                    binding, include_parameter_binding=False
+                )
+                client = FakeOpenAIResponsesCacheClient()
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    with self.assertRaisesRegex(
+                        ValueError, "does not approve a tool profile"
+                    ):
+                        run_cache_suite(config, client, Path(temp_dir))
+                self.assertEqual(client.bodies, [])
+
+    def test_progressive_without_tool_stage_allows_basic_cache_leaf(self) -> None:
+        config = _openai_responses_cache_config("progressive_customer_session")
+        config["cache_test"]["tool_stage"] = {"enabled": False, "round": 2}
+        _prepare_cache_model_profile(
+            config, "openai_cache_test", "gpt-5.6-sol", "gpt"
+        )
+        binding = binding_from_database_snapshot(config["_model_profile_database"])
+        policy_id = str(binding["test_binding_id"])
+        for row in binding["interface"]["test_bindings"]:
+            if row.get("test_binding_id") == policy_id:
+                row["pressure_profiles"] = {}
+        config["_model_profile_database"] = database_snapshot(
+            binding, include_parameter_binding=False
+        )
+        client = FakeOpenAIResponsesCacheClient()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            run_cache_suite(config, client, Path(temp_dir))
+        self.assertTrue(client.bodies)
+        self.assertTrue(all("tools" not in body for body in client.bodies))
+
     def test_measured_requests_use_unique_suffix_and_shared_prefix_stats(self) -> None:
-        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-pro"}):
+        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-flash"}):
             config = load_config()
         config["active_provider"] = "yibu"
-        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         config["cache_test"] = {
             **(config.get("cache_test") or {}),
             "scenario": "shared_prefix",
@@ -517,14 +889,16 @@ class CacheSuiteTest(unittest.TestCase):
         self.assertEqual(summary["cache_shared_prefix_record_count"], 3)
         self.assertEqual(summary["cache_shared_prefix_tokens"], 15000)
         self.assertEqual(summary["cache_hit_tokens"], 14700)
-        self.assertEqual(summary["cache_miss_tokens"], 300)
-        self.assertEqual(summary["cache_hit_rate"], 0.98)
+        self.assertEqual(summary["cache_miss_tokens"], 900)
+        self.assertEqual(summary["prefix_cache_miss_tokens"], 300)
+        self.assertAlmostEqual(summary["cache_hit_rate"], 4900 / 5200)
+        self.assertEqual(summary["prefix_cache_hit_rate"], 0.98)
 
     def test_growing_conversation_uses_previous_prompt_tokens_as_denominator(self) -> None:
-        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-pro"}):
+        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-flash"}):
             config = load_config()
         config["active_provider"] = "yibu"
-        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         config["cache_test"] = {
             **(config.get("cache_test") or {}),
             "scenario": "growing_conversation",
@@ -573,14 +947,16 @@ class CacheSuiteTest(unittest.TestCase):
         self.assertEqual(summary["cache_shared_prefix_record_count"], 3)
         self.assertEqual(summary["cache_shared_prefix_tokens"], 15650)
         self.assertEqual(summary["cache_hit_tokens"], 15400)
-        self.assertEqual(summary["cache_miss_tokens"], 250)
-        self.assertAlmostEqual(summary["cache_hit_rate"], 15400 / 15650)
+        self.assertEqual(summary["cache_miss_tokens"], 950)
+        self.assertEqual(summary["prefix_cache_miss_tokens"], 250)
+        self.assertAlmostEqual(summary["cache_hit_rate"], 15400 / 16350)
+        self.assertAlmostEqual(summary["prefix_cache_hit_rate"], 15400 / 15650)
 
     def test_progressive_customer_session_grows_real_conversations_and_reports_v10_metrics(self) -> None:
-        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-pro"}):
+        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-flash"}):
             config = load_config()
         config["active_provider"] = "yibu"
-        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         config["cache_test"] = {
             **(config.get("cache_test") or {}),
             "scenario": "progressive_customer_session",
@@ -665,10 +1041,10 @@ class CacheSuiteTest(unittest.TestCase):
         self.assertEqual(summary["cache_stage_metrics"]["tool_followup"]["request_count"], 2)
 
     def test_progressive_tool_unsupported_does_not_create_a_fake_followup_request(self) -> None:
-        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-pro"}):
+        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-flash"}):
             config = load_config()
         config["active_provider"] = "yibu"
-        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         config["cache_test"] = {
             **(config.get("cache_test") or {}),
             "scenario": "progressive_customer_session",
@@ -708,10 +1084,10 @@ class CacheSuiteTest(unittest.TestCase):
         self.assertTrue(all(record["success"] for record in request_rows))
 
     def test_progressive_unexpected_tool_call_stops_only_that_session(self) -> None:
-        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-pro"}):
+        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-flash"}):
             config = load_config()
         config["active_provider"] = "yibu"
-        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         config["cache_test"] = {
             **(config.get("cache_test") or {}),
             "scenario": "progressive_customer_session",
@@ -742,10 +1118,10 @@ class CacheSuiteTest(unittest.TestCase):
         self.assertEqual(result["summary"]["session_completion_ratio"], 0.0)
 
     def test_kilocode_agent_session_append_only_monotonic_hits_and_metrics(self) -> None:
-        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-pro"}):
+        with patch.dict(os.environ, {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": "deepseek-v4-flash"}):
             config = load_config()
         config["active_provider"] = "yibu"
-        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-pro"
+        config["providers"]["yibu"]["models"]["default"] = "deepseek-v4-flash"
         config["cache_test"] = {
             **(config.get("cache_test") or {}),
             "scenario": "kilocode_agent_session",
@@ -832,10 +1208,9 @@ class CacheSuiteTest(unittest.TestCase):
         self.assertNotIn("cache_case_metrics", summary)
         self.assertNotIn("session_completion_ratio", summary)
 
-    def test_kilocode_agent_session_supports_claude_and_gemini_native_transports(self) -> None:
+    def test_kilocode_agent_session_supports_claude_native_transport(self) -> None:
         for family, model, transport in (
             ("claude", "claude-sonnet-4-6", "claude_messages"),
-            ("gemini", "gemini-2.5-flash", "gemini_generate_content"),
         ):
             with self.subTest(transport=transport), patch.dict(
                 os.environ,
@@ -925,10 +1300,9 @@ class CacheSuiteTest(unittest.TestCase):
         other = _random_trajectory(12, random.Random(8))
         self.assertNotEqual(first, other)
 
-    def test_progressive_customer_session_supports_native_transports(self) -> None:
+    def test_progressive_customer_session_supports_claude_native_transport(self) -> None:
         for family, model, transport in (
             ("claude", "claude-sonnet-4-6", "claude_messages"),
-            ("gemini", "gemini-2.5-flash", "gemini_generate_content"),
         ):
             with self.subTest(transport=transport), patch.dict(
                 os.environ,
@@ -999,6 +1373,45 @@ class CacheSuiteTest(unittest.TestCase):
                     result["summary"]["cache_stage_metrics"]["tool_followup"]["request_count"],
                     1,
                 )
+
+    def test_gemini_native_cache_execution_fails_closed_when_pressure_is_disabled(self) -> None:
+        model = "gemini-3.6-flash"
+        transport = "gemini_generate_content"
+        with patch.dict(
+            os.environ,
+            {"LOADTEST_PROVIDER": "yibu", "LOADTEST_MODEL": model},
+        ):
+            config = load_config()
+            config["active_provider"] = "yibu"
+            models = config["providers"]["yibu"]["models"]
+            models["default"] = model
+            models["candidates"] = list(models.get("candidates") or []) + [model]
+            models["families"][model] = "gemini"
+            models["transports"][model] = transport
+            config["providers"]["yibu"]["api_interfaces"][transport] = {
+                "base_url": "https://example.invalid/v1",
+                "path": "/models/{model}:generateContent",
+                "auth": "google_api_key",
+            }
+            config["cache_test"] = {
+                **(config.get("cache_test") or {}),
+                "scenario": "progressive_customer_session",
+                "sessions": 1,
+                "rounds_per_session": 1,
+                "wait_after_seed_sec": 0,
+                "max_run_seconds": 60,
+                "consecutive_failure_limit": 1,
+                "estimated_request_count": 1,
+            }
+            client = FakeNativeCustomerCacheClient(transport)
+            with tempfile.TemporaryDirectory() as temp_dir:
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "Pressure testing is disabled for gemini/gemini-3.6-flash",
+                ):
+                    run_cache_suite(config, client, Path(temp_dir))
+
+        self.assertEqual(client.bodies, [])
 
 
 if __name__ == "__main__":

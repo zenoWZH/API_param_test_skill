@@ -7,6 +7,8 @@ from threading import Lock
 from typing import Any, Iterable
 from urllib.parse import urlsplit
 
+from .gemini_api_version import require_ai_studio_v1beta_url
+
 
 SELECTED_API_KEY_ENV = "LOADTEST_SELECTED_API_KEY"
 SELECTED_API_KEY_PROVIDER_ENV = "LOADTEST_SELECTED_API_KEY_PROVIDER"
@@ -40,6 +42,13 @@ _SAFE_CHILD_ENV_NAMES = {
     "TMPDIR",
     "TZ",
     "VIRTUAL_ENV",
+}
+_SAFE_LLM_API_TEST_CHILD_ENV_NAMES = {
+    "LLM_API_TEST_DATA_DIR",
+    "LLM_API_TEST_DOTENV",
+    "LLM_API_TEST_PROVIDERS_LOCAL",
+    "LLM_API_TEST_REPORTS_DIR",
+    "LLM_API_TEST_UPSTREAM_CORPUS",
 }
 _SENSITIVE_FIELD_NAMES = {
     "api-key",
@@ -85,6 +94,7 @@ class ProviderCredential:
         return cls(provider=provider, _secret=value, allowed_origins=origins)
 
     def auth_headers(self, *, url: str, auth_mode: str) -> dict[str, str]:
+        require_ai_studio_v1beta_url(url)
         origin = _normalized_origin(url)
         if origin not in self.allowed_origins:
             raise ValueError(
@@ -133,7 +143,7 @@ def build_provider_child_env(
     credential = credential_from_config(config, provider)
     env: dict[str, str] = {}
     for name, value in os.environ.items():
-        if name in _SAFE_CHILD_ENV_NAMES or name.startswith("LLM_API_TEST_") or (
+        if name in _SAFE_CHILD_ENV_NAMES or name in _SAFE_LLM_API_TEST_CHILD_ENV_NAMES or (
             name.startswith("LOADTEST_") and not _looks_sensitive_name(name)
         ):
             env[name] = value

@@ -49,16 +49,19 @@
           <label>Model<select id="paramModel"></select></label>
           <label>Route Profile<select id="paramRouteProfile"></select></label>
           <label>API Form<select id="paramApiForm"></select></label>
-          <label>Reference Source<select id="referenceSource"></select></label>
-          <label title="Auto 按 Reference Source/传输协议选择；其他项可强制使用指定响应协议。">Tool validation protocol
+          <label>测试矩阵<select id="paramWorkflow"><option value="__ordinary__">普通参数测试</option></select></label>
+          <label>Interface Contract<select id="referenceContractId"></select></label>
+          <label title="固定套件需明确选择；Claude 缓存固定对照包含两次输入估算和三次生成。">参数套件<select id="parameterSuite" disabled><option value="">通用参数矩阵</option></select></label>
+          <label title="Auto 按 Interface Contract/传输协议选择；其他项可强制使用指定响应协议。">Tool validation protocol
             <select id="toolValidationMode">
-              <option value="auto">Auto (by Reference)</option>
+              <option value="auto">Auto (by Contract)</option>
               <option value="openai_compat">OpenAI-compatible tool_calls</option>
               <option value="gemini_native">Gemini Native functionCall</option>
               <option value="claude_native">Claude Native tool_use</option>
             </select>
           </label>
-          <label>每个 profile 测试次数<input id="paramTestRuns" type="number" min="1" max="1000" step="1" inputmode="numeric" value="3"></label>
+          <label>完整套件执行轮数<input id="paramTestRuns" type="number" min="1" max="1000" step="1" inputmode="numeric" value="1"></label>
+          <label id="paramWorkflowCasesWrap" hidden>测试用例（默认全部）<input id="paramWorkflowCases" list="paramWorkflowCaseOptions" placeholder="可选：用例名称或 ID，逗号分隔"><datalist id="paramWorkflowCaseOptions"></datalist></label>
         </div>
         <div class="row">
           <span id="paramKeyStatus" class="pill">key: unknown</span>
@@ -66,13 +69,14 @@
           <span id="paramConfiguredRoute" class="pill">configured route: unknown</span>
           <span id="paramObservedFingerprint" class="pill">observed upstream: n/a</span>
           <span id="paramProfileStatus" class="pill">model profile: unknown</span>
-          <span id="referenceMode" class="pill">reference: default</span>
+          <span id="contractMode" class="pill">contract: default</span>
           <span id="toolValidationHint" class="pill">tool validation: auto</span>
           <span id="paramRunHint" class="pill">0 cells</span>
-          <button id="resetReference" type="button">Reset reference default</button>
+          <button id="resetContract" type="button">Reset contract default</button>
           <button id="startParam" class="primary" type="button">运行参数测试</button>
           <button id="stopParam" class="danger" type="button">停止当前 Job</button>
         </div>
+        <div id="paramWorkflowPreview" class="notice" hidden></div>
       </div>
 
       <div class="surface">
@@ -91,10 +95,10 @@
       </div>
 
       <div class="surface">
-        <h2>Reference Parameter Specs</h2>
+        <h2 id="paramSpecsTitle">Interface Contract Parameter Specs</h2>
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Parameter</th><th>Official / Contract</th><th>Model profile expectation</th><th>Coverage</th></tr></thead>
+            <thead id="paramSpecsHead"><tr><th>Parameter</th><th>Official / Contract</th><th>Model profile expectation</th><th>Coverage</th></tr></thead>
             <tbody id="paramSpecs"></tbody>
           </table>
         </div>
@@ -108,12 +112,17 @@
             <tbody id="paramResults"></tbody>
           </table>
         </div>
+        <details id="paramWorkflowEvidence" hidden>
+          <summary>请求与清理记录</summary>
+          <div class="table-wrap"><table><thead><tr><th>轮次</th><th>用例</th><th>阶段</th><th>请求状态</th><th>HTTP</th></tr></thead><tbody id="paramWorkflowAttempts"></tbody></table></div>
+          <pre id="paramWorkflowCleanup">尚无清理记录。</pre>
+        </details>
       </div>
 
       <div class="surface">
         <div class="section-head">
           <h2>Token Audit</h2>
-          <span class="pill">exact evidence gates · estimates are display-only</span>
+          <span class="pill">required usage · arithmetic · gross plausibility gate; exact evidence when configured</span>
         </div>
         <div class="table-wrap">
           <table class="token-audit-table">
@@ -161,7 +170,9 @@
           <label>Model<select id="imageModel"></select></label>
           <label>Route Profile<select id="imageRouteProfile"></select></label>
           <label id="imageApiFormWrap">API Form<select id="imageApiForm"></select></label>
-          <label>Suite<select id="imageSuite"><option value="smoke">smoke</option><option value="resolution">resolution</option><option value="full">full · requires high-resolution confirmation</option></select></label>
+          <label>Suite<select id="imageSuite"><option value="full" selected>full · 全部已启用用例</option><option value="smoke">smoke</option><option value="resolution">resolution</option></select></label>
+          <label>执行轮数<input id="imageRunCount" type="number" min="1" max="1000" step="1" value="1"></label>
+          <label>测试用例（默认全部）<input id="imageCases" placeholder="可选：用例名称或 ID，逗号分隔"></label>
           <label id="imageQualityWrap">Quality<select id="imageQuality"><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="auto">auto</option></select></label>
           <label id="imageOutputFormatWrap">Output format<select id="imageOutputFormat"><option value="png">png</option><option value="jpeg">jpeg</option><option value="webp">webp</option></select></label>
         </div>
@@ -356,6 +367,8 @@
         <div class="controls cache-core-controls">
           <label>Provider<select id="cacheProvider"></select></label>
           <label>Model<select id="cacheModel"></select></label>
+          <label>Route<select id="cacheRouteProfile"></select></label>
+          <label>API Form<select id="cacheApiForm"></select></label>
         </div>
         <div id="cacheProgressiveFields" class="controls cache-progressive-controls">
           <label>会话数<input id="cacheSessions" type="number" min="1" max="1000"></label>

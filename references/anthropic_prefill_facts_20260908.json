@@ -1,0 +1,487 @@
+{
+  "schema_version": 1,
+  "approval_code": "R7-ALL-MODELS-PREFIX-COMPLETION-LIVE",
+  "source_id": "anthropic",
+  "requests_sent": 9,
+  "http_counts": {
+    "200": 6,
+    "400": 3
+  },
+  "observations": [
+    {
+      "source_id": "anthropic",
+      "request_model_id": "claude-haiku-4-5-20251001",
+      "family_id": "claude",
+      "api_form": "anthropic_messages",
+      "profile_id": "text/anthropic/claude/claude-haiku-4-5-20251001",
+      "interface_id": "text/anthropic/claude/claude-haiku-4-5-20251001#anthropic-messages-default",
+      "contract_id": "claude_native_messages",
+      "parameter": "messages.final_assistant_prefill",
+      "controls": [
+        {
+          "case_id": "claude-haiku-4-5-20251001/prefill",
+          "label": "prefill",
+          "model": "claude-haiku-4-5-20251001",
+          "http_status": 200,
+          "request_sha256": "df819a19b33d04f6ff9152e3850b4624eae11f4029046c010a5658d8f6e30582",
+          "response_sha256": "907c02a59f5277b1dd0b9fa6ba31ea88eaa570de3ef133640115849f9ecde41b",
+          "response_id_sha256": "ce3a53436095a2b07067cf57faf44dd164f71c8f5f1ea8ba46590e7286a29bd9",
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "native_text_envelope_valid": true,
+            "usage": {
+              "input_tokens": 64,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "output_tokens": 14,
+              "service_tier": "standard",
+              "inference_geo": "not_available"
+            },
+            "returned_model": "claude-haiku-4-5-20251001",
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "assembled_json_valid": true,
+            "continuation_sha256": "a5092777beda0e92a3eb7d072f23ed64b7c5952328fad22c0d1c7b0eeb046f50"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_observation.json",
+            "sha256": "8486720445b834d70910cae2d24a33f10a68e62a6a5ae5e3ddec911a5b1745a1"
+          }
+        },
+        {
+          "case_id": "claude-haiku-4-5-20251001/stop",
+          "label": "stop",
+          "model": "claude-haiku-4-5-20251001",
+          "http_status": 200,
+          "request_sha256": "d897cea429801034f1e81b2df4f03461d048aeb37bfd3f56b21f14fa07a401a8",
+          "response_sha256": "9c48f5ca7bee07bac96f6fd17d4b1b6d11c77fc2bad68575ed9040ef7f73a18f",
+          "response_id_sha256": "0ba71aced548c94ffbbe08c76fe617ed2d9341492e00d739df2cbce5aa604410",
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "native_text_envelope_valid": true,
+            "usage": {
+              "input_tokens": 64,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "output_tokens": 7,
+              "service_tier": "standard",
+              "inference_geo": "not_available"
+            },
+            "returned_model": "claude-haiku-4-5-20251001",
+            "stop_reason": "stop_sequence",
+            "stop_sequence": "CUT_HERE",
+            "continuation_sha256": "e6bf2820877c4ae7ca91f961cc17743ee6601c6dbabd5dd4cf98c5dbe6fa20dc"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_observation.json",
+            "sha256": "270dd27fd8841ccff4dd3e3585fb774507b69c6ae27ebaf73e853b467d7b24d3"
+          }
+        },
+        {
+          "case_id": "claude-haiku-4-5-20251001/invalid_content_type",
+          "label": "invalid_content_type",
+          "model": "claude-haiku-4-5-20251001",
+          "http_status": 400,
+          "request_sha256": "e82f50089d1e660f67a981c15b87ad1835f6a149fe8532d8f709f65eef7dcbd9",
+          "response_sha256": "3a45db9eb54ae160ea3b17b0430fd6de42b537946d7a208abe73007210ac49d7",
+          "response_id_sha256": null,
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "target_parameter": "messages[1].content"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_observation.json",
+            "sha256": "299f2a65d0113c7d8248441cf9200ecf9be812b426159393732d34142bcb6361"
+          }
+        }
+      ],
+      "prefill_stop_type_controls_verified": true,
+      "api_version": "2023-06-01",
+      "thinking_mode": "disabled",
+      "output_cap": 2048,
+      "official_documents": {
+        "model_boundary": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+        "prefill": "https://platform.claude.com/docs/en/claude_api_primer",
+        "request": "https://platform.claude.com/docs/en/api/messages/create",
+        "retrieved_at": "2026-09-08",
+        "stop": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+      },
+      "raw_report_retention": "P1M",
+      "raw_report_expires_at": "2026-10-08T05:01:52Z",
+      "full_parameter_matrix_verified": false,
+      "other_models_or_forms_inferred": false,
+      "token_exactness_verified": false
+    },
+    {
+      "source_id": "anthropic",
+      "request_model_id": "claude-opus-4-5-20251101",
+      "family_id": "claude",
+      "api_form": "anthropic_messages",
+      "profile_id": "text/anthropic/claude/claude-opus-4-5-20251101",
+      "interface_id": "text/anthropic/claude/claude-opus-4-5-20251101#anthropic-messages-default",
+      "contract_id": "claude_native_messages",
+      "parameter": "messages.final_assistant_prefill",
+      "controls": [
+        {
+          "case_id": "claude-opus-4-5-20251101/prefill",
+          "label": "prefill",
+          "model": "claude-opus-4-5-20251101",
+          "http_status": 200,
+          "request_sha256": "57da2472ff33b17d526a09fe148932fa1b53116420390d316dd646eda7adb5c8",
+          "response_sha256": "acd2c097a295c54c51599200779742bc1a8f51d3e7be53cefb37b6df36cec669",
+          "response_id_sha256": "e6505aae433e6c73b255aa909c790796cb0f2e8f55526509039df256b9200d2f",
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "native_text_envelope_valid": true,
+            "usage": {
+              "input_tokens": 64,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "output_tokens": 14,
+              "service_tier": "standard",
+              "inference_geo": "not_available"
+            },
+            "returned_model": "claude-opus-4-5-20251101",
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "assembled_json_valid": true,
+            "continuation_sha256": "a5092777beda0e92a3eb7d072f23ed64b7c5952328fad22c0d1c7b0eeb046f50"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_observation.json",
+            "sha256": "f187c7eae859f6bcd6269f41b571e5acd14c04f227513d9d7450d5e945b12c8f"
+          }
+        },
+        {
+          "case_id": "claude-opus-4-5-20251101/stop",
+          "label": "stop",
+          "model": "claude-opus-4-5-20251101",
+          "http_status": 200,
+          "request_sha256": "1599a9d233c564255849bf727d39496d0c5bbac5e2eb406059c710fad7d3da66",
+          "response_sha256": "e8b2035f422e8dec455ddcf1bc4313e4c5c89b5c7dfb02f6df12ea7dfb87d585",
+          "response_id_sha256": "d0cf12c8013282ff67d253023e4745c7736303d60dbf737a3c63e61c9643dcee",
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "native_text_envelope_valid": true,
+            "usage": {
+              "input_tokens": 64,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "output_tokens": 7,
+              "service_tier": "standard",
+              "inference_geo": "not_available"
+            },
+            "returned_model": "claude-opus-4-5-20251101",
+            "stop_reason": "stop_sequence",
+            "stop_sequence": "CUT_HERE",
+            "continuation_sha256": "e6bf2820877c4ae7ca91f961cc17743ee6601c6dbabd5dd4cf98c5dbe6fa20dc"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_observation.json",
+            "sha256": "6643760df487f4bf29f626c5d94dcc3999cbbbffb40e31fb2c56b72d39dcf24c"
+          }
+        },
+        {
+          "case_id": "claude-opus-4-5-20251101/invalid_content_type",
+          "label": "invalid_content_type",
+          "model": "claude-opus-4-5-20251101",
+          "http_status": 400,
+          "request_sha256": "7dc6bfff52e43e6fe8f197eded430c8bd762028136b15761766505a4af44f19f",
+          "response_sha256": "22e01b65358f24014a92931801735f7ac4c1b2b9f3836112e2b0ebebefda8666",
+          "response_id_sha256": null,
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "target_parameter": "messages[1].content"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_observation.json",
+            "sha256": "461d0755ce463d4e37cfb8f730ab27e7c0a6e863ede55ef684b5e2ef11815f7f"
+          }
+        }
+      ],
+      "prefill_stop_type_controls_verified": true,
+      "api_version": "2023-06-01",
+      "thinking_mode": "disabled",
+      "output_cap": 2048,
+      "official_documents": {
+        "model_boundary": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+        "prefill": "https://platform.claude.com/docs/en/claude_api_primer",
+        "request": "https://platform.claude.com/docs/en/api/messages/create",
+        "retrieved_at": "2026-09-08",
+        "stop": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+      },
+      "raw_report_retention": "P1M",
+      "raw_report_expires_at": "2026-10-08T05:01:52Z",
+      "full_parameter_matrix_verified": false,
+      "other_models_or_forms_inferred": false,
+      "token_exactness_verified": false
+    },
+    {
+      "source_id": "anthropic",
+      "request_model_id": "claude-sonnet-4-5-20250929",
+      "family_id": "claude",
+      "api_form": "anthropic_messages",
+      "profile_id": "text/anthropic/claude/claude-sonnet-4-5-20250929",
+      "interface_id": "text/anthropic/claude/claude-sonnet-4-5-20250929#anthropic-messages-default",
+      "contract_id": "claude_native_messages",
+      "parameter": "messages.final_assistant_prefill",
+      "controls": [
+        {
+          "case_id": "claude-sonnet-4-5-20250929/prefill",
+          "label": "prefill",
+          "model": "claude-sonnet-4-5-20250929",
+          "http_status": 200,
+          "request_sha256": "bcd44a65761447b97797f1476bf883f0523b13644f3644e8908ab52432530fc2",
+          "response_sha256": "61d981d7174c45c3bf20a30fc753b9e104e9ac803edd96d66f7f0f4c2aed8dac",
+          "response_id_sha256": "9445736b3b1a6b210f1aa71912140c3a516aa89a77ffeb59d7cf1ba3061951bf",
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "native_text_envelope_valid": true,
+            "usage": {
+              "input_tokens": 64,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "output_tokens": 14,
+              "service_tier": "standard",
+              "inference_geo": "not_available"
+            },
+            "returned_model": "claude-sonnet-4-5-20250929",
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "assembled_json_valid": true,
+            "continuation_sha256": "a5092777beda0e92a3eb7d072f23ed64b7c5952328fad22c0d1c7b0eeb046f50"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_observation.json",
+            "sha256": "a5b1f98b65350b3cf5984ba90489a875e00b0c8459a95f53f03cfe8c4274b550"
+          }
+        },
+        {
+          "case_id": "claude-sonnet-4-5-20250929/stop",
+          "label": "stop",
+          "model": "claude-sonnet-4-5-20250929",
+          "http_status": 200,
+          "request_sha256": "c6a5ab64fb5d9065a43c440788e51d96cc0f3ac6ecd0bd4d88196e77d94b39dd",
+          "response_sha256": "f3001cb49d0e65fbb20a1407a347335467d9b4e75cb99d3f6f28624138c9fcb1",
+          "response_id_sha256": "a8d3cc26d3ce1f02120aeee2e32a2914b5219a2954a4a47a211b8c5a23e4ae30",
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "native_text_envelope_valid": true,
+            "usage": {
+              "input_tokens": 64,
+              "cache_creation_input_tokens": 0,
+              "cache_read_input_tokens": 0,
+              "cache_creation": {
+                "ephemeral_5m_input_tokens": 0,
+                "ephemeral_1h_input_tokens": 0
+              },
+              "output_tokens": 7,
+              "service_tier": "standard",
+              "inference_geo": "not_available"
+            },
+            "returned_model": "claude-sonnet-4-5-20250929",
+            "stop_reason": "stop_sequence",
+            "stop_sequence": "CUT_HERE",
+            "continuation_sha256": "e6bf2820877c4ae7ca91f961cc17743ee6601c6dbabd5dd4cf98c5dbe6fa20dc"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_observation.json",
+            "sha256": "28881a4a35204ede0fec2c73afc4469359b173be6d79b755301b06e3aeb49752"
+          }
+        },
+        {
+          "case_id": "claude-sonnet-4-5-20250929/invalid_content_type",
+          "label": "invalid_content_type",
+          "model": "claude-sonnet-4-5-20250929",
+          "http_status": 400,
+          "request_sha256": "11c7cae4de3db283d9d8bc29ab1cc2a2d21ff6cb3f0e6d12308a5e0fef85c11e",
+          "response_sha256": "5268ab9e716fa2f19c76a089230ab22b2d6a84df02594708567bda2b0058c719",
+          "response_id_sha256": null,
+          "original_observation": {
+            "pass": true,
+            "full_parameter_matrix_verified": false,
+            "target_parameter": "messages[1].content"
+          },
+          "evidence": {
+            "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_observation.json",
+            "sha256": "42bd091eab8cc96ba6fb4523c7ffb4b176fd17e1f144db55c82c6f572265e950"
+          }
+        }
+      ],
+      "prefill_stop_type_controls_verified": true,
+      "api_version": "2023-06-01",
+      "thinking_mode": "disabled",
+      "output_cap": 2048,
+      "official_documents": {
+        "model_boundary": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+        "prefill": "https://platform.claude.com/docs/en/claude_api_primer",
+        "request": "https://platform.claude.com/docs/en/api/messages/create",
+        "retrieved_at": "2026-09-08",
+        "stop": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+      },
+      "raw_report_retention": "P1M",
+      "raw_report_expires_at": "2026-10-08T05:01:52Z",
+      "full_parameter_matrix_verified": false,
+      "other_models_or_forms_inferred": false,
+      "token_exactness_verified": false
+    }
+  ],
+  "raw_artifacts": {
+    "request_package.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/request_package.json",
+      "sha256": "7163faf72f2221646c4a500394181863f576aadab0db901ed7bd2eb44b4582cf"
+    },
+    "dispatch_started.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/dispatch_started.json",
+      "sha256": "56a7729d90977d355b50761917c3e84af0cc5eb2380ee6c6648e0771038935ec"
+    },
+    "dispatch_finished.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/dispatch_finished.json",
+      "sha256": "9f4340abb4173ced5bec35c9ab543a0b021c83aee04f2ccd15803a676f8e98fc"
+    },
+    "case_01_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_attempt.json",
+      "sha256": "685d52e2acf4293b5ac5a71b57354921bd91284a9a25d3ef36b9cde8e3b23f65"
+    },
+    "case_01_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_observation.json",
+      "sha256": "8486720445b834d70910cae2d24a33f10a68e62a6a5ae5e3ddec911a5b1745a1"
+    },
+    "case_01_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_response.txt",
+      "sha256": "907c02a59f5277b1dd0b9fa6ba31ea88eaa570de3ef133640115849f9ecde41b"
+    },
+    "case_02_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_attempt.json",
+      "sha256": "806c9c6cb4bf0a4e67acd7d9c3e59b977804499a299725eb0379f31cce4a66db"
+    },
+    "case_02_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_observation.json",
+      "sha256": "270dd27fd8841ccff4dd3e3585fb774507b69c6ae27ebaf73e853b467d7b24d3"
+    },
+    "case_02_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_response.txt",
+      "sha256": "9c48f5ca7bee07bac96f6fd17d4b1b6d11c77fc2bad68575ed9040ef7f73a18f"
+    },
+    "case_03_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_attempt.json",
+      "sha256": "53add4f64fece2a1b4352fe8cc4950c28d4fff4939b937587b16d294902e4810"
+    },
+    "case_03_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_observation.json",
+      "sha256": "299f2a65d0113c7d8248441cf9200ecf9be812b426159393732d34142bcb6361"
+    },
+    "case_03_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_response.txt",
+      "sha256": "3a45db9eb54ae160ea3b17b0430fd6de42b537946d7a208abe73007210ac49d7"
+    },
+    "case_04_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_attempt.json",
+      "sha256": "e7faee7a54057b25074feaa5611c86976b27bc668cba4f83b8df0964ca05e767"
+    },
+    "case_04_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_observation.json",
+      "sha256": "f187c7eae859f6bcd6269f41b571e5acd14c04f227513d9d7450d5e945b12c8f"
+    },
+    "case_04_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_response.txt",
+      "sha256": "acd2c097a295c54c51599200779742bc1a8f51d3e7be53cefb37b6df36cec669"
+    },
+    "case_05_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_attempt.json",
+      "sha256": "1d70701cd45c1f14300acd1e19c67d35731c392d6e74ad1fc9fd5c40b8a31e44"
+    },
+    "case_05_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_observation.json",
+      "sha256": "6643760df487f4bf29f626c5d94dcc3999cbbbffb40e31fb2c56b72d39dcf24c"
+    },
+    "case_05_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_response.txt",
+      "sha256": "e8b2035f422e8dec455ddcf1bc4313e4c5c89b5c7dfb02f6df12ea7dfb87d585"
+    },
+    "case_06_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_attempt.json",
+      "sha256": "763005bddd564b901cd278e54007287b583012002c1ec6f93864a3b4e64e6d29"
+    },
+    "case_06_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_observation.json",
+      "sha256": "461d0755ce463d4e37cfb8f730ab27e7c0a6e863ede55ef684b5e2ef11815f7f"
+    },
+    "case_06_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_response.txt",
+      "sha256": "22e01b65358f24014a92931801735f7ac4c1b2b9f3836112e2b0ebebefda8666"
+    },
+    "case_07_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_attempt.json",
+      "sha256": "6e7ee93da48d884fba8c94a190805dfb93805e5295f6e19bfbe05d3fa6ee90de"
+    },
+    "case_07_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_observation.json",
+      "sha256": "a5b1f98b65350b3cf5984ba90489a875e00b0c8459a95f53f03cfe8c4274b550"
+    },
+    "case_07_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_response.txt",
+      "sha256": "61d981d7174c45c3bf20a30fc753b9e104e9ac803edd96d66f7f0f4c2aed8dac"
+    },
+    "case_08_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_attempt.json",
+      "sha256": "041163564cbf2e117a2c9a750d8b6ad702454cc3ef57ef2cf24f0d7e75b5c3b5"
+    },
+    "case_08_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_observation.json",
+      "sha256": "28881a4a35204ede0fec2c73afc4469359b173be6d79b755301b06e3aeb49752"
+    },
+    "case_08_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_response.txt",
+      "sha256": "f3001cb49d0e65fbb20a1407a347335467d9b4e75cb99d3f6f28624138c9fcb1"
+    },
+    "case_09_attempt.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_attempt.json",
+      "sha256": "7f6e0ba26cc3eaaff4e509da672070af6ec6f4ffda4139bc279090e8ba0fd177"
+    },
+    "case_09_observation.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_observation.json",
+      "sha256": "42bd091eab8cc96ba6fb4523c7ffb4b176fd17e1f144db55c82c6f572265e950"
+    },
+    "case_09_response.txt": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_response.txt",
+      "sha256": "5268ab9e716fa2f19c76a089230ab22b2d6a84df02594708567bda2b0058c719"
+    },
+    "summary.json": {
+      "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/summary.json",
+      "sha256": "22353b654406f2476e6039e20d24d66aba96825776a3676f5ddd4abb95cbf328"
+    }
+  },
+  "package_sha256": "42be86205d06714156e641c604fde02b72d4379a94a914fe0645f76374696f0c",
+  "execution_catalog_digest": "6262ecdc1599641d7e901d9f791832a3d239c1e264adacd6a215b79d6ec2c868",
+  "execution_test_extension_digest": "70cf5058c42f63790b8a9659f103c7b25ac3c683844a53a8417622a6c753e0ad",
+  "permanent_full_http_bodies_or_response_ids": false
+}

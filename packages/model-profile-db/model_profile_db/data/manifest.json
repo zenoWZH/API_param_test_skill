@@ -1,0 +1,86 @@
+{
+  "artifact_format_versions": {
+    "compiled_core": 1,
+    "manifest": 1,
+    "source_catalog": 1,
+    "sqlite": 3,
+    "test_extensions": 2
+  },
+  "artifacts": {
+    "artifact_manifest_schema": {
+      "path": "../schemas/artifact_manifest.schema.json",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/artifact-manifest-v1.json",
+      "sha256": "e4cea514866acdd18723d13616d21172924fcb590731cd2fbe21cacf900227a8",
+      "size": 5778
+    },
+    "compiled_core_schema": {
+      "path": "../schemas/compiled_core.schema.json",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/compiled-core-format-v1.json",
+      "sha256": "315fba571b8970a2da910cfb33d4cf76da4c7342200e22ae3b00752d6644c976",
+      "size": 9770
+    },
+    "json": {
+      "path": "catalog.json",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/compiled-core-format-v1.json",
+      "sha256": "783e07e601a6c814acc5d2a507bf654aebb3cd3012efdda171f09e3b4f4b703f",
+      "size": 11267845
+    },
+    "source_catalog_schema": {
+      "path": "../schemas/catalog.schema.json",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/source-catalog-v3.json",
+      "sha256": "2ca6466c44d47c02647c820796cd7cbb1afaaa171cfc5fc0380bdefe772844ae",
+      "size": 14419
+    },
+    "source_yaml": {
+      "path": "catalog.yaml",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/source-catalog-v3.json",
+      "sha256": "0f96b614a3960597ce31d5392e54f81abc667b2f9f2313a334a37a086d8ddf6f",
+      "size": 9751701
+    },
+    "sqlite": {
+      "path": "catalog.sqlite3",
+      "schema_id": "urn:yibu:model-profile-db:sqlite-core-v3",
+      "sha256": "135d94171fb0b242e1b7ab6b014c33d92e19d7cd18f65084fa239a5c2a2ea091",
+      "size": 8658944
+    },
+    "test_extensions_schema": {
+      "path": "../schemas/test_extensions.schema.json",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/test-extensions-v2.json",
+      "sha256": "870e9b4fa4d429c09a951867372acd889ea08101597386f946dd0b86226299f9",
+      "size": 17659
+    },
+    "test_extensions_yaml": {
+      "path": "test_extensions.yaml",
+      "schema_id": "https://yibu.example/schemas/model-profile-db/test-extensions-v2.json",
+      "sha256": "5b4d221fcc3d697347da4cd804d48beef6ba17fb0f56decd9722cbe35acfc246",
+      "size": 5320203
+    }
+  },
+  "catalog_digest": "f7217d7595a6545a66a33e4d8599dda08706d290c885740d12d7561b5f9fc39a",
+  "catalog_version": "0.4.0",
+  "counts": {
+    "contracts": 89,
+    "interfaces": 222,
+    "profiles": 155,
+    "provenance_records": 566,
+    "test_binding_provenance_records": 365,
+    "test_bindings": 365
+  },
+  "generated_at": "2026-08-18T00:00:00Z",
+  "identity_contract": {
+    "api_form_scope": "interface",
+    "hierarchy": [
+      "modality",
+      "source_id",
+      "family_id",
+      "model_slug"
+    ],
+    "interface_id_template": "{profile_id}#{interface_slug}",
+    "profile_id_template": "{modality}/{source_id}/{family_id}/{model_slug}",
+    "source_semantics": "official_reference_origin"
+  },
+  "manifest_schema_version": 1,
+  "mpdb_schema_version": 3,
+  "schema_id": "https://yibu.example/schemas/model-profile-db/artifact-manifest-v1.json",
+  "test_extension_digest": "629ca0a5dfa6eceeeac73a6f5ee73546c43efb8dfe861032bba5a7a6b6658b51"
+}

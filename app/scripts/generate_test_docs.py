@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate readable per-family parameter-profile manuals from schema v4.
+"""Generate per-family parameter manuals from the shared MPDB projection.
 
 The generated documents are intentionally checked in. Run with ``--check`` in
 CI or review workflows to prove that every registered family/source/profile is
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import re
 import sys
@@ -21,7 +22,6 @@ import yaml
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-CAPABILITY_PATH = PROJECT_ROOT / "model_capability_profiles.yaml"
 CONFIG_PATH = PROJECT_ROOT / "config.yaml"
 OUTPUT_DIR = PROJECT_ROOT / "docs" / "model_profiles"
 
@@ -29,6 +29,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from lib.config import deep_merge  # noqa: E402
+from lib.banana_generate_content import build_banana_generate_content_cases  # noqa: E402
+from lib.gpt_image_25 import gpt_image_25_cases  # noqa: E402
+from lib.gpt_image_25_responses import responses_image_cases, CURRENT_EXPECTATION_POLICY  # noqa: E402
+from lib.model_profile_catalog import get_model_profile_catalog  # noqa: E402
 from lib.image_validation import (  # noqa: E402
     banana_variant_cases,
     gpt_image_2_cases,
@@ -38,10 +42,15 @@ from lib.reference_specs import (  # noqa: E402
     get_reference_source,
     load_model_capability_profile,
     load_model_capability_profiles,
+    load_reference_specs,
     parameters_for_profile,
     resolve_profile_expectation,
     test_profiles_for_reference,
 )
+
+
+def _official_reference_ids() -> set[str]:
+    return set(load_reference_specs()["reference_sources"])
 
 
 FAMILY_META: dict[tuple[str, str], dict[str, str]] = {
@@ -53,7 +62,7 @@ FAMILY_META: dict[tuple[str, str], dict[str, str]] = {
     ("text", "glm"): {
         "title": "GLM",
         "slug": "glm",
-        "summary": "覆盖 GLM thinking、完整 reasoning_effort 档位、采样、结构化输出和工具流扩展。",
+        "summary": "覆盖 GLM-5.2 七档 reasoning_effort，以及 GLM-5.3 始终思考（仅 low/high/max）的原厂合同。",
     },
     ("text", "qwen"): {
         "title": "Qwen",
@@ -103,13 +112,26 @@ FAMILY_META: dict[tuple[str, str], dict[str, str]] = {
     ("image", "banana"): {
         "title": "Banana / Gemini Image",
         "slug": "banana",
-        "summary": "区分兼容 Chat 与 Gemini Interactions，并验证分辨率、宽高比和模型别名控制。",
+        "summary": "四个精确模型的 Google AI Studio GenerateContent v1beta 比例×分辨率矩阵共 142 个候选单元，逐项消费已发布的官方证据，缺失项保留观测。文档像素与稳定实网偏差分别展示，历史 v1 证据只读保留。Interactions、兼容 Chat 和 provider alias 使用各自独立探针。AI Studio 精确 Lite Image 的 function calling/tools 与 context caching 官方声明为 unsupported，保留 live_unverified，不新增工具或缓存执行。",
     },
     ("image", "grok-imagine"): {
         "title": "Grok Imagine",
         "slug": "grok_imagine",
         "summary": "覆盖 1K/2K、宽高比、批量数量、URL/b64 交付与越界拒绝。",
     },
+}
+
+
+# These manuals still contain pre-existing, execution-gated app parity work.
+# The shared MPDB may expose the corresponding catalog-only contracts, but the
+# app runtime configuration intentionally does not implement every referenced
+# test profile yet.  Keep the existing manuals untouched until the relevant
+# parity leaves are executed; other families remain deterministically checked.
+DEFERRED_APP_PARITY_FAMILIES = {
+    ("text", "claude"),
+    ("text", "claude_fable"),
+    ("text", "deepseek"),
+    ("text", "gpt"),
 }
 
 
@@ -120,6 +142,8 @@ PROFILE_INTERNAL_KEYS = {
     "prompt_fixture",
     "fixture",
     "fixture_chars",
+    "fixture_repeat_to_chars",
+    "run_success_mode",
 }
 
 
@@ -143,7 +167,7 @@ IMAGE_PURPOSES = {
     "banana_4k_aligned": "验证需显式计费确认的 4K 请求。",
     "banana_model_1k_request_2k": "交叉控制：1K 模型别名配 2K 请求，判断真正生效的控制来源。",
     "banana_model_2k_request_1k": "交叉控制：2K 模型别名配 1K 请求，判断真正生效的控制来源。",
-    "banana_512_square": "验证 Interactions 官方 512 分辨率档。",
+    "banana_512_square": "验证 Gemini 3.1 Flash Image 的 generic 官方 512 分辨率档。Lite 不进入此 generic 成功用例；它的 GenerateContent 精确边界另行展示。",
     "banana_1k_landscape_16_9": "验证 Interactions 的 1K、16:9 组合。",
     "banana_reject_lowercase_1k": "负向：错误的小写分辨率枚举应被拒绝。",
     "banana_reject_aspect_ratio_7_5": "负向：未登记的 7:5 宽高比应被拒绝。",
@@ -217,6 +241,14 @@ def _compact_value(value: Any) -> str:
 
 
 def _compact_settings(settings: dict[str, Any]) -> str:
+    settings = copy.deepcopy(settings)
+    operations = settings.get("operations")
+    if isinstance(operations, list) and operations:
+        settings["operations"] = " → ".join(
+            f"{operation.get('name', index)}:{operation.get('method', '?')}"
+            for index, operation in enumerate(operations, 1)
+            if isinstance(operation, dict)
+        )
     rows = _flatten_settings(settings)
     rendered = [f"`{key}={_compact_value(value)}`" for key, value in rows[:9]]
     if len(rows) > 9:
@@ -226,6 +258,8 @@ def _compact_settings(settings: dict[str, Any]) -> str:
 
 def _category(profile: str) -> str:
     name = profile.casefold()
+    if name.startswith("gemini_3_7_flash_interactions_tools_"):
+        return "工具调用"
     if "reject" in name or "disabled" in name or "none" in name:
         return "负向/边界"
     if "tool" in name:
@@ -259,6 +293,8 @@ def _category(profile: str) -> str:
 
 def _profile_purpose(profile: str, parameters: list[str]) -> str:
     name = profile.casefold()
+    if name.startswith("gemini_3_7_flash_interactions_tools_"):
+        return "验证当前 tool_choice 模式的文本/函数调用响应；此 profile 不执行外部工具或 follow-up。"
     target = "、".join(f"`{item}`" for item in parameters) or f"`{profile}` 对应能力"
     if "reject" in name:
         return f"负向探针：发送文档不允许的 {target}，确认网关明确拒绝而不是静默吞掉。"
@@ -293,6 +329,15 @@ def _profile_purpose(profile: str, parameters: list[str]) -> str:
 
 def _validation_focus(profile: str) -> str:
     name = profile.casefold()
+    if name.startswith("gemini_3_7_flash_interactions_tools_"):
+        mode = name.rsplit("_", 1)[-1]
+        if mode == "none":
+            return "必须返回有效文本且没有函数调用。"
+        if mode == "any":
+            return "必须返回声明中的函数调用，并检查调用 ID、参数对象及 schema。"
+        return "允许有效文本或声明中的函数调用；出现调用时检查调用 ID、参数对象及 schema。"
+    if name == "gemini_3_7_flash_interactions_thinking_summaries_auto":
+        return "检查原生 thought/usage 结构；auto 摘要允许为空，不据此判定失败。"
     if "reject" in name:
         return "应得到明确 400/422；若 2xx 则是 unexpected_acceptance。"
     if "tool" in name:
@@ -301,6 +346,11 @@ def _validation_focus(profile: str) -> str:
         return "内容必须能解析为 JSON；有 schema 时还要满足 schema。"
     if "stream" in name:
         return "检查 chunk 结构、结束标记、文本拼接与 usage 末块。"
+    if name == "kimi_k3_preserved_thinking":
+        return (
+            "可见回复须同时含历史 reasoning_content 中的 215 与 222。"
+            "使用官方 README 原句；同一配置重复轮次中一次语义与 token 校验成功可满足该语义检查。原始失败保留，接口、协议或 token 错误仍阻断。"
+        )
     if any(word in name for word in ("thinking", "reasoning", "effort")):
         return "检查请求档位和响应 reasoning/thinking 字段语义，不以可见文本长度代替。"
     if "candidate" in name or name.endswith("_n"):
@@ -309,6 +359,10 @@ def _validation_focus(profile: str) -> str:
 
 
 def _expectation_label(expectations: set[str]) -> str:
+    if expectations == {"reference_only"}:
+        return "只读记录（执行关闭）"
+    if "reference_only" in expectations:
+        return "按来源区分（含只读记录）"
     if expectations == {"supported"}:
         return "应支持"
     if expectations == {"unsupported"}:
@@ -325,6 +379,37 @@ def _source_links(source: dict[str, Any]) -> str:
     return " ".join(links) or "—"
 
 
+
+def _model_policy_references(modality: str, family: str, model: str, route: str, api_form: str) -> dict[str, dict[str, Any]]:
+    """Enumerate source-local policies without asking a runtime resolver to choose."""
+    catalog = get_model_profile_catalog()
+    references: dict[str, dict[str, Any]] = {}
+    for row in catalog.list_profiles(modality=modality, model=model, api_form=api_form):
+        profile = catalog.get_profile(str(row["profile_id"]))
+        for interface_id in profile.get("interface_ids") or []:
+            interface = catalog.get_interface(str(interface_id))
+            if interface.get("api_form") != api_form or interface.get("routing_mode") != route:
+                continue
+            for policy in interface.get("test_bindings") or []:
+                if (not isinstance(policy, dict) or policy.get("extension_type") != "model_test_policy"
+                        or (policy.get("suite_family_id") or profile.get("family_id")) != family):
+                    continue
+                for reference in policy.get("reference_contract_ids") or []:
+                    if reference not in (interface.get("contract_ids") or []):
+                        continue
+                    readonly = any(value is False for value in (
+                        interface.get("enabled"), interface.get("executable"),
+                        policy.get("enabled"), policy.get("executable"),
+                    ))
+                    previous = references.get(str(reference))
+                    if previous and previous["interface_id"] != interface_id:
+                        raise RuntimeError(f"Reference {reference!r} spans multiple Interfaces on the same route/API.")
+                    references[str(reference)] = {"interface_id": interface_id, "read_only": readonly}
+    if not references:
+        raise RuntimeError(f"No MPDB policy references for {modality}/{family}/{model}/{route}/{api_form}.")
+    return references
+
+
 def _family_inventory(
     modality: str,
     family: str,
@@ -338,26 +423,24 @@ def _family_inventory(
             model_names = list((form_cfg.get("model_profiles") or {}).keys())
             combination_sources: set[str] = set()
             for model in model_names:
-                capability = load_model_capability_profile(
-                    modality,
-                    family,
-                    model,
-                    path=CAPABILITY_PATH,
-                    route_profile=str(route),
-                    api_form=str(api_form),
-                )
-                allowed = set(capability.get("allowed_reference_sources") or [])
+                references = _model_policy_references(modality, family, model, str(route), str(api_form))
+                allowed = set(references)
                 combination_sources.update(allowed)
-                source_ids.update(allowed)
                 for source_id in allowed:
+                    if source_id not in _official_reference_ids():
+                        continue
+                    source_ids.add(source_id)
                     source = get_reference_source(source_id)
                     if source.get("model_family") != family:
+                        continue
+                    if references[source_id]["read_only"]:
+                        for profile in test_profiles_for_reference(source_id):
+                            expectations[profile].add("reference_only")
                         continue
                     selected = load_model_capability_profile(
                         modality,
                         family,
                         model,
-                        path=CAPABILITY_PATH,
                         route_profile=str(route),
                         api_form=str(api_form),
                         reference_source=source_id,
@@ -397,7 +480,7 @@ def _render_models(family_cfg: dict[str, Any]) -> list[str]:
 
 def _render_routes(combinations: list[dict[str, Any]]) -> list[str]:
     lines = [
-        "| Route Profile | API Form | 内部 transport | 已注册模型数 | Reference Source |",
+        "| Route Profile | API Form | 内部 transport | 已注册模型数 | Reference Contract |",
         "|---|---|---|---:|---|",
     ]
     for row in combinations:
@@ -411,7 +494,7 @@ def _render_routes(combinations: list[dict[str, Any]]) -> list[str]:
 
 def _render_sources(source_ids: set[str]) -> list[str]:
     lines = [
-        "| Reference Source | 说明 | Route / API Form | 认证范围 | Profile 数 | 官方资料 |",
+        "| Reference Contract | 说明 | Route / API Form | 认证范围 | Test Case 数 | 官方资料 |",
         "|---|---|---|---|---:|---|",
     ]
     for source_id in sorted(source_ids):
@@ -423,6 +506,32 @@ def _render_sources(source_ids: set[str]) -> list[str]:
             f"{len(test_profiles_for_reference(source_id))} | {_source_links(source)} |"
         )
     return lines
+
+
+
+def _mpdb_case_settings(profile: str, source_ids: set[str]) -> dict[str, Any]:
+    """Document source-authored cases without fabricating a config template."""
+    bodies: dict[str, dict[str, Any]] = {}
+    for source_id in sorted(source_ids):
+        for binding in get_model_profile_catalog().list_test_bindings(
+            contract_id=source_id, extension_type="parameter",
+        ):
+            for case in binding.get("case_definitions") or []:
+                if isinstance(case, dict) and case.get("case_id") == profile:
+                    body = case.get("body") or case.get("body_template") or case.get("request")
+                    if isinstance(body, dict):
+                        bodies[source_id] = copy.deepcopy(body)
+                    elif isinstance(case.get("operations"), list) and case["operations"]:
+                        # Dedicated lifecycle cases contain a sequence, including
+                        # cleanup operations, rather than one generic request.
+                        bodies[source_id] = {
+                            "generic_parameter_runner_supported": case.get("generic_parameter_runner_supported", False),
+                            "operations": copy.deepcopy(case["operations"]),
+                            "limits": copy.deepcopy(case.get("limits") or {}),
+                        }
+    if not bodies:
+        raise KeyError(f"No config template or source-authored MPDB body for {profile!r}.")
+    return next(iter(bodies.values())) if len(bodies) == 1 else {"source_scoped_bodies": bodies}
 
 
 def _render_text_profiles(
@@ -445,15 +554,143 @@ def _render_text_profiles(
         "|---|---|---|---|---|---|",
     ]
     for profile in ordered_profiles:
-        settings = _resolve_profile_settings(compatibility_profiles, profile)
-        parameters = sorted(parameter_map[profile])
-        lines.append(
-            f"| `{profile}` | {_category(profile)} | "
-            f"{_profile_purpose(profile, parameters)}<br>来源："
-            f"{'、'.join(f'`{item}`' for item in sorted(source_map[profile]))} | "
-            f"{_compact_settings(settings)} | {_expectation_label(expectations[profile])} | "
-            f"{_validation_focus(profile)} |"
+        settings = (
+            _resolve_profile_settings(compatibility_profiles, profile)
+            if profile in compatibility_profiles
+            else _mpdb_case_settings(profile, source_map[profile])
         )
+        parameters = sorted(parameter_map[profile])
+        expectation = _expectation_label(expectations[profile])
+        category = _category(profile)
+        purpose = _profile_purpose(profile, parameters)
+        focus = _validation_focus(profile)
+        if expectation == "应拒绝":
+            category = "负向/边界"
+            focus = "应得到明确 400/422，并能归因于测试字段；若 2xx 则是 unexpected_acceptance。"
+        elif expectation == "只读记录（执行关闭）":
+            category = "历史/文档记录"
+            purpose = "保留精确来源的已记录样本；普通参数执行门禁关闭。"
+            focus = "历史结果不授予新的参数调用权限，也不记为本轮认证通过。"
+        lines.append(
+            f"| `{profile}` | {category} | "
+            f"{purpose}<br>来源："
+            f"{'、'.join(f'`{item}`' for item in sorted(source_map[profile]))} | "
+            f"{_compact_settings(settings)} | {expectation} | "
+            f"{focus} |"
+        )
+    return lines
+
+
+
+def _banana_generate_content_cases() -> list[Any]:
+    cases: list[Any] = []
+    for model in (
+        "gemini-2.5-flash-image", "gemini-3.1-flash-lite-image",
+        "gemini-3.1-flash-image", "gemini-3-pro-image",
+    ):
+        capability = load_model_capability_profile(
+            "image", "banana", model, route_profile="google_ai_studio",
+            api_form="gemini_generate_content",
+        )
+        enabled = (
+            capability.get("parameter_test_enabled") is True
+            and capability.get("test_policy_parameter_test_enabled") is True
+        )
+        cases.extend(build_banana_generate_content_cases(
+            model, "resolution", include_4k=True, include_negative=True,
+            diagnostic=not enabled, capability_profile=capability,
+        ))
+    return cases
+
+
+def _banana_pixel_label(value: Any) -> str:
+    return "×".join(str(part) for part in value) if value else "文档未规定精确像素"
+
+
+def _banana_generate_content_purpose(case: Any) -> str:
+    group = "文档主矩阵" if case.metadata.get("matrix_group") == "documented" else "独立边界"
+    if case.expected_outcome == "observation":
+        return f"{group}；缺少该单元的已发布 v1beta 证据，保留观测，不计入认证。"
+    if case.expected_outcome == "rejection":
+        return f"{group}；同模型、同参数的官方 v1beta 拒绝证据；本次响应仍须归因到待测字段。"
+    if case.metadata.get("documentation_match") is False:
+        documented = _banana_pixel_label(case.metadata.get("documented_expected_size"))
+        actual = _banana_pixel_label(case.expected_size)
+        return f"{group}；文档/实网偏差：{documented} → {actual}；保留原文档与独立重复证据。"
+    return f"{group}；按当前精确模型 v1beta 证据核对文档像素、解码、数量、usage 和身份。"
+
+
+def _render_banana_generate_content_evidence(all_cases: list[Any]) -> list[str]:
+    cases = [case for case in all_cases if case.metadata.get("banana_gc_exact") is True]
+    groups: dict[str, list[Any]] = {}
+    for case in cases:
+        groups.setdefault(str(case.model_override), []).append(case)
+    main_count = sum(case.metadata.get("matrix_group") == "documented" for case in cases)
+    lines = [
+        "### Google AI Studio GenerateContent v1beta",
+        "",
+        f"当前展开 {main_count} 个文档主矩阵单元和 {len(cases) - main_count} 个独立边界，共 {len(cases)} 个候选请求。每个模型先发送 1K/1:1 基线；2.5 的主矩阵省略 imageSize。",
+        "普通执行只消费已发布的 image_case_expectations。模型门禁开启不等于所有单元已认证，缺失项保持 observation。",
+        "",
+        "| 模型 | 全矩阵单元 | 已固化 v1beta 单元 | 保留观测 |",
+        "|---|---:|---:|---:|",
+    ]
+    for model, rows in groups.items():
+        unresolved = sum(case.expected_outcome == "observation" for case in rows)
+        lines.append(f"| `{model}` | {len(rows)} | {len(rows) - unresolved} | {unresolved} |")
+    lines.extend([
+        "",
+        "文档和官方实网尺寸分别保留；稳定偏差只适用于精确模型、API 版本和参数单元，不修改其它模型的像素表。",
+        "",
+        "| 偏差 Case | 原文档像素 | 官方 v1beta 验收像素 | 独立证据引用数 |",
+        "|---|---|---|---:|",
+    ])
+    for case in cases:
+        if case.expected_outcome == "success" and case.metadata.get("documentation_match") is False:
+            lines.append(
+                f"| `{case.name}` | {_banana_pixel_label(case.metadata.get('documented_expected_size'))} | "
+                f"{_banana_pixel_label(case.expected_size)} | {len(case.metadata.get('beta_evidence_refs') or [])} |"
+            )
+    lines.extend(["", "### 当前图片用例", ""])
+    return lines
+
+
+def _render_banana_generate_content_history() -> list[str]:
+    catalog = get_model_profile_catalog()
+    interface = catalog.get_interface(
+        "image/google_ai_studio/banana/gemini-3.1-flash-lite-image#gemini-generate-content-default"
+    )
+    historical = (
+        interface.get("source_conflicts", {}).get("api_version_execution_policy_20260908", {})
+        .get("historical_versions", {}).get("v1")
+    )
+    if not isinstance(historical, dict):
+        raise RuntimeError("Missing archived Lite GenerateContent v1 evidence for documentation.")
+    archived_interface = historical["interface"]
+    contract_id = archived_interface["default_contract_id"]
+    catalog.get_contract(contract_id)  # The historical contract remains queryable.
+    reference = historical["model_test_policy_evidence"]
+    history_path = PROJECT_ROOT / reference["path"]
+    if not history_path.is_file() and PROJECT_ROOT.name == "app":
+        history_path = PROJECT_ROOT.parent / reference["path"]
+    raw_history = history_path.read_bytes()
+    if hashlib.sha256(raw_history).hexdigest() != reference["sha256"]:
+        raise RuntimeError("Historical image policy evidence digest mismatch.")
+    policy = json.loads(raw_history)["policies"][reference["policy_ids"][0]]
+    lines = [
+        "", "### 历史 v1 证据（只读）", "",
+        "以下内容直接读取 Interface 的 historical_versions.v1 归档及原 Contract，不调用当前 Lite 用例展开器，也不授予 v1 或 v1beta 执行权限。",
+        "",
+        "| 模型 | 历史 Contract | 版本 | 历史 test_scope | 历史认证范围 |",
+        "|---|---|---|---|---|",
+        f"| `gemini-3.1-flash-lite-image` | `{contract_id}` | `v1` | `{policy.get('test_scope')}` | `{policy.get('certification_scope')}` |",
+        "",
+        "| 历史 Profile | 当时预期 |",
+        "|---|---|",
+    ]
+    for profile, expectation in sorted((policy.get("expectations") or {}).items()):
+        lines.append(f"| `{profile}` | `{expectation}` |")
+    lines.extend(["", "历史 v1 的小写 1k、512/2K/4K 和比例结论不能替代当前 v1beta 的逐项证据。", ""])
     return lines
 
 
@@ -462,7 +699,10 @@ def _image_case_sets(family: str) -> dict[str, list[Any]]:
         return {
             "openai_images_generations": gpt_image_2_cases(
                 "full", include_4k=True, include_negative=True
-            )
+            ) + gpt_image_25_cases("gpt-image-2.5-sunburst", "full", include_4k=True),
+            "openai_images_edits": gpt_image_25_cases("gpt-image-2.5-sunburst", "full", operation="edit", include_4k=True),
+            "openai_responses": responses_image_cases("gpt-image-2.5-sunburst", "full", include_4k=True,
+                                                       expectation_policy=CURRENT_EXPECTATION_POLICY),
         }
     if family == "grok-imagine":
         return {
@@ -471,6 +711,7 @@ def _image_case_sets(family: str) -> dict[str, list[Any]]:
             )
         }
     return {
+        "gemini_generate_content": _banana_generate_content_cases(),
         "openai_chat_completions": [
             *banana_variant_cases(
                 "full",
@@ -500,6 +741,69 @@ def _image_case_sets(family: str) -> dict[str, list[Any]]:
     }
 
 
+def _image_case_settings(case: Any, api_forms: set[str]) -> dict[str, Any]:
+    if case.metadata.get("banana_gc_exact") is True:
+        settings = {
+            "model_path": case.model_override, "api_version": "v1beta",
+            "contents": "safe text-to-image prompt", **copy.deepcopy(case.parameters),
+        }
+        if case.expected_size:
+            key = "documented_reference_size" if case.expected_outcome == "observation" else "expected_size"
+            settings[key] = list(case.expected_size)
+        return settings
+    if not case.metadata.get("profile_driven"):
+        settings = dict(case.parameters)
+        if case.model_override:
+            settings["model_override"] = case.model_override
+        if case.expected_size:
+            settings["expected_size"] = list(case.expected_size)
+        return settings
+    api_form = str(case.metadata.get("api_form") or "")
+    if api_form not in api_forms:
+        raise RuntimeError(
+            f"Profile-driven image case {case.name!r} has mismatched API form."
+        )
+    resolution = str(case.metadata.get("requested_resolution") or "1K")
+    aspect_ratio = str(case.metadata.get("aspect_ratio") or "1:1")
+    thinking_level = case.metadata.get("thinking_level")
+    if api_form == "gemini_interactions":
+        settings: dict[str, Any] = {
+            "model": case.model_override,
+            "input": "safe text-to-image prompt",
+            "response_format": {
+                "type": "image",
+                "mime_type": "image/jpeg",
+                "aspect_ratio": aspect_ratio,
+                "image_size": resolution,
+            },
+            "store": False,
+        }
+        if thinking_level:
+            settings["generation_config"] = {
+                "thinking_level": thinking_level,
+            }
+    else:
+        settings = {
+            "model_path": case.model_override,
+            "contents": "safe text-to-image prompt",
+            "generationConfig": {
+                "responseModalities": ["TEXT", "IMAGE"],
+                "imageConfig": {
+                    "aspectRatio": aspect_ratio,
+                    "imageSize": resolution,
+                },
+            },
+        }
+        if thinking_level:
+            settings["generationConfig"]["thinkingConfig"] = {
+                "thinkingLevel": thinking_level,
+            }
+    if case.expected_size:
+        settings["expected_size"] = list(case.expected_size)
+    return settings
+
+
+
 def _render_image_profiles(
     family: str,
     family_cfg: dict[str, Any],
@@ -519,38 +823,57 @@ def _render_image_profiles(
                     "image",
                     family,
                     model,
-                    path=CAPABILITY_PATH,
                     route_profile=str(route),
                     api_form=str(api_form),
                 )
                 for case_name in case_map:
+                    if case_map[case_name].metadata.get("banana_gc_exact") is True:
+                        continue
                     if api_form in case_forms[case_name]:
+                        case = case_map[case_name]
+                        if case.metadata.get("profile_driven") and (
+                            str(route) != "google_ai_studio"
+                            or str(model) != case.metadata.get("model_scope")
+                        ):
+                            continue
+                        expectation_profile = str(case.metadata.get("test_profile") or case_name)
                         expectations[case_name].add(
                             resolve_profile_expectation(
                                 "image",
                                 family,
                                 model,
-                                case_name,
+                                expectation_profile,
                                 capability_profile=cap,
                             )
                         )
 
-    lines = [
+    lines = _render_banana_generate_content_evidence(list(case_map.values())) if family == "banana" else []
+    lines.extend([
         "| Case / Profile | API Form | 具体测试目的 | 关键请求设置 | 期望 |",
         "|---|---|---|---|---|",
-    ]
+    ])
     for case_name, case in case_map.items():
-        settings = dict(case.parameters)
-        if case.model_override:
-            settings["model_override"] = case.model_override
-        if case.expected_size:
-            settings["expected_size"] = list(case.expected_size)
+        settings = _image_case_settings(case, case_forms[case_name])
         forms = "<br>".join(f"`{item}`" for item in sorted(case_forms[case_name]))
+        if case.metadata.get("gpt_image_25") or case.metadata.get("gpt_image_25_responses"):
+            expectation = {"success": "应支持", "rejection": "应拒绝", "observation": "观测（未裁决）"}[case.expected_outcome]
+            purpose = "Sunburst / Flare 独立绑定；" + case.description
+            if case.metadata.get("semantic_review"):
+                purpose += " 需审查生成图片的语义效果。"
+            lines.append(f"| `{case_name}` | {forms} | {_markdown(purpose)} | {_compact_settings(settings)} | {expectation} | `not_certified`，实测见 [2.5 审计](../gpt_image_25_param_audit.md) |")
+            continue
+        if case.metadata.get("banana_gc_exact") is True:
+            authored = {"success": "应支持", "rejection": "应拒绝", "observation": "观测（未认证）"}[case.expected_outcome]
+            purpose = _banana_generate_content_purpose(case)
+            lines.append(f"| `{case_name}` | {forms} | {purpose} | {_compact_settings(settings)} | {authored} |")
+            continue
         purpose = IMAGE_PURPOSES.get(case_name, case.description or "验证图片响应语义。")
         authored = "应拒绝" if case.expected_outcome == "rejection" else _expectation_label(expectations[case_name])
         lines.append(
             f"| `{case_name}` | {forms} | {purpose} | {_compact_settings(settings)} | {authored} |"
         )
+    if family == "banana":
+        lines.extend(_render_banana_generate_content_history())
     return lines
 
 
@@ -567,7 +890,7 @@ def _render_family_document(
     lines = [
         f"# {meta['title']} 模型家族 Profile 说明",
         "",
-        "<!-- 由 scripts/generate_test_docs.py 从 schema v4 生成，请勿手工维护表格。 -->",
+        "<!-- 由 scripts/generate_test_docs.py 从 Model Profile Database 与测试扩展生成，请勿手工维护表格。 -->",
         "",
         f"{meta['summary']}",
         "",
@@ -582,7 +905,7 @@ def _render_family_document(
         ),
         "",
         (
-            "先在界面按 Provider → Model → Route Profile → API Form → Reference Source 选择组合，再用下文表格确认本次会运行哪些 profile。"
+            "先在界面按 Provider → Model → Route Profile → API Form → Reference Contract 选择组合，再用下文表格确认本次会运行哪些 Test Case。"
             if modality == "text"
             else "先在界面按 Provider → Model → Route Profile → API Form → Suite 选择组合，再用下文表格确认图片 case、费用确认和验收要求。"
         ),
@@ -606,7 +929,7 @@ def _render_family_document(
         lines.extend(
             [
                 "",
-                "## Reference Source",
+                "## Reference Contract",
                 "",
                 *_render_sources(source_ids),
                 "",
@@ -650,14 +973,15 @@ def _render_index(
     lines = [
         "# 模型家族 Profile 手册索引",
         "",
-        "本目录由 `model_capability_profiles.yaml`、`api_reference_specs.yaml` 和 `config.yaml` 自动生成。每个已注册模型家族必须有且只有一份说明文档；每个文字 Reference Source 的可执行 profile、每个图片 case 都必须出现在对应家族文档中。",
+        "本目录由 Model Profile Database（含测试扩展）的普通运行投影和 `config.yaml` 自动生成。`identity_only`、禁用或研究绑定可能被过滤，不代表完整 catalog 的全部身份。Claude、Claude Fable、DeepSeek、GPT 属于暂缓 App 同步的家族，现有手册仅保留，正文不参与本生成器的重写与一致性检查。",
         "",
         "| 模态 | 模型家族 | 规范模型数 | Route/API Form 组合数 | Profile/Case 数 | 文档 |",
         "|---|---|---:|---:|---:|---|",
     ]
     for modality, modality_cfg in capabilities["modalities"].items():
         for family, family_cfg in modality_cfg["families"].items():
-            meta = FAMILY_META[(modality, family)]
+            key = (str(modality), str(family))
+            meta = FAMILY_META[key]
             models = family_cfg.get("models") or family_cfg.get("canonical_models") or {}
             combos = sum(
                 len((route_cfg.get("api_forms") or {}))
@@ -683,8 +1007,10 @@ def _render_index(
                     }
                 )
             path = OUTPUT_DIR / f"{meta['slug']}.md"
-            if path not in rendered:
+            if path not in rendered and key not in DEFERRED_APP_PARITY_FAMILIES:
                 raise RuntimeError(f"Missing rendered family document: {path}")
+            if not path.exists():
+                raise RuntimeError(f"Missing family document: {path}")
             lines.append(
                 f"| {modality} | `{family}` | {len(models)} | {combos} | {item_count} | "
                 f"[{meta['title']}](./{meta['slug']}.md) |"
@@ -699,7 +1025,11 @@ def _render_index(
             "python scripts/generate_test_docs.py --check",
             "```",
             "",
-            "`--check` 不改文件；只要 schema 新增家族、Reference Source、profile 或图片 case 而文档尚未重生成，就会退出 1。",
+            "`--check` 不改文件；本次实际生成的索引与非暂缓家族文档不一致时退出 1。它不验证暂缓家族正文、被过滤的身份/研究矩阵、手写指南或历史实网证据。",
+            "",
+            "## 专用研究与历史证据",
+            "",
+            "- [源码仓库的 Fable 5 / 5.1 专项审计](https://github.com/zenoWZH/api_pressure/blob/main/docs/fable_5_5_1_param_audit_20260912.md)：5.1 已登记，专用研究 runner 与普通参数入口分开，普通执行尚未开放。",
             "",
         ]
     )
@@ -707,7 +1037,7 @@ def _render_index(
 
 
 def build_documents() -> dict[Path, str]:
-    capabilities = load_model_capability_profiles(CAPABILITY_PATH)
+    capabilities = load_model_capability_profiles()
     config = _read_yaml(CONFIG_PATH)
     compatibility_profiles = config.get("compatibility_profiles") or {}
     rendered: dict[Path, str] = {}
@@ -718,6 +1048,8 @@ def build_documents() -> dict[Path, str]:
             actual_families.add(key)
             if key not in FAMILY_META:
                 raise RuntimeError(f"Missing FAMILY_META entry for {key}")
+            if key in DEFERRED_APP_PARITY_FAMILIES:
+                continue
             slug = FAMILY_META[key]["slug"]
             rendered[OUTPUT_DIR / f"{slug}.md"] = _render_family_document(
                 str(modality),

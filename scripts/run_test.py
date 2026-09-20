@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import skill_env
 
-DATA_DIR = skill_env.ensure_skill_env()
+DATA_DIR = skill_env.configure_skill_env()
 APP_ROOT = skill_env.APP_ROOT
 sys.path.insert(0, str(APP_ROOT))
 
@@ -39,6 +39,41 @@ JOB_TYPES = {
     "soak",
     "trace_test",
 }
+PROTECTED_EXTRA_FIELDS = frozenset(
+    {
+        "type",
+        "provider",
+        "model",
+        "route_profile",
+        "api_form",
+        "reference_source",
+        "workload",
+        "users",
+        "spawn_rate",
+        "duration",
+        "param_test_runs",
+        "tool_validation_mode",
+        "cache_measured_requests",
+        "target_rpm",
+        "target_tpm",
+        "timeout_sec",
+        "api_key",
+        "api_key_env",
+        "base_url",
+        "command",
+        "job_id",
+        "report_dir",
+        "approval",
+        "approved",
+        "approval_status",
+        "requires_approval",
+        "human_approved",
+        "user_approved",
+        "purpose",
+        "test_purpose",
+        "intent",
+    }
+)
 
 
 def _new_job_id(job_type: str, provider: str, model: str) -> str:
@@ -47,7 +82,18 @@ def _new_job_id(job_type: str, provider: str, model: str) -> str:
     return f"{stamp}_{safe}_{uuid.uuid4().hex[:8]}"
 
 
-def _background_fork() -> tuple[bool, int | None]:
+def _decode_background_launch(data: bytes) -> tuple[dict, int]:
+    try:
+        info = json.loads(data.decode()) if data else {}
+    except Exception:
+        info = {}
+    if not isinstance(info, dict) or not info:
+        info = {"error": "background launch failed"}
+    launch_ok = bool(info.get("job_id")) and not info.get("error")
+    return info, 0 if launch_ok else 2
+
+
+def _background_fork() -> tuple[bool, int | None, int]:
     r, w = os.pipe()
     sys.stdout.flush()
     sys.stderr.flush()
@@ -61,21 +107,21 @@ def _background_fork() -> tuple[bool, int | None]:
                 break
             data += chunk
         os.close(r)
-        try:
-            info = json.loads(data.decode()) if data else {}
-        except Exception:
-            info = {}
-        if not info:
-            info = {"error": "background launch failed"}
+        info, parent_exit_code = _decode_background_launch(data)
         print(json.dumps(info, ensure_ascii=False))
-        return True, None
+        return True, None, parent_exit_code
     os.close(r)
     os.setsid()
-    return False, w
+    return False, w, 0
 
 
 def _background_child_stdio(w: int, info: dict) -> None:
-    os.write(w, json.dumps(info, ensure_ascii=False).encode())
+    pending = memoryview(json.dumps(info, ensure_ascii=False).encode())
+    while pending:
+        written = os.write(w, pending)
+        if written <= 0:
+            raise OSError("failed to report background launch status")
+        pending = pending[written:]
     os.close(w)
     devnull = os.open(os.devnull, os.O_RDWR)
     os.dup2(devnull, 0)
@@ -131,23 +177,38 @@ def _payload_from_args(args: argparse.Namespace) -> dict:
         if value is not None:
             payload[key] = value
     if args.extra_json:
-        payload.update(json.loads(args.extra_json))
+        extra = json.loads(args.extra_json)
+        if not isinstance(extra, dict):
+            raise ValueError("--extra-json must decode to a JSON object")
+        protected = sorted(
+            key for key in extra if str(key).casefold() in PROTECTED_EXTRA_FIELDS
+        )
+        if protected:
+            raise ValueError(
+                "--extra-json cannot set protected fields: "
+                + ", ".join(str(key) for key in protected)
+            )
+        payload.update(extra)
     return payload
 
 
 def _run_via_console_manager(args: argparse.Namespace) -> int:
+    try:
+        payload = _payload_from_args(args)
+    except (ValueError, json.JSONDecodeError) as exc:
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 2
     background = bool(args.background)
     pipe_w = -1
     if background:
-        is_parent, pipe_w_result = _background_fork()
+        is_parent, pipe_w_result, parent_exit_code = _background_fork()
         if is_parent:
-            return 0
+            return parent_exit_code
         pipe_w = pipe_w_result if pipe_w_result is not None else -1
     os.environ.setdefault("LLM_API_TEST_SKIP_HISTORY", "1")
     sys.path.insert(0, str(APP_ROOT / "scripts"))
     import web_console
 
-    payload = _payload_from_args(args)
     try:
         job = web_console.JOB_MANAGER.create(payload)
     except Exception as exc:
@@ -220,9 +281,9 @@ def _run_trace(args: argparse.Namespace) -> int:
         pass
     pipe_w = -1
     if args.background:
-        is_parent, pipe_w_result = _background_fork()
+        is_parent, pipe_w_result, parent_exit_code = _background_fork()
         if is_parent:
-            return 0
+            return parent_exit_code
         pipe_w = pipe_w_result if pipe_w_result is not None else -1
     job_id = _new_job_id("trace_test", provider, model)
     report_dir = ensure_dir(default_reports_root() / "jobs" / job_id)
@@ -264,18 +325,29 @@ def _run_trace(args: argparse.Namespace) -> int:
             },
         )
     except Exception as exc:
+        if args.background:
+            _background_child_stdio(pipe_w, {"error": str(exc)})
+            os._exit(2)
         print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
         return 2
     log_fh = (report_dir / "job.log").open("w", encoding="utf-8")
-    process = subprocess.Popen(
-        command,
-        cwd=APP_ROOT,
-        env=env,
-        stdout=log_fh,
-        stderr=subprocess.STDOUT,
-        text=True,
-        start_new_session=True,
-    )
+    try:
+        process = subprocess.Popen(
+            command,
+            cwd=APP_ROOT,
+            env=env,
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            text=True,
+            start_new_session=True,
+        )
+    except Exception as exc:
+        log_fh.close()
+        if args.background:
+            _background_child_stdio(pipe_w, {"error": str(exc)})
+            os._exit(2)
+        print(json.dumps({"error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        return 2
     log_fh.close()
     _write_run_json(
         report_dir,
@@ -330,7 +402,7 @@ def _run_trace(args: argparse.Namespace) -> int:
 
 def _list_providers() -> int:
     config = load_config()
-    from lib.config import get_provider_config
+    from lib.config import get_provider_config, provider_has_api_key
 
     active = ""
     try:
@@ -348,7 +420,9 @@ def _list_providers() -> int:
             {
                 "provider": name,
                 "label": cfg.get("label"),
-                "active": name == active,
+                "selected_by_default": name == active,
+                "credential_available": provider_has_api_key(config, name),
+                "live_readiness": "unknown_until_completed_probe",
                 "default_model": models_cfg.get("default"),
                 "models": models_cfg.get("candidates") or [],
                 "families": models_cfg.get("families") or {},
@@ -393,6 +467,7 @@ def main() -> int:
     )
     parser.add_argument("--background", action="store_true")
     args = parser.parse_args()
+    skill_env.ensure_skill_env()
     if args.list_providers:
         try:
             return _list_providers()

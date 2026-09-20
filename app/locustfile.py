@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import copy
 import json
 import os
 import random
 import threading
 import time
+import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
 
-from locust import HttpUser, constant, events, task
+from locust import HttpUser, constant, constant_throughput, events, task
+from locust.exception import StopUser
 
 from lib.adaptive_load import (
     AdaptiveLengthController,
@@ -44,10 +47,28 @@ from lib.deepseek_params import (
     extract_tool_calls,
     extract_usage,
     total_tokens_from_usage,
+    load_pressure_capability,
     weighted_workload_profiles,
 )
-from lib.metrics import RequestRecord, RunRecorder, classify_failure, load_records, summarize_records
+from lib.load_rate import ConstantThroughputPlan, MeasurementWindow
+from lib.gemini_api_version import build_gemini_api_url, is_ai_studio_origin
+from lib.metrics import (
+    RequestRecord,
+    RunRecorder,
+    classify_failure,
+    classify_pressure_failure,
+    load_records,
+    summarize_records,
+    write_json,
+)
+from lib.job_spec import load_job_spec
+from lib.model_profile_catalog import (
+    binding_from_database_snapshot,
+    capability_profile_from_database_snapshot,
+    resolve_runtime_parameter_config,
+)
 from lib.param_specs import param_rows_for_family, param_spec_payload
+from lib.reference_specs import pressure_test_runnable
 
 
 def _optional_env_int(name: str) -> int | None:
@@ -79,10 +100,135 @@ MODEL_TRANSPORT = get_model_transport(
     route_profile=MODEL_ROUTE_PROFILE,
     api_form=MODEL_API_FORM,
 )
+JOB_SPEC = load_job_spec(os.getenv("LOADTEST_JOB_SPEC"))
+if JOB_SPEC:
+    _runtime_identity = {
+        "provider": ACTIVE_PROVIDER,
+        "model": SELECTED_MODEL,
+        "api_form": MODEL_API_FORM,
+        "route_profile": MODEL_ROUTE_PROFILE,
+    }
+    _identity_mismatches = [
+        field
+        for field, expected in _runtime_identity.items()
+        if JOB_SPEC.get(field) not in (None, "", expected)
+    ]
+    if _identity_mismatches:
+        raise RuntimeError(
+            "Job spec identity conflicts with Locust runtime selection: "
+            + ", ".join(_identity_mismatches)
+        )
+_job_database = (
+    JOB_SPEC.get("model_profile_database") if isinstance(JOB_SPEC, dict) else None
+)
+if isinstance(_job_database, dict):
+    _snapshot_binding = binding_from_database_snapshot(_job_database)
+    _target = _snapshot_binding.get("execution_target") or {}
+    _target_expected = {
+        "provider_id": ACTIVE_PROVIDER,
+        "request_model_id": SELECTED_MODEL,
+        "route_profile": MODEL_ROUTE_PROFILE,
+        "api_form": MODEL_API_FORM,
+    }
+    _target_mismatches = [
+        field
+        for field, expected in _target_expected.items()
+        if _target.get(field) not in (None, "", expected)
+    ]
+    if _target_mismatches:
+        raise RuntimeError(
+            "Job MPDB snapshot conflicts with Locust runtime selection: "
+            + ", ".join(_target_mismatches)
+        )
+    MODEL_PROFILE_DATABASE = copy.deepcopy(_job_database)
+else:
+    try:
+        _parameter_config = resolve_runtime_parameter_config(
+            CONFIG,
+            ACTIVE_PROVIDER,
+            SELECTED_MODEL,
+            MODEL_FAMILY,
+            MODEL_ROUTE_PROFILE,
+            MODEL_API_FORM,
+            modality="text",
+        )
+    except (KeyError, RuntimeError, ValueError) as exc:
+        raise RuntimeError(
+            "App Locust pressure runner requires a registered pressure-enabled "
+            "text capability; image/video or unregistered models are rejected."
+        ) from exc
+    MODEL_PROFILE_DATABASE = copy.deepcopy(
+        _parameter_config["model_profile_database"]
+    )
+_expected_snapshot_digest = str(
+    os.getenv("LOADTEST_EXPECTED_MPDB_SNAPSHOT_DIGEST") or ""
+).strip()
+_expected_reference_contract = str(
+    os.getenv("LOADTEST_EXPECTED_REFERENCE_CONTRACT_ID") or ""
+).strip()
+if _expected_snapshot_digest and (
+    MODEL_PROFILE_DATABASE.get("snapshot_digest") != _expected_snapshot_digest
+):
+    raise RuntimeError(
+        "Locust MPDB snapshot digest conflicts with its prepared sweep plan."
+    )
+if _expected_reference_contract and (
+    MODEL_PROFILE_DATABASE.get("reference_contract_id")
+    != _expected_reference_contract
+):
+    raise RuntimeError(
+        "Locust reference Contract conflicts with its prepared sweep plan."
+    )
+CONFIG["_model_profile_database"] = copy.deepcopy(MODEL_PROFILE_DATABASE)
+_job_capability = (
+    JOB_SPEC.get("model_capability_profile") if isinstance(JOB_SPEC, dict) else None
+)
+REFERENCE_CONTRACT_ID = str(
+    (JOB_SPEC or {}).get("reference_contract_id")
+    or MODEL_PROFILE_DATABASE.get("reference_contract_id")
+    or ""
+) or None
+if _job_capability is not None:
+    CONFIG["_model_capability_profile"] = copy.deepcopy(_job_capability)
+try:
+    MODEL_CAPABILITY = load_pressure_capability(
+        CONFIG, ACTIVE_PROVIDER, MODEL_FAMILY, SELECTED_MODEL,
+        MODEL_API_FORM, MODEL_ROUTE_PROFILE, REFERENCE_CONTRACT_ID,
+    )
+except (KeyError, RuntimeError, ValueError) as exc:
+    raise RuntimeError(
+        "App Locust pressure runner requires a registered pressure-enabled "
+        "text capability; image/video or unregistered models are rejected."
+    ) from exc
+if not (
+    MODEL_CAPABILITY.get("known_model") is True
+    and MODEL_CAPABILITY.get("known_api_profile") is True
+    and MODEL_CAPABILITY.get("route_profile_known") is True
+    and pressure_test_runnable(MODEL_CAPABILITY)
+):
+    raise RuntimeError(
+        "App Locust pressure runner requires a registered pressure-enabled "
+        "text capability; image/video or unregistered models are rejected."
+    )
+MODEL_CAPABILITY["model_profile_database"] = copy.deepcopy(
+    MODEL_PROFILE_DATABASE
+)
+CONFIG["_model_capability_profile"] = copy.deepcopy(MODEL_CAPABILITY)
 WORKLOAD = os.getenv("LOADTEST_WORKLOAD", "throughput")
+if WORKLOAD == "cache_suite":
+    raise RuntimeError(
+        "LOADTEST_WORKLOAD=cache_suite is a legacy weighted load workload and "
+        "does not provide valid cache-hit evidence. Use scripts/run_cache.py "
+        "for the MPDB-bound cache suite."
+    )
 REQUEST_MODE = os.getenv("LOADTEST_REQUEST_MODE", "unique")
 if REQUEST_MODE not in {"unique", "fixed"}:
     raise RuntimeError("LOADTEST_REQUEST_MODE must be unique or fixed.")
+if WORKLOAD == "throughput_rpm" and REQUEST_MODE != "fixed":
+    raise RuntimeError(
+        "throughput_rpm is the standard fixed-body pressure workload; "
+        "LOADTEST_REQUEST_MODE must be fixed."
+    )
 PHASE = os.getenv("LOADTEST_PHASE", "measure")
 REPORT_DIR = Path(os.getenv("LOADTEST_REPORT_DIR", str(PROJECT_ROOT / "reports" / "locust")))
 METRICS = CONFIG.get("metrics") or {}
@@ -101,7 +247,13 @@ RECORDER = RunRecorder(
     business_group=BUSINESS_GROUP,
     cache_min_prompt_tokens=int(METRICS.get("cache_min_prompt_tokens", 4000)),
 )
-RAW_TASK_ENTRIES = weighted_workload_profiles(CONFIG, WORKLOAD)
+RAW_TASK_ENTRIES = weighted_workload_profiles(
+    CONFIG,
+    WORKLOAD,
+    api_form=MODEL_API_FORM,
+    route_profile=MODEL_ROUTE_PROFILE,
+    reference_source=REFERENCE_CONTRACT_ID,
+)
 TASK_ENTRIES, CONTEXT_SKIPPED_PROFILES = filter_context_unsafe_profiles(
     CONFIG,
     PROVIDER_CFG,
@@ -133,11 +285,105 @@ if TARGET_TOKENS_PER_REQUEST <= 0 and TARGET_RPM > 0 and TARGET_TPM > 0:
     TARGET_TOKENS_PER_REQUEST = TARGET_TPM / TARGET_RPM
 CONFIGURED_USERS = _optional_env_int("LOADTEST_USERS")
 STAIRCASE_STEP = _optional_env_int("LOADTEST_STAIRCASE_STEP")
+WARMUP_SEC = max(float(os.getenv("LOADTEST_WARMUP_SEC", "0") or 0), 0.0)
+MEASURE_DURATION_SEC = max(
+    float(os.getenv("LOADTEST_MEASURE_DURATION_SEC", "0") or 0), 0.0
+)
+RATE_PLAN = ConstantThroughputPlan.build(TARGET_RPM, CONFIGURED_USERS)
+MEASUREMENT_WINDOW = MeasurementWindow.build(WARMUP_SEC, MEASURE_DURATION_SEC)
+_RATE_USER_LOCK = threading.Lock()
+_RATE_USER_INDEX = 0
+_RATE_EPOCH_MONOTONIC: float | None = None
+_RUN_STARTED_WALL: float | None = None
+_MEASURE_STARTED_WALL: float | None = None
+_MEASURE_ENDED_WALL: float | None = None
+_STARTED_REQUESTS: dict[str, dict[str, float | None]] = {}
+
+
+@events.test_start.add_listener
+def start_measurement_clock(environment: Any, **kwargs: Any) -> None:
+    global _RATE_EPOCH_MONOTONIC, _RATE_USER_INDEX
+    global _RUN_STARTED_WALL, _MEASURE_STARTED_WALL, _MEASURE_ENDED_WALL
+    _RATE_EPOCH_MONOTONIC = time.perf_counter()
+    _RATE_USER_INDEX = 0
+    _STARTED_REQUESTS.clear()
+    _RUN_STARTED_WALL = time.time()
+    if MEASUREMENT_WINDOW is not None:
+        _MEASURE_STARTED_WALL = (
+            _RUN_STARTED_WALL + MEASUREMENT_WINDOW.measure_start_elapsed_sec
+        )
+        _MEASURE_ENDED_WALL = (
+            _RUN_STARTED_WALL + MEASUREMENT_WINDOW.measure_end_elapsed_sec
+        )
+    else:
+        _MEASURE_STARTED_WALL = None
+        _MEASURE_ENDED_WALL = None
+    _write_load_window("running")
+
+
+def _claim_rate_user_index() -> int:
+    global _RATE_USER_INDEX
+    with _RATE_USER_LOCK:
+        index = _RATE_USER_INDEX
+        _RATE_USER_INDEX += 1
+    if RATE_PLAN is not None and index >= RATE_PLAN.users:
+        raise RuntimeError(
+            "Locust spawned more users than LOADTEST_USERS; aggregate RPM would be invalid."
+        )
+    return index
+
+
+def _is_warmup_timestamp(timestamp: float) -> bool:
+    if PHASE == "warmup":
+        return True
+    if _MEASURE_STARTED_WALL is None:
+        return False
+    return timestamp < _MEASURE_STARTED_WALL
+
+
+def _measurement_elapsed() -> float | None:
+    if _RATE_EPOCH_MONOTONIC is None:
+        return None
+    return time.perf_counter() - _RATE_EPOCH_MONOTONIC
+
+
+def _admit_request() -> float | None:
+    if MEASUREMENT_WINDOW is None or _RATE_EPOCH_MONOTONIC is None:
+        return None
+    elapsed = _measurement_elapsed()
+    assert elapsed is not None
+    if not MEASUREMENT_WINDOW.admits_elapsed(elapsed):
+        raise StopUser()
+    return elapsed
+
+
+def _admit_before_send(request_id: str) -> float:
+    """Apply the final monotonic gate with no blocking work before HTTP send."""
+    try:
+        elapsed = _admit_request()
+    except StopUser:
+        closed_elapsed = _measurement_elapsed()
+        RECORDER.record_attempt_cancelled_before_send(
+            request_id=request_id,
+            timestamp=time.time(),
+            elapsed_sec=closed_elapsed,
+        )
+        raise
+    started_at = time.time()
+    _STARTED_REQUESTS[request_id] = {
+        "elapsed_sec": elapsed,
+        "timestamp": started_at,
+    }
+    return started_at
 
 
 def _context_metadata() -> dict[str, Any]:
     return {
         "request_mode": REQUEST_MODE,
+        "warmup_sec": WARMUP_SEC or None,
+        "measure_duration_sec": MEASURE_DURATION_SEC or None,
+        "measure_started_at": _MEASURE_STARTED_WALL,
+        "measure_ended_at": _MEASURE_ENDED_WALL,
         "backend": PROVIDER_CFG.get("backend"),
         "context_window_tokens": CONTEXT_WINDOW_TOKENS,
         "context_window_source": CONTEXT_WINDOW_SOURCE,
@@ -147,12 +393,210 @@ def _context_metadata() -> dict[str, Any]:
     }
 
 
+def _claude_stop_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+    details = payload.get("stop_details")
+    if not isinstance(details, dict):
+        return {}
+    return {
+        "stop_details_type": details.get("type"),
+        "stop_details_category": details.get("category"),
+        "stop_details_explanation": details.get("explanation"),
+    }
+
+
+def _classify_request_failure(
+    group: str,
+    status_code: int | None,
+    finish_reason: str | None,
+    error_type: str | None,
+) -> str | None:
+    if group != "throughput_profiles":
+        return classify_failure(status_code, finish_reason, error_type)
+    configured_reasons = METRICS.get("failure_finish_reasons")
+    return classify_pressure_failure(
+        status_code,
+        finish_reason,
+        error_type,
+        configured_reasons if isinstance(configured_reasons, list) else None,
+    )
+
+
+def _begin_request_attempt(
+    name: str,
+    group: str,
+    profile: str,
+    transport: str,
+) -> tuple[str, float]:
+    admitted_elapsed = _admit_request()
+    request_id = uuid.uuid4().hex
+    timestamp = time.time()
+    path = {
+        "claude_messages": "/v1/messages",
+        "gemini_generate_content": f"/v1beta/models/{SELECTED_MODEL}:generateContent",
+    }.get(transport, "/v1/chat/completions")
+    RECORDER.record_attempt(
+        request_id=request_id,
+        timestamp=timestamp,
+        task_name=name,
+        group=group,
+        profile=profile,
+        method="POST",
+        path=path,
+        is_warmup=(
+            MEASUREMENT_WINDOW.phase_for_elapsed(admitted_elapsed) == "warmup"
+            if MEASUREMENT_WINDOW is not None and admitted_elapsed is not None
+            else _is_warmup_timestamp(timestamp)
+        ),
+        admitted_elapsed_sec=admitted_elapsed,
+        extra={
+            "provider": ACTIVE_PROVIDER,
+            "workload": WORKLOAD,
+            "requested_model": SELECTED_MODEL,
+            "transport": transport,
+            "target_rpm": TARGET_RPM or None,
+            "configured_users": CONFIGURED_USERS,
+            **_context_metadata(),
+        },
+    )
+    return request_id, timestamp
+
+
+def _load_attempt_rows() -> list[dict[str, Any]]:
+    if not RECORDER.attempts_path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    with RECORDER.attempts_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            try:
+                value = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(value, dict):
+                rows.append(value)
+    return rows
+
+
+def _write_load_window(status: str) -> None:
+    if RATE_PLAN is None or MEASUREMENT_WINDOW is None:
+        return
+    all_attempt_rows = _load_attempt_rows()
+    measured_admissions = [
+        item
+        for item in all_attempt_rows
+        if item.get("event") in {None, "admitted"}
+        if item.get("group") == "throughput_profiles"
+        and not item.get("is_warmup")
+        and (
+            item.get("admitted_elapsed_sec") is None
+            or float(item.get("admitted_elapsed_sec") or 0)
+            >= MEASUREMENT_WINDOW.measure_start_elapsed_sec
+        )
+        and (
+            item.get("admitted_elapsed_sec") is None
+            or float(item.get("admitted_elapsed_sec") or 0)
+            < MEASUREMENT_WINDOW.measure_end_elapsed_sec
+        )
+        and (
+            item.get("admitted_elapsed_sec") is not None
+            or _MEASURE_STARTED_WALL is None
+            or float(item.get("timestamp") or 0) >= _MEASURE_STARTED_WALL
+        )
+        and (
+            item.get("admitted_elapsed_sec") is not None
+            or _MEASURE_ENDED_WALL is None
+            or float(item.get("timestamp") or 0) < _MEASURE_ENDED_WALL
+        )
+    ]
+    measured_admission_ids = {
+        str(item.get("request_id"))
+        for item in measured_admissions
+        if item.get("request_id")
+    }
+    cancelled_ids = {
+        str(item.get("request_id"))
+        for item in all_attempt_rows
+        if item.get("event") == "cancelled_before_send"
+        and item.get("request_id")
+        and str(item.get("request_id")) in measured_admission_ids
+    }
+    started_ids = {
+        request_id
+        for request_id, details in _STARTED_REQUESTS.items()
+        if details.get("elapsed_sec") is not None
+        and float(details["elapsed_sec"])
+        >= MEASUREMENT_WINDOW.measure_start_elapsed_sec
+        and float(details["elapsed_sec"])
+        < MEASUREMENT_WINDOW.measure_end_elapsed_sec
+    }
+    # Legacy ledgers predate explicit lifecycle events. Preserve their old
+    # admitted-minus-cancelled interpretation when reconstructing such a run.
+    if measured_admission_ids and not any(item.get("event") for item in all_attempt_rows):
+        started_ids = measured_admission_ids - cancelled_ids
+    admitted_ids = measured_admission_ids | started_ids
+    records = [
+        item
+        for item in load_records(RECORDER.records_path)
+        if item.group == "throughput_profiles"
+        and item.request_id
+        and str(item.request_id) in started_ids
+    ]
+    completed_ids = {
+        str(item.request_id)
+        for item in records
+        if item.request_id and str(item.request_id) in started_ids
+    }
+    planned = RATE_PLAN.planned_requests(MEASUREMENT_WINDOW.measure_sec)
+    started = len(started_ids)
+    unresolved = admitted_ids - started_ids - cancelled_ids
+    write_json(
+        REPORT_DIR / "load_window.json",
+        {
+            "schema_version": 1,
+            "status": status,
+            "scheduler": "locust.constant_throughput",
+            "scheduler_semantics": "closed_loop_capped_throughput",
+            "target_rpm": RATE_PLAN.target_rpm,
+            "users": RATE_PLAN.users,
+            "per_user_rps": RATE_PLAN.per_user_rps,
+            "warmup_sec": MEASUREMENT_WINDOW.warmup_sec,
+            "measure_sec": MEASUREMENT_WINDOW.measure_sec,
+            "measure_started_at": _MEASURE_STARTED_WALL,
+            "measure_ended_at": _MEASURE_ENDED_WALL,
+            "planned_start_count": planned,
+            "admitted_request_count": len(admitted_ids),
+            "cancelled_before_send_count": len(cancelled_ids),
+            "unresolved_admission_count": len(unresolved),
+            "admission_conservation_ok": (
+                len(admitted_ids)
+                == len(started_ids) + len(cancelled_ids) + len(unresolved)
+            ),
+            "started_request_count": started,
+            "completed_request_count": len(completed_ids),
+            "successful_request_count": sum(
+                1
+                for item in records
+                if item.request_id in completed_ids and item.success
+            ),
+            "unfinished_after_drain_count": len(started_ids - completed_ids),
+            "completion_conservation_ok": (
+                started
+                == len(completed_ids) + len(started_ids - completed_ids)
+            ),
+            "unscheduled_count": max(planned - started, 0.0),
+            "overrun_start_count": max(started - planned, 0.0),
+        },
+    )
+
+
 def _transport_target(transport: str, model: str | None = None) -> str:
     interface = get_provider_interface(CONFIG, transport, ACTIVE_PROVIDER)
     path = str(interface.get("path") or "")
     if model is not None:
         path = path.format(model=quote(model, safe=""))
-    return f"{str(interface['base_url']).rstrip('/')}/{path.lstrip('/')}"
+    return build_gemini_api_url(
+        str(interface["base_url"]), path,
+        api_version=interface.get("api_version") or interface.get("default_api_version"),
+    )
 
 
 def _transport_headers(transport: str, api_key: str) -> dict[str, str]:
@@ -168,6 +612,9 @@ def _transport_headers(transport: str, api_key: str) -> dict[str, str]:
         headers = {"x-goog-api-key": api_key, "content-type": "application/json"}
     else:
         headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    version = str(interface.get("anthropic_version") or "").strip()
+    if version:
+        headers["anthropic-version"] = version
     # Optional JSON object for Cloudflare / gateway quirks (e.g. browser UA).
     raw_extra = str(os.getenv("LOADTEST_HTTP_EXTRA_HEADERS") or "").strip()
     if raw_extra:
@@ -180,23 +627,6 @@ def _transport_headers(transport: str, api_key: str) -> dict[str, str]:
 
 def _apply_request_mode(body: dict[str, Any], transport: str) -> None:
     apply_request_mode(body, transport, REQUEST_MODE)
-
-
-class TargetRateLimiter:
-    def __init__(self, rpm: float) -> None:
-        self.interval_sec = 60.0 / rpm
-        self._lock = threading.Lock()
-        self._next_at = 0.0
-
-    def wait(self) -> None:
-        with self._lock:
-            now = time.perf_counter()
-            if self._next_at <= now:
-                self._next_at = now + self.interval_sec
-                return
-            sleep_for = self._next_at - now
-            self._next_at += self.interval_sec
-        time.sleep(sleep_for)
 
 
 class TargetTokenRateLimiter:
@@ -225,7 +655,6 @@ class TargetTokenRateLimiter:
             self._next_at = max(time.perf_counter(), self._next_at + adjustment)
 
 
-TARGET_RATE_LIMITER = TargetRateLimiter(TARGET_RPM) if TARGET_RPM > 0 else None
 TARGET_TOKEN_RATE_LIMITER = TargetTokenRateLimiter(TARGET_TPM) if TARGET_TPM > 0 else None
 ADAPTIVE_CONTROLLER = (
     AdaptiveLengthController(
@@ -363,15 +792,31 @@ OFFICIAL_PARAM_ROWS = param_rows_for_family(MODEL_FAMILY)
 
 class DeepSeekLoadUser(HttpUser):
     host = PROVIDER_CFG.get("base_url", "https://yibuapi.com/v1")
-    wait_time = constant(0)
+    wait_time = (
+        constant_throughput(RATE_PLAN.per_user_rps)
+        if RATE_PLAN is not None
+        else constant(0)
+    )
 
     def on_start(self) -> None:
         self.timeout_sec = get_timeout_sec(CONFIG)
         api_key = get_api_key(CONFIG, ACTIVE_PROVIDER)
         self.api_key = api_key
+        if RATE_PLAN is not None:
+            user_index = _claim_rate_user_index()
+            epoch = _RATE_EPOCH_MONOTONIC or time.perf_counter()
+            scheduled_at = epoch + RATE_PLAN.initial_offset_sec(user_index)
+            delay = scheduled_at - time.perf_counter()
+            if delay > 0:
+                time.sleep(delay)
+            # Locust's native constant_throughput uses these values to pace
+            # subsequent task starts. Reset them after the initial staggering.
+            self._cp_last_run = time.time()
+            self._cp_last_wait_time = 0
 
     @task
     def run_weighted_profile(self) -> None:
+        _admit_request()
         adaptive_plan: AdaptiveRequestPlan | None = None
         if ADAPTIVE_CONTROLLER is not None:
             group, profile = "throughput_profiles", "adaptive_context"
@@ -382,7 +827,15 @@ class DeepSeekLoadUser(HttpUser):
             return
 
         try:
-            built = build_request(CONFIG, group, profile)
+            built = build_request(
+                CONFIG,
+                group,
+                profile,
+                api_form_override=MODEL_API_FORM,
+                route_profile_override=MODEL_ROUTE_PROFILE,
+                reference_source=REFERENCE_CONTRACT_ID,
+                pressure_policy_override=MODEL_CAPABILITY,
+            )
             if ADAPTIVE_CONTROLLER is not None:
                 adaptive_plan = ADAPTIVE_CONTROLLER.apply_to_body(built.body)
             _apply_request_mode(
@@ -422,6 +875,8 @@ class DeepSeekLoadUser(HttpUser):
                     validate=False,
                     transport=transport,
                 )
+            except StopUser:
+                raise
             except Exception as exc:
                 self._record_build_failure(group, profile, exc, task_name=f"{name}:followup")
         elif extract_tool_calls(response_payload):
@@ -439,16 +894,25 @@ class DeepSeekLoadUser(HttpUser):
                     validate=False,
                     transport=transport,
                 )
+            except StopUser:
+                raise
             except Exception as exc:
                 self._record_build_failure(group, profile, exc, task_name=f"{name}:followup")
 
     def _list_models(self) -> None:
         name = "control:list_models" if PHASE != "warmup" else "warmup:list_models"
+        target = build_gemini_api_url(
+            str(get_provider_interface(CONFIG, "chat_completions", ACTIVE_PROVIDER)["base_url"]),
+            "/models",
+        )
+        headers = _transport_headers("chat_completions", self.api_key)
+        _admit_request()
         started = time.perf_counter()
         timestamp = time.time()
         with self.client.get(
-            f"{str(get_provider_interface(CONFIG, 'chat_completions', ACTIVE_PROVIDER)['base_url']).rstrip('/')}/models",
-            headers=_transport_headers("chat_completions", self.api_key),
+            target,
+            headers=headers,
+            allow_redirects=not is_ai_studio_origin(target),
             timeout=self.timeout_sec,
             name=name,
             catch_response=True,
@@ -472,7 +936,7 @@ class DeepSeekLoadUser(HttpUser):
                 response_length=len(response.content or b""),
                 error_type=None if success else "http_error",
                 failure_classification=classify_failure(response.status_code),
-                is_warmup=PHASE == "warmup",
+                is_warmup=_is_warmup_timestamp(timestamp),
                 extra={
                     "provider": ACTIVE_PROVIDER,
                     "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -498,34 +962,70 @@ class DeepSeekLoadUser(HttpUser):
         transport: str = "chat_completions",
         adaptive_plan: AdaptiveRequestPlan | None = None,
     ) -> dict[str, Any] | None:
-        if TARGET_RATE_LIMITER is not None and PHASE != "warmup":
-            TARGET_RATE_LIMITER.wait()
         estimated_tokens: int | None = None
         if TARGET_TOKEN_RATE_LIMITER is not None and PHASE != "warmup":
             estimated_tokens = TARGET_TOKEN_RATE_LIMITER.reserve(
                 body,
                 adaptive_plan.estimated_total_tokens if adaptive_plan else None,
             )
+        request_id, timestamp = _begin_request_attempt(
+            name, group, profile, transport
+        )
         if transport == "claude_messages":
             if body.get("stream"):
                 payload = self._post_claude_messages_stream(
-                    name, group, profile, body, validate=validate, adaptive_plan=adaptive_plan
+                    name,
+                    group,
+                    profile,
+                    body,
+                    request_id,
+                    timestamp,
+                    validate=validate,
+                    adaptive_plan=adaptive_plan,
                 )
             else:
                 payload = self._post_claude_messages_json(
-                    name, group, profile, body, validate=validate, adaptive_plan=adaptive_plan
+                    name,
+                    group,
+                    profile,
+                    body,
+                    request_id,
+                    timestamp,
+                    validate=validate,
+                    adaptive_plan=adaptive_plan,
                 )
         elif transport == "gemini_generate_content":
             payload = self._post_gemini_native_json(
-                name, group, profile, body, validate=validate, adaptive_plan=adaptive_plan
+                name,
+                group,
+                profile,
+                body,
+                request_id,
+                timestamp,
+                validate=validate,
+                adaptive_plan=adaptive_plan,
             )
         elif body.get("stream"):
             payload = self._post_chat_stream(
-                name, group, profile, body, validate=validate, adaptive_plan=adaptive_plan
+                name,
+                group,
+                profile,
+                body,
+                request_id,
+                timestamp,
+                validate=validate,
+                adaptive_plan=adaptive_plan,
             )
         else:
             payload = self._post_chat_json(
-                name, group, profile, body, validate=validate, adaptive_plan=adaptive_plan
+                name,
+                group,
+                profile,
+                body,
+                request_id,
+                timestamp,
+                validate=validate,
+                adaptive_plan=adaptive_plan,
             )
         if TARGET_TOKEN_RATE_LIMITER is not None and estimated_tokens is not None and payload is not None:
             TARGET_TOKEN_RATE_LIMITER.reconcile(estimated_tokens, extract_usage(payload))
@@ -539,17 +1039,22 @@ class DeepSeekLoadUser(HttpUser):
         group: str,
         profile: str,
         body: dict[str, Any],
+        request_id: str,
+        timestamp: float,
         validate: bool = True,
         adaptive_plan: AdaptiveRequestPlan | None = None,
     ) -> dict[str, Any] | None:
+        target = _transport_target("chat_completions")
+        headers = _transport_headers("chat_completions", self.api_key)
         started = time.perf_counter()
-        timestamp = time.time()
         payload: dict[str, Any] = {}
         error_type: str | None = None
+        timestamp = _admit_before_send(request_id)
         with self.client.post(
-            _transport_target("chat_completions"),
+            target,
             json=body,
-            headers=_transport_headers("chat_completions", self.api_key),
+            headers=headers,
+            allow_redirects=not is_ai_studio_origin(target),
             timeout=self.timeout_sec,
             name=name,
             catch_response=True,
@@ -564,7 +1069,12 @@ class DeepSeekLoadUser(HttpUser):
             finish_reason = extract_finish_reason(payload)
             usage = extract_usage(payload)
             validation_error = _validate_profile(profile, payload, usage) if validate else None
-            failure = classify_failure(response.status_code, finish_reason, error_type or validation_error)
+            failure = _classify_request_failure(
+                group,
+                response.status_code,
+                finish_reason,
+                error_type or validation_error,
+            )
             success = 200 <= response.status_code <= 299 and failure is None
             if success:
                 response.success()
@@ -580,6 +1090,8 @@ class DeepSeekLoadUser(HttpUser):
                     method="POST",
                     path="/v1/chat/completions",
                     success=success,
+                    request_id=request_id,
+                    completed_at=time.time(),
                     status_code=response.status_code,
                     latency_ms=latency_ms,
                     response_length=len(response.content or b""),
@@ -588,7 +1100,7 @@ class DeepSeekLoadUser(HttpUser):
                     error_type=error_type,
                     failure_classification=failure,
                     cache_headers=_cache_headers(response.headers),
-                    is_warmup=PHASE == "warmup",
+                    is_warmup=_is_warmup_timestamp(timestamp),
                     extra={
                         "provider": ACTIVE_PROVIDER,
                         "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -600,6 +1112,7 @@ class DeepSeekLoadUser(HttpUser):
                         "route_profile": MODEL_ROUTE_PROFILE,
                         "requested_model": body.get("model"),
                         "response_model": payload.get("model"),
+                        "response_id": payload.get("id"),
                         "target_rpm": TARGET_RPM or None,
                         "target_tpm": TARGET_TPM or None,
                         "target_tokens_per_request": TARGET_TOKENS_PER_REQUEST or None,
@@ -618,11 +1131,14 @@ class DeepSeekLoadUser(HttpUser):
         group: str,
         profile: str,
         body: dict[str, Any],
+        request_id: str,
+        timestamp: float,
         validate: bool = True,
         adaptive_plan: AdaptiveRequestPlan | None = None,
     ) -> dict[str, Any] | None:
+        target = _transport_target("chat_completions")
+        headers = _transport_headers("chat_completions", self.api_key)
         started = time.perf_counter()
-        timestamp = time.time()
         content_parts: list[str] = []
         reasoning_parts: list[str] = []
         tool_calls: list[dict[str, Any]] = []
@@ -633,10 +1149,12 @@ class DeepSeekLoadUser(HttpUser):
         ttft_ms: float | None = None
         error_type: str | None = None
 
+        timestamp = _admit_before_send(request_id)
         with self.client.post(
-            _transport_target("chat_completions"),
+            target,
             json=body,
-            headers=_transport_headers("chat_completions", self.api_key),
+            headers=headers,
+            allow_redirects=not is_ai_studio_origin(target),
             timeout=self.timeout_sec,
             stream=True,
             name=name,
@@ -702,7 +1220,12 @@ class DeepSeekLoadUser(HttpUser):
                 "usage": usage,
             }
             validation_error = _validate_profile(profile, payload, usage) if validate else None
-            failure = classify_failure(response.status_code, finish_reason, error_type or validation_error)
+            failure = _classify_request_failure(
+                group,
+                response.status_code,
+                finish_reason,
+                error_type or validation_error,
+            )
             success = 200 <= response.status_code <= 299 and failure is None
             if success:
                 response.success()
@@ -718,6 +1241,8 @@ class DeepSeekLoadUser(HttpUser):
                     method="POST",
                     path="/v1/chat/completions",
                     success=success,
+                    request_id=request_id,
+                    completed_at=time.time(),
                     status_code=response.status_code,
                     latency_ms=latency_ms,
                     ttft_ms=ttft_ms,
@@ -727,7 +1252,7 @@ class DeepSeekLoadUser(HttpUser):
                     error_type=error_type,
                     failure_classification=failure,
                     cache_headers=_cache_headers(response.headers),
-                    is_warmup=PHASE == "warmup",
+                    is_warmup=_is_warmup_timestamp(timestamp),
                     extra={
                         "provider": ACTIVE_PROVIDER,
                         "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -757,17 +1282,22 @@ class DeepSeekLoadUser(HttpUser):
         group: str,
         profile: str,
         body: dict[str, Any],
+        request_id: str,
+        timestamp: float,
         validate: bool = True,
         adaptive_plan: AdaptiveRequestPlan | None = None,
     ) -> dict[str, Any] | None:
+        target = _transport_target("gemini_generate_content", SELECTED_MODEL)
+        headers = _transport_headers("gemini_generate_content", self.api_key)
         started = time.perf_counter()
-        timestamp = time.time()
         payload: dict[str, Any] = {}
         error_type: str | None = None
+        timestamp = _admit_before_send(request_id)
         with self.client.post(
-            _transport_target("gemini_generate_content", SELECTED_MODEL),
+            target,
             json=body,
-            headers=_transport_headers("gemini_generate_content", self.api_key),
+            headers=headers,
+            allow_redirects=not is_ai_studio_origin(target),
             timeout=self.timeout_sec,
             name=name,
             catch_response=True,
@@ -783,7 +1313,8 @@ class DeepSeekLoadUser(HttpUser):
             finish_reason = candidate.get("finishReason")
             usage = payload.get("usageMetadata") or {}
             validation_error = _validate_profile(profile, payload, usage) if validate else None
-            failure = classify_failure(
+            failure = _classify_request_failure(
+                group,
                 response.status_code,
                 str(finish_reason) if finish_reason else None,
                 error_type or validation_error,
@@ -802,6 +1333,8 @@ class DeepSeekLoadUser(HttpUser):
                     method="POST",
                     path="/models/{model}:generateContent",
                     success=success,
+                    request_id=request_id,
+                    completed_at=time.time(),
                     status_code=response.status_code,
                     latency_ms=latency_ms,
                     response_length=len(response.content or b""),
@@ -810,7 +1343,7 @@ class DeepSeekLoadUser(HttpUser):
                     error_type=error_type,
                     failure_classification=failure,
                     cache_headers=_cache_headers(response.headers),
-                    is_warmup=PHASE == "warmup",
+                    is_warmup=_is_warmup_timestamp(timestamp),
                     extra={
                         "provider": ACTIVE_PROVIDER,
                         "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -841,17 +1374,22 @@ class DeepSeekLoadUser(HttpUser):
         group: str,
         profile: str,
         body: dict[str, Any],
+        request_id: str,
+        timestamp: float,
         validate: bool = True,
         adaptive_plan: AdaptiveRequestPlan | None = None,
     ) -> dict[str, Any] | None:
+        target = _transport_target("claude_messages")
+        headers = _transport_headers("claude_messages", self.api_key)
         started = time.perf_counter()
-        timestamp = time.time()
         payload: dict[str, Any] = {}
         error_type: str | None = None
+        timestamp = _admit_before_send(request_id)
         with self.client.post(
-            _transport_target("claude_messages"),
+            target,
             json=body,
-            headers=_transport_headers("claude_messages", self.api_key),
+            headers=headers,
+            allow_redirects=not is_ai_studio_origin(target),
             timeout=self.timeout_sec,
             name=name,
             catch_response=True,
@@ -866,7 +1404,12 @@ class DeepSeekLoadUser(HttpUser):
             finish_reason = extract_finish_reason(payload)
             usage = extract_usage(payload)
             validation_error = _validate_profile(profile, payload, usage) if validate else None
-            failure = classify_failure(response.status_code, finish_reason, error_type or validation_error)
+            failure = _classify_request_failure(
+                group,
+                response.status_code,
+                finish_reason,
+                error_type or validation_error,
+            )
             success = 200 <= response.status_code <= 299 and failure is None
             if success:
                 response.success()
@@ -882,6 +1425,8 @@ class DeepSeekLoadUser(HttpUser):
                     method="POST",
                     path="/v1/messages",
                     success=success,
+                    request_id=request_id,
+                    completed_at=time.time(),
                     status_code=response.status_code,
                     latency_ms=latency_ms,
                     response_length=len(response.content or b""),
@@ -890,7 +1435,7 @@ class DeepSeekLoadUser(HttpUser):
                     error_type=error_type,
                     failure_classification=failure,
                     cache_headers=_cache_headers(response.headers),
-                    is_warmup=PHASE == "warmup",
+                    is_warmup=_is_warmup_timestamp(timestamp),
                     extra={
                         "provider": ACTIVE_PROVIDER,
                         "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -902,12 +1447,14 @@ class DeepSeekLoadUser(HttpUser):
                         "route_profile": MODEL_ROUTE_PROFILE,
                         "requested_model": body.get("model"),
                         "response_model": payload.get("model"),
+                        "response_id": payload.get("id"),
                         "target_rpm": TARGET_RPM or None,
                         "target_tpm": TARGET_TPM or None,
                         "target_tokens_per_request": TARGET_TOKENS_PER_REQUEST or None,
                         "configured_users": CONFIGURED_USERS,
                         "staircase_step": STAIRCASE_STEP,
                         **_context_metadata(),
+                        **_claude_stop_metadata(payload),
                         **(adaptive_plan.record_extra() if adaptive_plan else {}),
                     },
                 )
@@ -920,25 +1467,32 @@ class DeepSeekLoadUser(HttpUser):
         group: str,
         profile: str,
         body: dict[str, Any],
+        request_id: str,
+        timestamp: float,
         validate: bool = True,
         adaptive_plan: AdaptiveRequestPlan | None = None,
     ) -> dict[str, Any] | None:
+        target = _transport_target("claude_messages")
+        headers = _transport_headers("claude_messages", self.api_key)
         started = time.perf_counter()
-        timestamp = time.time()
         content_parts: list[str] = []
         content_blocks: list[dict[str, Any]] = []
         raw_lines: list[str] = []
         usage: dict[str, Any] = {}
         finish_reason: str | None = None
+        stop_details: dict[str, Any] | None = None
+        response_id: str | None = None
         response_model: str | None = None
         pending_json = ""
         ttft_ms: float | None = None
         error_type: str | None = None
 
+        timestamp = _admit_before_send(request_id)
         with self.client.post(
-            _transport_target("claude_messages"),
+            target,
             json=body,
-            headers=_transport_headers("claude_messages", self.api_key),
+            headers=headers,
+            allow_redirects=not is_ai_studio_origin(target),
             timeout=self.timeout_sec,
             stream=True,
             name=name,
@@ -968,6 +1522,7 @@ class DeepSeekLoadUser(HttpUser):
                 event_type = event.get("type")
                 if event_type == "message_start":
                     message = event.get("message") or {}
+                    response_id = message.get("id") or response_id
                     response_model = message.get("model") or response_model
                     if isinstance(message.get("usage"), dict):
                         usage.update(message["usage"])
@@ -994,6 +1549,8 @@ class DeepSeekLoadUser(HttpUser):
                 elif event_type == "message_delta":
                     delta = event.get("delta") or {}
                     finish_reason = delta.get("stop_reason") or finish_reason
+                    if isinstance(delta.get("stop_details"), dict):
+                        stop_details = delta["stop_details"]
                     if isinstance(event.get("usage"), dict):
                         usage.update(event["usage"])
                 elif event_type == "message_stop":
@@ -1003,13 +1560,20 @@ class DeepSeekLoadUser(HttpUser):
             if pending_json and finish_reason is None:
                 error_type = error_type or "stream_json_parse"
             payload = {
+                "id": response_id,
                 "content": content_blocks,
                 "model": response_model,
                 "stop_reason": finish_reason,
+                "stop_details": stop_details,
                 "usage": usage,
             }
             validation_error = _validate_profile(profile, payload, usage) if validate else None
-            failure = classify_failure(response.status_code, finish_reason, error_type or validation_error)
+            failure = _classify_request_failure(
+                group,
+                response.status_code,
+                finish_reason,
+                error_type or validation_error,
+            )
             success = 200 <= response.status_code <= 299 and failure is None
             if success:
                 response.success()
@@ -1025,6 +1589,8 @@ class DeepSeekLoadUser(HttpUser):
                     method="POST",
                     path="/v1/messages",
                     success=success,
+                    request_id=request_id,
+                    completed_at=time.time(),
                     status_code=response.status_code,
                     latency_ms=latency_ms,
                     ttft_ms=ttft_ms,
@@ -1034,7 +1600,7 @@ class DeepSeekLoadUser(HttpUser):
                     error_type=error_type,
                     failure_classification=failure,
                     cache_headers=_cache_headers(response.headers),
-                    is_warmup=PHASE == "warmup",
+                    is_warmup=_is_warmup_timestamp(timestamp),
                     extra={
                         "provider": ACTIVE_PROVIDER,
                         "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -1046,12 +1612,14 @@ class DeepSeekLoadUser(HttpUser):
                         "route_profile": MODEL_ROUTE_PROFILE,
                         "requested_model": body.get("model"),
                         "response_model": payload.get("model"),
+                        "response_id": payload.get("id"),
                         "target_rpm": TARGET_RPM or None,
                         "target_tpm": TARGET_TPM or None,
                         "target_tokens_per_request": TARGET_TOKENS_PER_REQUEST or None,
                         "configured_users": CONFIGURED_USERS,
                         "staircase_step": STAIRCASE_STEP,
                         **_context_metadata(),
+                        **_claude_stop_metadata(payload),
                         **(adaptive_plan.record_extra() if adaptive_plan else {}),
                     },
                 )
@@ -1066,6 +1634,7 @@ class DeepSeekLoadUser(HttpUser):
         task_name: str | None = None,
     ) -> None:
         name = task_name or _request_name(group, profile)
+        timestamp = time.time()
         self.environment.events.request.fire(
             request_type="BUILD",
             name=name,
@@ -1075,7 +1644,7 @@ class DeepSeekLoadUser(HttpUser):
         )
         RECORDER.record(
             RequestRecord(
-                timestamp=time.time(),
+                timestamp=timestamp,
                 task_name=name,
                 group=group,
                 profile=profile,
@@ -1084,7 +1653,7 @@ class DeepSeekLoadUser(HttpUser):
                 success=False,
                 error_type=exc.__class__.__name__,
                 failure_classification=exc.__class__.__name__,
-                is_warmup=PHASE == "warmup",
+                is_warmup=_is_warmup_timestamp(timestamp),
                 extra={
                     "provider": ACTIVE_PROVIDER,
                     "provider_label": PROVIDER_CFG.get("label") or ACTIVE_PROVIDER,
@@ -1104,6 +1673,7 @@ class DeepSeekLoadUser(HttpUser):
 @events.quitting.add_listener
 def flush_metrics(environment: Any, **kwargs: Any) -> None:
     RECORDER.flush()
+    _write_load_window("completed")
 
 
 @events.init.add_listener
@@ -1295,6 +1865,7 @@ def _live_summary() -> dict[str, Any]:
             "model_family": MODEL_FAMILY,
             "api_form": MODEL_API_FORM,
             "route_profile": MODEL_ROUTE_PROFILE,
+            "model_profile_database": copy.deepcopy(MODEL_PROFILE_DATABASE),
             "profile_counts": dict(profile_counts),
             "response_model_counts": dict(response_models),
         }

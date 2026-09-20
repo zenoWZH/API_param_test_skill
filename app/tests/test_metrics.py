@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import json
 import unittest
+from tempfile import TemporaryDirectory
 
 from lib.metrics import (
     RequestRecord,
+    RunRecorder,
     build_time_series,
     classify_failure,
+    classify_pressure_failure,
     summarize_records,
 )
 
@@ -43,6 +47,86 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(classify_failure(429, error_type="json_parse"), "http_429")
         self.assertEqual(classify_failure(502, error_type="json_parse"), "http_5xx")
         self.assertEqual(classify_failure(200, error_type="json_parse"), "json_parse")
+
+    def test_pressure_refusal_is_business_failure_but_http_2xx(self) -> None:
+        self.assertEqual(
+            classify_pressure_failure(200, " Refusal "),
+            "finish_reason:refusal",
+        )
+        self.assertIsNone(classify_pressure_failure(200, "end_turn"))
+        self.assertEqual(
+            classify_pressure_failure(502, "refusal"),
+            "http_5xx",
+        )
+
+        completed = record(
+            100,
+            success=True,
+            usage={},
+            extra={"target_rpm": 100},
+        )
+        completed.finish_reason = "end_turn"
+        refused = record(
+            100.6,
+            success=False,
+            usage={},
+            extra={"target_rpm": 100},
+        )
+        refused.status_code = 200
+        refused.finish_reason = "refusal"
+        refused.failure_classification = "finish_reason:refusal"
+
+        summary = summarize_records([completed, refused], duration_sec=60)
+
+        self.assertEqual(summary["http_2xx_count"], 2)
+        self.assertEqual(summary["http_2xx_rate"], 1)
+        self.assertEqual(summary["business_success_count"], 1)
+        self.assertEqual(summary["business_failure_count"], 1)
+        self.assertEqual(summary["attempted_business_rpm"], 2)
+        self.assertEqual(summary["business_rpm"], 1)
+        self.assertEqual(summary["planned_request_count"], 100)
+        self.assertEqual(summary["arrival_shortfall_count"], 98)
+        self.assertEqual(
+            summary["failure_classification_counts"],
+            {"finish_reason:refusal": 1},
+        )
+
+    def test_pressure_finish_reason_policy_can_be_configured(self) -> None:
+        self.assertIsNone(
+            classify_pressure_failure(
+                200,
+                "refusal",
+                failure_finish_reasons=["content_filter"],
+            )
+        )
+        self.assertEqual(
+            classify_pressure_failure(
+                200,
+                " CONTENT_FILTER ",
+                failure_finish_reasons=["content_filter"],
+            ),
+            "finish_reason:content_filter",
+        )
+        self.assertIsNone(
+            classify_pressure_failure(
+                200,
+                "insufficient_system_resource",
+                failure_finish_reasons=[],
+            )
+        )
+
+    def test_http_rate_uses_only_sent_http_requests_as_denominator(self) -> None:
+        completed = record(100, success=True, usage={})
+        build_failure = record(101, success=False, usage={})
+        build_failure.method = "BUILD"
+        build_failure.status_code = None
+        build_failure.failure_classification = "ValueError"
+
+        summary = summarize_records([completed, build_failure], duration_sec=60)
+
+        self.assertEqual(summary["http_request_count"], 1)
+        self.assertEqual(summary["http_2xx_count"], 1)
+        self.assertEqual(summary["http_2xx_rate"], 1)
 
     def test_streaming_latency_percentiles_use_successful_requests(self) -> None:
         records = [
@@ -91,6 +175,81 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(summary["total_tpm"], 15)
         self.assertEqual(summary["token_usage_coverage"], 0.5)
         self.assertEqual(summary["success_rate"], 0.5)
+
+    def test_configured_measurement_window_avoids_first_last_rpm_inflation(self) -> None:
+        records = [
+            record(
+                100 + index * 0.6,
+                success=True,
+                usage={},
+                extra={"target_rpm": 100, "measure_duration_sec": 60},
+            )
+            for index in range(100)
+        ]
+
+        summary = summarize_records(records)
+
+        self.assertEqual(summary["business_record_count"], 100)
+        self.assertEqual(summary["attempted_business_rpm"], 100)
+        self.assertEqual(summary["business_rpm"], 100)
+        self.assertEqual(summary["planned_request_count"], 100)
+        self.assertEqual(summary["arrival_shortfall_count"], 0)
+        self.assertEqual(summary["arrival_coverage"], 1)
+
+    def test_configured_measurement_window_excludes_warmup_and_end_tail(self) -> None:
+        common = {
+            "target_rpm": 100,
+            "measure_duration_sec": 60,
+            "measure_started_at": 112,
+            "measure_ended_at": 172,
+        }
+        warmup = record(111.4, success=True, usage={}, extra=common)
+        warmup.is_warmup = True
+        measured = [
+            record(112 + index * 0.6, success=True, usage={}, extra=common)
+            for index in range(100)
+        ]
+        tail = record(172, success=True, usage={}, extra=common)
+
+        summary = summarize_records([warmup, *measured, tail])
+
+        self.assertEqual(summary["business_record_count"], 100)
+        self.assertEqual(summary["measurement_excluded_count"], 2)
+        self.assertEqual(summary["attempted_business_rpm"], 100)
+        self.assertEqual(summary["arrival_overrun_count"], 0)
+        self.assertEqual(summary["completion_coverage"], 1)
+
+    def test_attempt_ledger_is_written_before_completion_records(self) -> None:
+        with TemporaryDirectory() as tmp:
+            recorder = RunRecorder(tmp)
+            recorder.record_attempt(
+                request_id="attempt-1",
+                timestamp=100,
+                task_name="chat:throughput_profiles:standard_short",
+                group="throughput_profiles",
+                profile="standard_short",
+                method="POST",
+                path="/v1/messages",
+                is_warmup=False,
+                extra={"target_rpm": 100},
+            )
+            recorder.record_attempt_cancelled_before_send(
+                request_id="attempt-1",
+                timestamp=101,
+                elapsed_sec=72,
+            )
+
+            self.assertTrue(recorder.attempts_path.exists())
+            self.assertFalse(recorder.records_path.exists())
+            rows = [
+                json.loads(line)
+                for line in recorder.attempts_path.read_text("utf-8").splitlines()
+            ]
+            self.assertEqual(
+                [item["event"] for item in rows],
+                ["admitted", "cancelled_before_send"],
+            )
+            self.assertEqual({item["request_id"] for item in rows}, {"attempt-1"})
 
     def test_tpm_uses_completion_inclusive_of_thinking_without_double_counting_details(self) -> None:
         records = [

@@ -36,8 +36,8 @@
 
   <rect class="panel" x="54" y="736" width="1332" height="136" rx="8"/>
   <circle class="num" cx="78" cy="764" r="15"/><text class="numtext" x="78" y="764">4</text><text class="h2" x="104" y="770">测量可信度</text>
-  <rect class="green" x="78" y="800" width="386" height="46" rx="6"/><text class="t ok bold" x="96" y="826">正向控制：cold → warm cached 增长</text>
-  <rect class="green" x="478" y="800" width="386" height="46" rx="6"/><text class="t ok bold" x="496" y="826">负向控制：唯一前缀命中低于上限</text>
+  <rect class="green" x="78" y="800" width="386" height="46" rx="6"/><text class="t ok bold" x="96" y="826">正向控制：cold=0，warm 有读取</text>
+  <rect class="green" x="478" y="800" width="386" height="46" rx="6"/><text class="t ok bold" x="496" y="826">负向控制：cached read 必须为 0</text>
   <rect class="soft" x="878" y="800" width="484" height="46" rx="6"/><text class="t" x="896" y="826">逐请求：cached ≤ input 且 ≤ 可复用前缀</text>
   <text class="small" x="54" y="900">示意数值用于展示判读顺序，不代表当前 Provider 实测结果；延迟仅作辅助证据。</text>
 </svg>

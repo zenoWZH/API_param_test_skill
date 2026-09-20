@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yibu.example/schemas/model-profile-db/compiled-core-format-v1.json",
+  "title": "Yibu Model Profile Database Compiled Core Format v1",
+  "type": "object",
+  "required": [
+    "compiled_core_format_version",
+    "mpdb_schema_version",
+    "catalog_version",
+    "catalog_digest",
+    "identity_contract",
+    "provenance_schema_version",
+    "provenance_records",
+    "modalities",
+    "sources",
+    "families",
+    "canonical_models",
+    "contracts",
+    "profiles",
+    "interfaces",
+    "route_templates",
+    "legacy_aliases",
+    "views"
+  ],
+  "properties": {
+    "compiled_core_format_version": {"const": 1},
+    "mpdb_schema_version": {"const": 3},
+    "catalog_version": {"type": "string", "minLength": 1},
+    "catalog_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "released_at": {"type": "string"},
+    "identity_contract": {
+      "type": "object",
+      "required": [
+        "hierarchy",
+        "profile_id_template",
+        "interface_id_template",
+        "api_form_scope",
+        "source_semantics"
+      ],
+      "properties": {
+        "hierarchy": {
+          "const": ["modality", "source_id", "family_id", "model_slug"]
+        },
+        "profile_id_template": {
+          "const": "{modality}/{source_id}/{family_id}/{model_slug}"
+        },
+        "interface_id_template": {"const": "{profile_id}#{interface_slug}"},
+        "api_form_scope": {"const": "interface"},
+        "source_semantics": {"const": "official_reference_origin"}
+      },
+      "additionalProperties": false
+    },
+    "provenance_schema_version": {"const": 1},
+    "provenance_records": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/provenanceRecord"}
+    },
+    "modalities": {
+      "type": "object",
+      "required": ["text", "image", "video"],
+      "properties": {
+        "text": {"type": "object"},
+        "image": {
+          "type": "object",
+          "properties": {"pressure_test_enabled": {"const": false}},
+          "required": ["pressure_test_enabled"]
+        },
+        "video": {
+          "type": "object",
+          "properties": {"pressure_test_enabled": {"const": false}},
+          "required": ["pressure_test_enabled"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["provenance_record_id"],
+        "properties": {
+          "provenance_record_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "families": {"type": "object", "additionalProperties": {"type": "object"}},
+    "canonical_models": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "family_id",
+          "owner_source_id",
+          "model_slug",
+          "modalities",
+          "official_sources",
+          "verification_status",
+          "provenance_record_id"
+        ],
+        "properties": {
+          "api_form": false
+        }
+      }
+    },
+    "contracts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "contract_id",
+          "api_form",
+          "source_id",
+          "source_ids",
+          "official_sources",
+          "verification_status",
+          "provenance_record_id"
+        ],
+        "properties": {
+          "contract_id": {"type": "string"},
+          "source_id": {"type": "string", "minLength": 1},
+          "source_ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {"type": "string"},
+            "uniqueItems": true
+          },
+          "parent_contract_id": {"type": "string"},
+          "api_form": {"type": "string", "minLength": 1},
+          "official_sources": {"type": "array", "minItems": 1},
+          "verification_status": {"const": "exact_official_api_contract"},
+          "provenance_record_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "profile_id",
+          "modality",
+          "source_id",
+          "family_id",
+          "model_slug",
+          "canonical_model_id",
+          "request_model_ids",
+          "interface_ids",
+          "provenance_record_id"
+        ],
+        "properties": {
+          "profile_id": {"type": "string"},
+          "modality": {"enum": ["text", "image", "video"]},
+          "source_id": {"type": "string"},
+          "family_id": {"type": "string"},
+          "model_slug": {"type": "string"},
+          "api_form": false,
+          "canonical_model_id": {"type": "string"},
+          "request_model_ids": {"type": "array", "minItems": 1},
+          "interface_ids": {"type": "array", "uniqueItems": true},
+          "provenance_record_id": {"type": "string", "minLength": 1}
+        },
+        "not": {"required": ["interfaces"]}
+      }
+    },
+    "interfaces": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "interface_id",
+          "interface_slug",
+          "profile_id",
+          "modality",
+          "source_id",
+          "family_id",
+          "model_slug",
+          "api_form",
+          "routing_mode",
+          "contract_ids",
+          "default_contract_id",
+          "provenance_record_id"
+        ],
+        "properties": {
+          "interface_id": {"type": "string"},
+          "interface_slug": {"type": "string"},
+          "profile_id": {"type": "string"},
+          "modality": {"enum": ["text", "image", "video"]},
+          "source_id": {"type": "string"},
+          "family_id": {"type": "string"},
+          "model_slug": {"type": "string"},
+          "api_form": {"type": "string", "minLength": 1},
+          "routing_mode": {"type": "string", "minLength": 1},
+          "contract_ids": {"type": "array", "minItems": 1, "uniqueItems": true},
+          "default_contract_id": {"type": "string", "minLength": 1},
+          "provenance_record_id": {"type": "string", "minLength": 1}
+        },
+        "not": {"required": ["safety_binding"]}
+      }
+    },
+    "route_templates": {
+      "type": "object",
+      "additionalProperties": {"type": "object"}
+    },
+    "legacy_aliases": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "views": {
+      "type": "object",
+      "required": ["modality_source_family_model"],
+      "properties": {
+        "modality_source_family_model": {"type": "object"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "provenanceRecord": {
+      "type": "object",
+      "required": [
+        "source_id",
+        "authority",
+        "authority_domains",
+        "official_urls",
+        "retrieved_at",
+        "target",
+        "exact_identity",
+        "api_form",
+        "parameters",
+        "section_summary",
+        "content_version"
+      ],
+      "properties": {
+        "source_id": {"type": "string", "minLength": 1},
+        "authority": {"enum": ["origin_vendor", "managed_cloud", "managed_platform_marketplace"]},
+        "authority_domains": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "official_urls": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "pattern": "^https://"},
+          "uniqueItems": true
+        },
+        "retrieved_at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+        "target": {
+          "type": "object",
+          "required": ["type", "id", "fields"],
+          "properties": {
+            "type": {"enum": ["source", "canonical_model", "profile", "interface", "contract"]},
+            "id": {"type": "string", "minLength": 1},
+            "fields": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1},
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "exact_identity": {"type": "object", "minProperties": 1},
+        "api_form": {"type": ["string", "null"]},
+        "parameters": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "section_summary": {"type": "string", "minLength": 1},
+        "content_version": {"$ref": "#/$defs/contentVersion"}
+      },
+      "additionalProperties": false
+    },
+    "contentVersion": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "value"],
+          "properties": {
+            "kind": {"const": "official_version"},
+            "value": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "sha256"],
+          "properties": {
+            "kind": {"const": "content_sha256"},
+            "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["kind", "snapshot_date", "page_content_sha256_available"],
+          "properties": {
+            "kind": {"const": "unversioned_retrieval_snapshot"},
+            "snapshot_date": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"},
+            "page_content_sha256_available": {"const": false}
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

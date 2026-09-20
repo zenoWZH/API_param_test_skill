@@ -39,7 +39,7 @@ class ParamTestInputGroupingTests(unittest.TestCase):
                     route_profile="vendor_direct",
                     api_form="openai_chat_completions",
                 ),
-                "deepseek_chat",
+                "deepseek_v4_pro_0813_chat",
             )
 
     def test_model_comparison_rejects_conflicting_explicit_source(self) -> None:
@@ -118,6 +118,44 @@ class ParamTestInputGroupingTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "contain the word JSON"):
             _sample_inputs_for_profile(config, "qwen_response_format", 1, random.Random(0))
+
+    def test_inline_messages_profile_does_not_claim_a_random_prompt_sample(self) -> None:
+        config = {
+            "compatibility_profiles": {
+                "glm53_flash_image_base64": {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": "Describe the image."}
+                            ],
+                        }
+                    ]
+                }
+            },
+            "param_test_inputs": {
+                "general": [{"id": "must_not_be_used", "prompt": "random"}]
+            },
+        }
+        samples = _sample_inputs_for_profile(
+            config,
+            "glm53_flash_image_base64",
+            2,
+            random.Random(0),
+        )
+        self.assertEqual(
+            samples,
+            [
+                {
+                    "id": "inline_messages:glm53_flash_image_base64",
+                    "prompt": "Profile-defined inline messages in compatibility_profiles.glm53_flash_image_base64.",
+                },
+                {
+                    "id": "inline_messages:glm53_flash_image_base64",
+                    "prompt": "Profile-defined inline messages in compatibility_profiles.glm53_flash_image_base64.",
+                },
+            ],
+        )
 
     def test_reasoning_profiles_use_reasoning_input_pool(self) -> None:
         config = {

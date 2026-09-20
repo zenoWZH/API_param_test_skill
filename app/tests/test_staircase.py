@@ -28,7 +28,13 @@ class StaircaseTest(unittest.TestCase):
             },
         }
         with tempfile.TemporaryDirectory() as temp_dir:
-            with patch.dict(os.environ, {"LOADTEST_TARGET_RPM": "1000", "LOADTEST_TARGET_TPM": "100000", "YIBU_API_KEY": "test-secret-value-123"}):
+            with patch.dict(os.environ, {
+                "LOADTEST_TARGET_RPM": "1000",
+                "LOADTEST_TARGET_TPM": "100000",
+                "LOADTEST_WARMUP_SEC": "12",
+                "LOADTEST_MEASURE_DURATION_SEC": "120",
+                "YIBU_API_KEY": "test-secret-value-123",
+            }):
                 with patch("scripts.run_staircase.subprocess.run") as mocked_run:
                     mocked_run.return_value.returncode = 0
                     run_locust(
@@ -47,6 +53,8 @@ class StaircaseTest(unittest.TestCase):
         child_env = mocked_run.call_args.kwargs["env"]
         self.assertNotIn("LOADTEST_TARGET_RPM", child_env)
         self.assertNotIn("LOADTEST_TARGET_TPM", child_env)
+        self.assertNotIn("LOADTEST_WARMUP_SEC", child_env)
+        self.assertNotIn("LOADTEST_MEASURE_DURATION_SEC", child_env)
         self.assertEqual(child_env["LOADTEST_TARGET_TOKENS_PER_REQUEST"], "100.0")
         self.assertEqual(child_env["LOADTEST_USERS"], "30")
         self.assertEqual(child_env["LOADTEST_STAIRCASE_STEP"], "2")

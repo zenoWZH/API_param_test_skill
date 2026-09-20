@@ -6,7 +6,7 @@ import math
 import re
 import struct
 import zlib
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from typing import Any, Iterable
 
 from .param_outcome import (
@@ -16,6 +16,7 @@ from .param_outcome import (
 from .reference_specs import (
     load_model_capability_profile,
     resolve_profile_expectation,
+    test_profiles_for_reference,
 )
 
 
@@ -23,10 +24,46 @@ GPT_IMAGE_2_MIN_PIXELS = 655_360
 GPT_IMAGE_2_MAX_PIXELS = 8_294_400
 GPT_IMAGE_2_MAX_EDGE = 3_840
 GPT_IMAGE_2_MAX_ASPECT_RATIO = 3.0
+MAX_IMAGE_PAYLOAD_BYTES = 20 * 1024 * 1024
+MAX_IMAGE_EDGE = 16_384
+MAX_IMAGE_PIXELS = 40_000_000
+MAX_IMAGE_DECODED_BYTES = 256 * 1024 * 1024
 GROK_IMAGINE_DIMENSIONS = {
     ("1k", "1:1"): (1024, 1024),
     ("2k", "1:1"): (2048, 2048),
 }
+GEMINI_FLASH_25_IMAGE_IDS = {
+    "gemini-2.5-flash-image",
+}
+GEMINI_FLASH_31_IMAGE_IDS = {
+    "gemini-3.1-flash-image",
+    "gemini-3.1-flash-image-preview",
+}
+GEMINI_FLASH_31_LITE_IMAGE_IDS = {
+    "gemini-3.1-flash-lite-image",
+}
+GEMINI_FLASH_31_LITE_IMAGE_API_FORMS = {
+    "gemini_interactions": {
+        "reference_source": "gemini_3_1_flash_lite_image_interactions",
+        "aspect_ratio_constraint": "response_format.aspect_ratio",
+        "thinking_levels": {"minimal": "minimal", "high": "high"},
+    },
+    "gemini_generate_content": {
+        "reference_source": "gemini_3_1_flash_lite_image_generate_content",
+        "aspect_ratio_constraint": "generationConfig.imageConfig.aspectRatio",
+        "thinking_levels": {"minimal": "MINIMAL", "high": "HIGH"},
+    },
+}
+GEMINI_FLASH_31_LITE_IMAGE_PROFILE_SUFFIXES = (
+    "1k_aspect_matrix",
+    "image_size_512_observation",
+    "lowercase_1k_observation",
+    "reject_aspect_7_5",
+    "reject_2k",
+    "reject_4k",
+    "thinking_minimal",
+    "thinking_high",
+)
 
 
 @dataclass(frozen=True)
@@ -65,6 +102,8 @@ class ImageInfo:
     sha256: str
     has_alpha: bool | None = None
     visual_metrics: dict[str, Any] = field(default_factory=dict)
+    has_transparent_pixels: bool | None = None
+    has_visible_pixels: bool | None = None
 
     @property
     def pixel_count(self) -> int | None:
@@ -242,26 +281,29 @@ def banana_variant_cases(
     if suite == "smoke":
         return cases
 
-    cases.append(
-        _banana_case(
-            "banana_2k_aligned",
-            model_template,
-            model_resolution="2K",
-            requested_resolution="2K",
-            expected_size=(2048, 2048),
-            control_probe="aligned",
+    flash_25_image = model_template in GEMINI_FLASH_25_IMAGE_IDS
+    flash_31_lite_image = model_template in GEMINI_FLASH_31_LITE_IMAGE_IDS
+    if not flash_31_lite_image:
+        cases.append(
+            _banana_case(
+                "banana_2k_aligned",
+                model_template,
+                model_resolution="2K",
+                requested_resolution="2K",
+                expected_size=(1024, 1024) if flash_25_image else (2048, 2048),
+                control_probe="aligned",
+            )
         )
-    )
-    latest_flash_image = model_template in {
-        "gemini-3.1-flash-image",
-        "gemini-3.1-flash-image-preview",
-    }
-    if latest_flash_image and transport in {
+    latest_flash_image = model_template in GEMINI_FLASH_31_IMAGE_IDS
+    latest_lite_image = flash_31_lite_image
+    if (latest_flash_image or latest_lite_image) and transport in {
         "chat-completions",
         "gemini-interactions",
     }:
-        cases.extend(
-            [
+        # Official docs: 512 is Gemini 3.1 Flash Image only. Lite is 1K-only, so
+        # do not emit banana_512_square (and do not encode it as a 400 reject).
+        if latest_flash_image:
+            cases.append(
                 _banana_case(
                     "banana_512_square",
                     model_template,
@@ -269,17 +311,18 @@ def banana_variant_cases(
                     requested_resolution="512",
                     expected_size=(512, 512),
                     control_probe="official_parameter",
-                ),
-                _banana_case(
-                    "banana_1k_landscape_16_9",
-                    model_template,
-                    model_resolution="1K",
-                    requested_resolution="1K",
-                    expected_size=(1376, 768),
-                    control_probe="official_parameter",
-                    aspect_ratio="16:9",
-                ),
-            ]
+                )
+            )
+        cases.append(
+            _banana_case(
+                "banana_1k_landscape_16_9",
+                model_template,
+                model_resolution="1K",
+                requested_resolution="1K",
+                expected_size=(1376, 768),
+                control_probe="official_parameter",
+                aspect_ratio="16:9",
+            )
         )
         if include_negative:
             cases.extend(
@@ -326,7 +369,7 @@ def banana_variant_cases(
                 ),
             ]
         )
-    if include_4k:
+    if include_4k and not flash_31_lite_image:
         cases.append(
             _banana_case(
                 "banana_4k_aligned",
@@ -338,6 +381,251 @@ def banana_variant_cases(
             )
         )
     return cases
+
+
+def gemini_flash_31_lite_image_profile_cases(
+    suite: str = "smoke",
+    *,
+    api_form: str,
+    include_4k: bool = False,
+    include_negative: bool = True,
+    capability_profile: dict[str, Any] | None = None,
+) -> list[ImageTestCase]:
+    """Expand the exact Lite Image MPDB contract into executable HTTP cases."""
+    if suite not in {"smoke", "resolution", "full"}:
+        raise ValueError(f"Unsupported image test suite: {suite!r}")
+    if suite == "full" and not include_4k:
+        raise ValueError(
+            "The full Gemini 3.1 Flash Lite Image matrix requires "
+            "include_4k=True to acknowledge the 4K boundary request."
+        )
+    api_contract = GEMINI_FLASH_31_LITE_IMAGE_API_FORMS.get(api_form)
+    if api_contract is None:
+        raise ValueError(
+            "Gemini 3.1 Flash Lite Image profile cases require "
+            "gemini_interactions or gemini_generate_content."
+        )
+    capability = capability_profile or load_model_capability_profile(
+        "image",
+        "banana",
+        "gemini-3.1-flash-lite-image",
+        route_profile="google_ai_studio",
+        api_form=api_form,
+    )
+    if capability.get("parameter_test_enabled") is not True:
+        raise ValueError(
+            "Image parameter testing is disabled for "
+            f"banana/gemini-3.1-flash-lite-image/{api_form}."
+        )
+    if capability.get("test_policy_parameter_test_enabled") is not True:
+        raise ValueError(
+            "Catalog parameter-test policy is disabled for "
+            f"banana/gemini-3.1-flash-lite-image/{api_form}."
+        )
+    if str(capability.get("test_scope") or "") != "safe_parameter_matrix":
+        raise ValueError(
+            "Gemini 3.1 Flash Lite Image requires test_scope="
+            "safe_parameter_matrix before profile cases can be built."
+        )
+
+    source_id = str(capability.get("default_reference_source") or "")
+    expected_source = str(api_contract["reference_source"])
+    if source_id != expected_source:
+        raise ValueError(
+            "Gemini 3.1 Flash Lite Image reference contract mismatch: "
+            f"expected={expected_source!r}, actual={source_id!r}."
+        )
+    prefix = expected_source
+    expected_profiles = [
+        f"{prefix}_{suffix}"
+        for suffix in GEMINI_FLASH_31_LITE_IMAGE_PROFILE_SUFFIXES
+    ]
+    contract_profiles = test_profiles_for_reference(source_id)
+    if contract_profiles != expected_profiles:
+        raise ValueError(
+            "Gemini 3.1 Flash Lite Image contract/profile mapping drifted: "
+            f"expected={expected_profiles!r}, actual={contract_profiles!r}."
+        )
+
+    constraint_path = str(api_contract["aspect_ratio_constraint"])
+    raw_constraint = (capability.get("parameter_constraints") or {}).get(
+        constraint_path
+    )
+    aspect_ratios = (
+        list(raw_constraint.get("allowed_values") or [])
+        if isinstance(raw_constraint, dict)
+        else []
+    )
+    if not aspect_ratios or any(not isinstance(value, str) for value in aspect_ratios):
+        raise ValueError(
+            "Gemini 3.1 Flash Lite Image has no valid profile-driven "
+            f"aspect-ratio matrix at {constraint_path!r}."
+        )
+
+    cases: list[ImageTestCase] = []
+    for profile_id in contract_profiles:
+        suffix = profile_id.removeprefix(f"{prefix}_")
+        if suffix == "1k_aspect_matrix":
+            selected_ratios = aspect_ratios[:1] if suite == "smoke" else aspect_ratios
+            for aspect_ratio in selected_ratios:
+                ratio_slug = aspect_ratio.replace(":", "_")
+                case = _banana_case(
+                    f"{profile_id}__aspect_{ratio_slug}",
+                    "gemini-3.1-flash-lite-image",
+                    model_resolution="1K",
+                    requested_resolution="1K",
+                    expected_size=(1024, 1024) if aspect_ratio == "1:1" else None,
+                    control_probe="official_parameter",
+                    aspect_ratio=aspect_ratio,
+                )
+                cases.append(
+                    _with_lite_image_profile_metadata(
+                        case,
+                        api_form=api_form,
+                        profile_id=profile_id,
+                        expected_aspect_ratio=aspect_ratio,
+                    )
+                )
+            continue
+        if suite == "smoke":
+            continue
+        if suffix in {
+            "image_size_512_observation",
+            "lowercase_1k_observation",
+            "reject_aspect_7_5",
+            "reject_2k",
+            "reject_4k",
+        }:
+            expectation = resolve_profile_expectation(
+                "image",
+                "banana",
+                "gemini-3.1-flash-lite-image",
+                profile_id,
+                capability_profile=capability,
+            )
+            if expectation == "unsupported" and not include_negative:
+                continue
+            if suffix == "reject_4k" and not include_4k:
+                continue
+            requested_resolution = {
+                "image_size_512_observation": "512",
+                "lowercase_1k_observation": "1k",
+                "reject_aspect_7_5": "1K",
+                "reject_2k": "2K",
+                "reject_4k": "4K",
+            }[suffix]
+            aspect_ratio = "7:5" if suffix == "reject_aspect_7_5" else "1:1"
+            expected_size = (
+                {
+                    "image_size_512_observation": (512, 512),
+                    "lowercase_1k_observation": (1024, 1024),
+                }.get(suffix)
+                if expectation == "supported"
+                else None
+            )
+            case = _banana_case(
+                profile_id,
+                "gemini-3.1-flash-lite-image",
+                model_resolution="1K",
+                requested_resolution=requested_resolution,
+                expected_size=expected_size,
+                control_probe=(
+                    "live_observed_parameter"
+                    if expectation == "supported"
+                    else "negative_parameter"
+                ),
+                aspect_ratio=aspect_ratio,
+                expected_outcome=(
+                    "success" if expectation == "supported" else "rejection"
+                ),
+            )
+            cases.append(
+                _with_lite_image_profile_metadata(
+                    case,
+                    api_form=api_form,
+                    profile_id=profile_id,
+                )
+            )
+            continue
+        if suffix.startswith("thinking_"):
+            if suite != "full":
+                continue
+            level_key = suffix.removeprefix("thinking_")
+            thinking_level = api_contract["thinking_levels"].get(level_key)
+            if not isinstance(thinking_level, str):
+                raise ValueError(
+                    f"Unsupported Lite Image thinking profile: {profile_id}"
+                )
+            case = _banana_case(
+                profile_id,
+                "gemini-3.1-flash-lite-image",
+                model_resolution="1K",
+                requested_resolution="1K",
+                expected_size=(1024, 1024),
+                control_probe="official_parameter",
+                aspect_ratio="1:1",
+            )
+            cases.append(
+                _with_lite_image_profile_metadata(
+                    case,
+                    api_form=api_form,
+                    profile_id=profile_id,
+                    expected_aspect_ratio="1:1",
+                    thinking_level=thinking_level,
+                )
+            )
+            continue
+        raise ValueError(f"Unsupported Lite Image contract profile: {profile_id}")
+    return cases
+
+
+def _with_lite_image_profile_metadata(
+    case: ImageTestCase,
+    *,
+    api_form: str,
+    profile_id: str,
+    expected_aspect_ratio: str | None = None,
+    thinking_level: str | None = None,
+) -> ImageTestCase:
+    metadata = {
+        **case.metadata,
+        "test_profile": profile_id,
+        "profile_driven": True,
+        "api_form": api_form,
+        "model_scope": "gemini-3.1-flash-lite-image",
+        "stateless": True,
+    }
+    if expected_aspect_ratio is not None:
+        metadata["expected_aspect_ratio"] = expected_aspect_ratio
+        metadata["aspect_ratio_relative_tolerance"] = 0.05
+    if thinking_level is not None:
+        metadata["thinking_level"] = thinking_level
+    if "1k_aspect_matrix" in profile_id:
+        description = (
+            "Profile-driven 1K aspect-ratio matrix cell for the exact Gemini "
+            "3.1 Flash Lite Image API contract."
+        )
+    elif "thinking_" in profile_id:
+        description = (
+            "Profile-driven image request for an exact documented thinking "
+            "level on Gemini 3.1 Flash Lite Image."
+        )
+    elif "_observation" in profile_id:
+        description = (
+            "Profile-driven live-observed boundary whose supported outcome is "
+            "specific to this Gemini API form."
+        )
+    else:
+        description = (
+            "Profile-driven negative boundary request from the exact Gemini "
+            "3.1 Flash Lite Image API contract."
+        )
+    return replace(
+        case,
+        description=description,
+        tags=(*case.tags, "exact_contract", "profile_driven"),
+        metadata=metadata,
+    )
 
 
 def grok_imagine_cases(
@@ -488,8 +776,16 @@ def validate_gpt_image_2_size(size: str) -> list[str]:
 def inspect_image_bytes(raw: bytes, *, visual_forensics: bool = True) -> ImageInfo:
     if not raw:
         raise ValueError("image payload is empty")
+    if len(raw) > MAX_IMAGE_PAYLOAD_BYTES:
+        raise ValueError(
+            f"image payload exceeds {MAX_IMAGE_PAYLOAD_BYTES} byte limit"
+        )
 
     image_format, width, height, has_alpha = _read_image_header(raw)
+    from PIL import Image
+    with Image.open(io.BytesIO(raw)) as decoded:
+        alpha_min, alpha_max = decoded.convert("RGBA").getchannel("A").getextrema()
+        transparent_pixels = alpha_min < 255
     visual_metrics = analyze_visual_detail(raw) if visual_forensics else {
         "available": False,
         "reason": "disabled",
@@ -502,6 +798,8 @@ def inspect_image_bytes(raw: bytes, *, visual_forensics: bool = True) -> ImageIn
         sha256=hashlib.sha256(raw).hexdigest(),
         has_alpha=has_alpha,
         visual_metrics=visual_metrics,
+        has_transparent_pixels=transparent_pixels,
+        has_visible_pixels=alpha_max > 0,
     )
 
 
@@ -513,6 +811,7 @@ def apply_capability_expectations(
     modality: str = "image",
     api_form: str | None = None,
     route_profile: str | None = None,
+    capability_profile: dict[str, Any] | None = None,
 ) -> list[ImageTestCase]:
     """Overlay model_capability_profiles expectations onto image cases.
 
@@ -520,13 +819,15 @@ def apply_capability_expectations(
     supported keeps the authored success/observation outcome; an explicit
     supported override can flip a negative probe back to success.
     """
-    capability = load_model_capability_profile(
-        modality,
-        family,
-        model,
-        api_form=api_form,
-        route_profile=route_profile,
-    )
+    capability = capability_profile
+    if capability is None:
+        capability = load_model_capability_profile(
+            modality,
+            family,
+            model,
+            api_form=api_form,
+            route_profile=route_profile,
+        )
     if (
         capability.get("known_model") is not True
         or capability.get("known_api_profile") is not True
@@ -539,14 +840,16 @@ def apply_capability_expectations(
 
     updated: list[ImageTestCase] = []
     for case in cases:
+        profile = str(case.metadata.get("test_profile") or case.name)
         expectation = resolve_profile_expectation(
             modality,
             family,
             model,
-            case.name,
+            profile,
             capability_profile=capability,
         )
         metadata = dict(case.metadata)
+        metadata["expectation_profile"] = profile
         metadata["expectation"] = expectation
         metadata["capability_family"] = family
         metadata["capability_model"] = model
@@ -596,6 +899,13 @@ def evaluate_case(
     error: dict[str, Any] | str | None = None,
 ) -> dict[str, Any]:
     image_list = list(images)
+    if (case.metadata or {}).get("banana_gc_candidate") is True:
+        from .banana_generate_content import evaluate_candidate_case
+
+        return evaluate_candidate_case(
+            case, status_code=status_code, images=image_list, error=error,
+            usage=usage, latency_ms=latency_ms,
+        )
     failures: list[str] = []
     expectation = str(
         (case.metadata or {}).get("expectation")
@@ -639,6 +949,14 @@ def evaluate_case(
 
     if case.expected_outcome == "rejection":
         outcome = map_probe_outcome("unsupported", status_code=status_code, validation_ok=True)
+        attribution: dict[str, Any] = {}
+        if case.metadata.get("banana_gc_exact") is True:
+            from .banana_generate_content import parameter_rejection_attribution
+
+            attribution = parameter_rejection_attribution(case, error)
+            if outcome["pass"] and attribution["matched"] is not True:
+                outcome = {**outcome, "pass": False, "status": "fail"}
+                failures.append("parameter_rejection_not_attributed")
         if not outcome["pass"]:
             if status_code is not None and 200 <= status_code <= 299:
                 failures.append("invalid_parameter_accepted")
@@ -659,6 +977,7 @@ def evaluate_case(
             "error": error,
             "tags": list(case.tags),
             "metadata": dict(case.metadata),
+            **({"parameter_rejection_attribution": attribution} if attribution else {}),
         }
 
     content_failures: list[str] = []
@@ -683,11 +1002,21 @@ def evaluate_case(
                         image.height,
                     )
                 )
+            expected_transparency = case.metadata.get("expected_transparency")
+            if expected_transparency is True and image.has_visible_pixels is not True:
+                content_failures.append(f"transparent_output_has_no_visible_pixels:index={index}")
+            if isinstance(expected_transparency, bool) and image.has_transparent_pixels is not expected_transparency:
+                content_failures.append(
+                    f"transparency_mismatch:index={index}:expected={expected_transparency}:actual={image.has_transparent_pixels}"
+                )
             expected_aspect_ratio = case.metadata.get("expected_aspect_ratio")
             if expected_aspect_ratio and not _matches_aspect_ratio(
                 image.width,
                 image.height,
                 str(expected_aspect_ratio),
+                relative_tolerance=float(
+                    case.metadata.get("aspect_ratio_relative_tolerance") or 0.005
+                ),
             ):
                 content_failures.append(
                     "aspect_ratio_mismatch:index={}:expected={}:actual={}x{}".format(
@@ -1121,6 +1450,8 @@ def _matches_aspect_ratio(
     width: int | None,
     height: int | None,
     expected: str,
+    *,
+    relative_tolerance: float = 0.005,
 ) -> bool:
     if not width or not height:
         return False
@@ -1129,7 +1460,7 @@ def _matches_aspect_ratio(
         return False
     expected_ratio = float(match.group(1)) / float(match.group(2))
     actual_ratio = width / height
-    return abs(actual_ratio - expected_ratio) / expected_ratio <= 0.005
+    return abs(actual_ratio - expected_ratio) / expected_ratio <= relative_tolerance
 
 
 def _banana_case(
@@ -1188,25 +1519,67 @@ def _banana_case(
             "model_resolution": model_resolution if uses_resolution_alias else None,
             "requested_resolution": requested_resolution,
             "model_expected_size": list(model_size) if uses_resolution_alias else None,
+            "honor_mime_type": model_template not in GEMINI_FLASH_25_IMAGE_IDS,
         },
     )
 
 
 def _read_image_header(raw: bytes) -> tuple[str, int | None, int | None, bool | None]:
     if raw.startswith(bytes.fromhex("89504e470d0a1a0a")):
-        if len(raw) < 26 or raw[12:16] != b"IHDR":
-            raise ValueError("invalid PNG IHDR")
+        if (
+            len(raw) < 33
+            or raw[8:12] != b"\x00\x00\x00\r"
+            or raw[12:16] != b"IHDR"
+        ):
+            raise ValueError("invalid or truncated PNG IHDR")
         width, height = struct.unpack(">II", raw[16:24])
+        _validate_image_resource_limits(width, height)
         color_type = raw[25]
         _validate_png_structure(raw, width, height, raw[24], color_type, raw[28])
+        _validate_complete_image_decode(raw, "PNG", width, height)
         return "PNG", width, height, color_type in {4, 6}
     if raw.startswith(bytes.fromhex("ffd8ff")):
         width, height = _jpeg_size(raw)
+        _validate_image_resource_limits(width, height)
+        if not raw.endswith(b"\xff\xd9"):
+            raise ValueError("truncated JPEG: missing terminal EOI marker")
+        _validate_complete_image_decode(raw, "JPEG", width, height)
         return "JPEG", width, height, False
     if len(raw) >= 30 and raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
+        if int.from_bytes(raw[4:8], "little") + 8 != len(raw):
+            raise ValueError("truncated or trailing WebP RIFF payload")
         width, height, has_alpha = _webp_size(raw)
+        _validate_image_resource_limits(width, height)
+        _validate_complete_image_decode(raw, "WEBP", width, height)
         return "WEBP", width, height, has_alpha
     raise ValueError(f"unsupported image signature: {raw[:16].hex()}")
+
+
+def _validate_complete_image_decode(
+    raw: bytes, image_format: str, width: int, height: int,
+) -> None:
+    """Header dimensions and container checks do not prove a complete artifact."""
+    try:
+        from PIL import Image, ImageFile
+    except ImportError as exc:
+        raise ValueError(
+            f"complete {image_format} validation requires Pillow from requirements-image.txt"
+        ) from exc
+    if ImageFile.LOAD_TRUNCATED_IMAGES:
+        raise ValueError("strict image decoding is unavailable while LOAD_TRUNCATED_IMAGES is enabled")
+    try:
+        with Image.open(io.BytesIO(raw)) as source:
+            if source.format != image_format or source.size != (width, height):
+                raise ValueError("decoded image metadata differs from its header")
+            if getattr(source, "n_frames", 1) != 1:
+                raise ValueError("animated image output is unsupported")
+            if width * height * max(1, len(source.getbands())) > MAX_IMAGE_DECODED_BYTES:
+                raise ValueError("decoded image exceeds the memory limit")
+            source.verify()
+        with Image.open(io.BytesIO(raw)) as source:
+            source.load()
+    except Exception as exc:
+        raise ValueError(f"{image_format} image decoding failed: {exc}") from exc
 
 
 def _validate_png_structure(
@@ -1234,10 +1607,14 @@ def _validate_png_structure(
         if expected_crc != actual_crc:
             raise ValueError(f"invalid PNG CRC for {chunk_type!r}")
         if chunk_type == b"IHDR":
+            if saw_ihdr or position != 8 or length != 13:
+                raise ValueError("invalid PNG IHDR placement or length")
             saw_ihdr = True
         elif chunk_type == b"IDAT":
             idat_parts.append(raw[data_start:data_end])
         elif chunk_type == b"IEND":
+            if length != 0:
+                raise ValueError("invalid PNG IEND length")
             saw_iend = True
             if crc_end != len(raw):
                 raise ValueError("unexpected data after PNG IEND")
@@ -1246,22 +1623,51 @@ def _validate_png_structure(
 
     if not saw_ihdr or not idat_parts or not saw_iend:
         raise ValueError("PNG must contain IHDR, IDAT, and IEND chunks")
+    channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}.get(color_type)
+    if channels is None:
+        raise ValueError(f"unsupported PNG color type: {color_type}")
+    row_bytes = math.ceil(width * channels * bit_depth / 8)
+    expected_length = (row_bytes + 1) * height
+    if expected_length > MAX_IMAGE_DECODED_BYTES:
+        raise ValueError(
+            f"PNG decoded payload exceeds {MAX_IMAGE_DECODED_BYTES} byte limit"
+        )
     try:
-        decompressed = zlib.decompress(b"".join(idat_parts))
+        decompressor = zlib.decompressobj()
+        decompressed = decompressor.decompress(
+            b"".join(idat_parts), MAX_IMAGE_DECODED_BYTES + 1
+        )
+        if decompressor.unconsumed_tail or len(decompressed) > MAX_IMAGE_DECODED_BYTES:
+            raise ValueError(
+                f"PNG decoded payload exceeds {MAX_IMAGE_DECODED_BYTES} byte limit"
+            )
+        decompressed += decompressor.flush(
+            MAX_IMAGE_DECODED_BYTES + 1 - len(decompressed)
+        )
     except zlib.error as exc:
         raise ValueError(f"invalid PNG IDAT stream: {exc}") from exc
+    if len(decompressed) > MAX_IMAGE_DECODED_BYTES:
+        raise ValueError(
+            f"PNG decoded payload exceeds {MAX_IMAGE_DECODED_BYTES} byte limit"
+        )
+    if not decompressor.eof or decompressor.unused_data:
+        raise ValueError("invalid or trailing PNG IDAT stream")
     if not decompressed:
         raise ValueError("PNG IDAT stream is empty")
     if interlace_method == 0:
-        channels = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}.get(color_type)
-        if channels is None:
-            raise ValueError(f"unsupported PNG color type: {color_type}")
-        row_bytes = math.ceil(width * channels * bit_depth / 8)
-        expected_length = (row_bytes + 1) * height
         if len(decompressed) != expected_length:
             raise ValueError(
                 f"PNG scanline length mismatch: expected={expected_length}:actual={len(decompressed)}"
             )
+
+
+def _validate_image_resource_limits(width: int, height: int) -> None:
+    if width <= 0 or height <= 0:
+        raise ValueError("image dimensions must be positive")
+    if max(width, height) > MAX_IMAGE_EDGE:
+        raise ValueError(f"image edge exceeds {MAX_IMAGE_EDGE} pixel limit")
+    if width * height > MAX_IMAGE_PIXELS:
+        raise ValueError(f"image exceeds {MAX_IMAGE_PIXELS} pixel limit")
 
 
 def _jpeg_size(raw: bytes) -> tuple[int, int]:

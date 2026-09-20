@@ -7,14 +7,21 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import skill_env
+from result_validation import classify_result
 
-skill_env.ensure_skill_env()
+skill_env.configure_skill_env()
 sys.path.insert(0, str(skill_env.APP_ROOT))
 
 from lib.config import default_reports_root  # noqa: E402
 
 PARAM_KEYS = [
     "pass",
+    "proof_scope",
+    "result_validation",
+    "param_test_runs",
+    "tool_validation_mode",
+    "full_parameter_certification",
+    "native_aws_certification",
     "provider",
     "provider_label",
     "model",
@@ -90,6 +97,19 @@ def _pick(payload: dict, keys: list[str]) -> dict:
     return {key: payload.get(key) for key in keys if payload.get(key) is not None}
 
 
+def _workflow_summary(report: dict) -> dict:
+    """Keep request/cleanup evidence visible without dumping response bodies."""
+    summary = _pick(report, ["status", "plan_digest", "workflow_id", "cleanup_only",
+                             "requested_run_count", "completed_run_count", "case_outcomes"])
+    summary["runs"] = [
+        {**_pick(run, ["run_id", "status", "request_count", "business_request_count",
+                      "cleanup_request_count", "fatal_reason"]),
+         "cleanup": _pick(run.get("cleanup") or {}, ["status", "unknown_creations"])}
+        for run in report.get("runs", []) if isinstance(run, dict)
+    ]
+    return summary
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Print a condensed result JSON for a job, ready for summarization."
@@ -97,7 +117,13 @@ def main() -> int:
     parser.add_argument("--id", dest="job_id", required=True)
     parser.add_argument("--full", action="store_true", help="dump raw verdict/summary files")
     args = parser.parse_args()
-    report_dir = default_reports_root() / "jobs" / args.job_id
+    skill_env.ensure_skill_env()
+    jobs_root = default_reports_root() / "jobs"
+    try:
+        report_dir = skill_env.resolve_job_dir(jobs_root, args.job_id)
+    except ValueError as exc:
+        print(json.dumps({"error": str(exc)}), file=sys.stderr)
+        return 2
     if not report_dir.is_dir():
         print(json.dumps({"error": f"job not found: {args.job_id}"}), file=sys.stderr)
         return 2
@@ -113,11 +139,17 @@ def main() -> int:
         "report_dir": str(report_dir),
     }
     job_type = output["type"]
+    raw_result = (_read_json(report_dir / "summary.json") or {}) if job_type == "image_param_test" else verdict
+    validation = classify_result(job_spec, raw_result, job_type)
+    if validation is not None:
+        output["result_validation"] = validation
     if args.full:
         output["verdict"] = verdict or None
         output["summary"] = _read_json(report_dir / "summary.json")
         output["load_result"] = _read_json(report_dir / "load_result.json")
         output["param_results"] = _read_json(report_dir / "param_results.json")
+        output["workflow_result"] = _read_json(report_dir / "workflow_result.json")
+        output["execution_plan"] = _read_json(report_dir / "execution_plan.json")
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return 0
     if job_type == "param_test":
@@ -137,6 +169,14 @@ def main() -> int:
         )
     else:
         output["result"] = verdict or _read_json(report_dir / "summary.json")
+    result = output.get("result")
+    if isinstance(result, dict):
+        if validation is not None:
+            result["reported_pass"] = raw_result.get("pass")
+            result["pass"] = validation["pass"]
+        workflow = verdict.get("workflow_result") or result.get("workflow_result")
+        if isinstance(workflow, dict):
+            result["workflow_result"] = _workflow_summary(workflow)
     if not output.get("result"):
         output["hint"] = "no verdict yet; job may still be running (check jobs.py --id)"
     print(json.dumps(output, ensure_ascii=False, indent=2))

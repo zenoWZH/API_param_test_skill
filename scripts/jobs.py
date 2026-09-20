@@ -10,8 +10,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import skill_env
+from result_validation import classify_result
 
-skill_env.ensure_skill_env()
+skill_env.configure_skill_env()
 sys.path.insert(0, str(skill_env.APP_ROOT))
 
 from lib.config import default_reports_root  # noqa: E402
@@ -77,7 +78,9 @@ def _job_status(report_dir: Path) -> dict:
             )
     else:
         has_result = bool(verdict) or bool(load_result) or bool(summary)
-        info["status"] = "finished" if has_result else "unknown"
+        info["status"] = ("finished" if has_result else "planned"
+                          if job_spec.get("schema_version") == 6 and job_spec.get("execution_plan")
+                          else "unknown")
         info["created_at"] = report_dir.stat().st_mtime
     if verdict:
         info["pass"] = verdict.get("pass")
@@ -85,6 +88,12 @@ def _job_status(report_dir: Path) -> dict:
         info["pass"] = load_result.get("pass", load_result.get("threshold_pass"))
     if summary and "pass" in summary:
         info["pass"] = summary.get("pass")
+    raw_result = summary if info["type"] == "image_param_test" else verdict
+    validation = classify_result(job_spec, raw_result, info["type"])
+    if validation is not None:
+        info["reported_pass"] = raw_result.get("pass")
+        info["pass"] = validation["pass"]
+        info["result_validation"] = validation
     return info
 
 
@@ -111,7 +120,10 @@ def _stop_job(report_dir: Path) -> dict:
             "reason": "process not alive",
         }
     try:
-        os.killpg(pid, signal.SIGTERM)
+        if run.get("signal_scope") == "process":
+            os.kill(pid, signal.SIGTERM)
+        else:
+            os.killpg(pid, signal.SIGTERM)
     except (ProcessLookupError, PermissionError, OSError) as exc:
         return {"job_id": report_dir.name, "stopped": False, "reason": str(exc)}
     run["stop_requested"] = True
@@ -135,14 +147,26 @@ def main() -> int:
         "--since-hours", type=float, default=None, help="only jobs newer than N hours"
     )
     args = parser.parse_args()
+    skill_env.ensure_skill_env()
     jobs_root = default_reports_root() / "jobs"
     if args.stop:
-        report_dir = jobs_root / args.stop
+        try:
+            report_dir = skill_env.resolve_job_dir(jobs_root, args.stop)
+        except ValueError as exc:
+            print(json.dumps({"error": str(exc)}), file=sys.stderr)
+            return 2
         if not report_dir.is_dir():
             print(json.dumps({"error": f"job not found: {args.stop}"}), file=sys.stderr)
             return 2
-        print(json.dumps(_stop_job(report_dir), ensure_ascii=False))
-        return 0
+        stopped = _stop_job(report_dir)
+        print(json.dumps(stopped, ensure_ascii=False))
+        return 0 if stopped.get("stopped") else 1
+    if args.job_id:
+        try:
+            skill_env.resolve_job_dir(jobs_root, args.job_id)
+        except ValueError as exc:
+            print(json.dumps({"error": str(exc)}), file=sys.stderr)
+            return 2
     jobs = []
     if jobs_root.exists():
         for report_dir in sorted(
@@ -160,9 +184,15 @@ def main() -> int:
                 if created < time.time() - args.since_hours * 3600:
                     continue
             jobs.append(info)
+    if args.job_id and not jobs:
+        print(
+            json.dumps({"error": f"job not found: {args.job_id}"}, ensure_ascii=False),
+            file=sys.stderr,
+        )
+        return 2
     print(
         json.dumps(
-            jobs if not args.job_id else (jobs[0] if jobs else None),
+            jobs if not args.job_id else jobs[0],
             ensure_ascii=False,
             indent=2,
         )

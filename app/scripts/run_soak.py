@@ -106,6 +106,10 @@ def run_locust(
             "LOADTEST_REPORT_DIR": str(report_dir),
         }
     )
+    if phase == "warmup" and workload == "throughput_rpm":
+        # The standard RPM warmup uses fixed bodies. Keep the measurement
+        # request mode inherited from the caller unchanged.
+        env["LOADTEST_REQUEST_MODE"] = "fixed"
     cmd = [
         sys.executable,
         "-m",

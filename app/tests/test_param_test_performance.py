@@ -94,6 +94,40 @@ def test_gemini_performance_includes_thoughts_in_output_throughput() -> None:
     assert metrics["throughput_output_tokens_per_sec"] == 113.0
 
 
+def test_performance_metrics_reuse_validated_xai_additive_accounting() -> None:
+    result = ChatResult(
+        success=True,
+        status_code=200,
+        latency_ms=1000.0,
+        timestamp=0.0,
+        usage={
+            "prompt_tokens": 208,
+            "completion_tokens": 1,
+            "total_tokens": 224,
+            "completion_tokens_details": {"reasoning_tokens": 15},
+        },
+    )
+    accounting = {
+        "input_tokens": 208,
+        "answer_tokens": 1,
+        "thinking_tokens": 15,
+        "output_tokens": 16,
+        "total_tokens": 224,
+    }
+
+    metrics = _performance_metrics(
+        result,
+        "chat_completions",
+        usage_accounting=accounting,
+    )
+
+    assert metrics["answer_tokens"] == 1
+    assert metrics["thinking_tokens"] == 15
+    assert metrics["output_tokens"] == 16
+    assert metrics["total_tokens"] == 224
+    assert metrics["throughput_output_tokens_per_sec"] == 16.0
+
+
 def test_performance_summary_uses_successful_samples() -> None:
     results = [
         {

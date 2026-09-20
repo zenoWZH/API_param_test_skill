@@ -1,0 +1,4176 @@
+{
+  "api_form": "gemini_interactions",
+  "api_total_cost_cap": null,
+  "api_version": "v1beta",
+  "approval_codes": [
+    "R7-ALL-MODELS-EFFECT-PROOF",
+    "R7-APP-PARITY-GEMINI-3.7"
+  ],
+  "catalog_digest_at_execution": "862d18643fd41bafaf48c3da69282368a35840c9990f186adeb7d9a865c23e69",
+  "contract_id": "gemini_3_7_flash_interactions",
+  "evidence_requirement": "effect",
+  "execution_provider": "gemini",
+  "execution_source_archive": {
+    "expires_at": "2026-10-09T21:33:20Z",
+    "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/execution_sources.zip",
+    "sha256": "2063ed3eeeb943e83d9382d8691c9678f8424a3cc07b1917ac92dcf7d501c119"
+  },
+  "fatal_error_type": null,
+  "google_direct": true,
+  "http_counts": {
+    "200": 15,
+    "400": 3
+  },
+  "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+  "kind": "gemini_interactions_budget_adjusted_parameter_observations",
+  "native_response_verified_count": 14,
+  "new_http_requests_during_replay": 0,
+  "not_sent_case_ids": [],
+  "official_documents": {
+    "function_calling": {
+      "checked_on": "2026-09-09",
+      "findings": [
+        "auto can choose a call or a direct response.",
+        "any forces a function call; none prohibits function calls.",
+        "validated checks function-schema adherence; documentation does not establish that every request must call a tool."
+      ],
+      "url": "https://ai.google.dev/gemini-api/docs/function-calling"
+    },
+    "model": {
+      "checked_on": "2026-09-09",
+      "findings": [
+        "The exact model supports low/medium/high thinking; minimal is unsupported and returns an error."
+      ],
+      "url": "https://ai.google.dev/gemini-api/docs/models/gemini-3.7-flash"
+    },
+    "openapi": {
+      "checked_on": "2026-09-09",
+      "findings": [
+        "The current version is v1beta; Interaction.required contains status only.",
+        "The POST SSE response declares [DONE] as its sentinel.",
+        "GenerationConfig declares max_output_tokens, seed, stop_sequences, thinking_level, thinking_summaries and tool_choice.",
+        "CreateModelInteraction includes labels; its presence in the schema does not establish model/account availability.",
+        "FunctionCallStep requires id, name, arguments and type."
+      ],
+      "url": "https://ai.google.dev/static/api/interactions.openapi.json"
+    },
+    "structured": {
+      "checked_on": "2026-09-09",
+      "findings": [
+        "Interactions structured output uses response_format.type=text, mime_type=application/json and schema.",
+        "Only a subset of JSON Schema is supported; parsed JSON should be validated against that schema."
+      ],
+      "url": "https://ai.google.dev/gemini-api/docs/structured-output"
+    },
+    "thinking": {
+      "checked_on": "2026-09-09",
+      "findings": [
+        "Only final output is returned by default; auto enables thought summaries.",
+        "A simple request can yield a signature-only thought step. Empty or absent summary is allowed."
+      ],
+      "url": "https://ai.google.dev/gemini-api/docs/thinking"
+    }
+  },
+  "ordinary_mpdb_gates_changed": false,
+  "original_low_budget_failure_preserved": true,
+  "original_records_rewritten": false,
+  "original_skipped_cases": [],
+  "original_summary": {
+    "fatal_error_type": null,
+    "native_response_verified_count": 14,
+    "not_sent_case_ids": [],
+    "observations": [
+      {
+        "case_id": "gemini_3_7_flash_interactions_basic",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "basic",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "aeb84ed61f182261c8fdf9dbc289efda447edb070e3c919fb283c8c601c2d567"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 58,
+            "visible_text_sha256": "3002af731e33580c088823ba809c8302b82dd19c88278bba2ba226237180014c"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 4227,
+          "raw_sha256": "ec7bcc083d1117102bdb880ca68813bc1ab81775c8f96d952c506f36c80348db",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 40,
+            "total_thought_tokens": 853,
+            "total_tokens": 913,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 1,
+        "request_sha256": "49c9aa3ef337c02106e98ff38c9371de8cf13ad3ff272dbb73fcca4aac310182",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "ec7bcc083d1117102bdb880ca68813bc1ab81775c8f96d952c506f36c80348db",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_system_instruction",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "system_instruction",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "e5c780898f782831998acb45e9e698a0409cbe70ee1a577ca68488a5f82fe152"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 71,
+            "visible_text_sha256": "4998111d75643ee4737fc494751b0b94072cc369dd9a2c212d2814b82b5667a7"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 3264,
+          "raw_sha256": "8bd3db6421d7500f4c1c083c2371bbcd7ed66bff290f360744f9c98f54750ace",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 30,
+            "total_output_tokens": 45,
+            "total_thought_tokens": 484,
+            "total_tokens": 559,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 2,
+        "request_sha256": "1d9055f376581a1dbf0c9e82d899544482de0cb156fa7598a4cae8678dd00760",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "8bd3db6421d7500f4c1c083c2371bbcd7ed66bff290f360744f9c98f54750ace",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_response_format_json",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "response_format_json",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "json": {
+              "failed_keywords": [],
+              "matches_schema": true,
+              "parse_valid": true,
+              "schema_checkable": true,
+              "schema_enforcement_proven": false
+            },
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "524e88dfc697bce082909986e3b941dfd31e6eb7fb5c4429664f02c1cbf8efd3"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 317,
+            "visible_text_sha256": "ddc99d85adf50f79d5d7ad752c5aa89eb89d311364562f7ab07f0fbf88ab4d86"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 3571,
+          "raw_sha256": "3dd050b2aa4f88cdb532a77d88455eec2a35504e6b4cd756f73ff5d673c1e04f",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 60,
+            "total_output_tokens": 164,
+            "total_thought_tokens": 368,
+            "total_tokens": 592,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 3,
+        "request_sha256": "cf9fd551eabd9d9b1a78be211ffe8a53e5113164266d4412a7fbcc68cc28d192",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "3dd050b2aa4f88cdb532a77d88455eec2a35504e6b4cd756f73ff5d673c1e04f",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_stream",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "stream",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": false,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": false,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": true,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "completed_event_seen": true,
+              "created_event_seen": true,
+              "data_after_done": false,
+              "done_count": 1,
+              "done_seen": true,
+              "event_count": 11,
+              "event_id_missing_count": 11,
+              "event_id_observed_count": 0,
+              "event_ids_all_observable": false,
+              "event_types": {
+                "interaction.completed": 1,
+                "interaction.created": 1,
+                "interaction.status_update": 1,
+                "step.delta": 4,
+                "step.start": 2,
+                "step.stop": 2
+              },
+              "events_complete": true,
+              "interaction_id_observed": false,
+              "interaction_id_sha256": [],
+              "interaction_ids_consistent": false,
+              "lifecycle_event_count": 3,
+              "lifecycle_identity_verified": false,
+              "lifecycle_interaction_id_missing_count": 3,
+              "requested": true
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "a1e78b4aa01ce4d72842eaaad8e4639a52b49057135f44e1efcb9a998bb0ce53"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 73,
+            "visible_text_sha256": "85b5a8a920807e130949d59d64b71a956c8cc5a89a50e59edc393b2b5ad343cc"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 4537,
+          "raw_sha256": "32578bc529b242969338225bc611541c9d39f74f8544e2a7baa5ca22c2a0b04f",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": "interaction_id_missing",
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 43,
+            "total_thought_tokens": 446,
+            "total_tokens": 509,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 4,
+        "request_sha256": "bb706ff94dd5378a37b879485d77612440edc0c0461471f4772fb1f63ec035f5",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "32578bc529b242969338225bc611541c9d39f74f8544e2a7baa5ca22c2a0b04f",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_store_false",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "store_false",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "63b7ad4ae1eaaee084c5e86ccc10ce4e4035bdd731ba70518075e79230fe9796"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 66,
+            "visible_text_sha256": "3de31e815bde448f753dcdc7d24872e6068c861a9eb32205ea1d9357f5944abd"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 3565,
+          "raw_sha256": "647c82f2d75f4b1a6d1562cd5f044bf0305500e1b932b8fb2811b067eae05073",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 38,
+            "total_thought_tokens": 724,
+            "total_tokens": 782,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 5,
+        "request_sha256": "49c9aa3ef337c02106e98ff38c9371de8cf13ad3ff272dbb73fcca4aac310182",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "647c82f2d75f4b1a6d1562cd5f044bf0305500e1b932b8fb2811b067eae05073",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_max_output_tokens",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "max_output_tokens",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 768,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "bcce24efbd674a8c634dc29c849c4b4ec03f1623a7eaf1a4d73eb60aac1d348c"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 62,
+            "visible_text_sha256": "06491213ec782390bd63a64f998a503f0888f9c81aeb53b68c567cb9a02f75cb"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 4069,
+          "raw_sha256": "118c0db681c741a69621b3f604ab426e7c7007fb77e085a16ac5a7199b755c52",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 36,
+            "total_thought_tokens": 653,
+            "total_tokens": 709,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 6,
+        "request_sha256": "5b0bbde6c8365f2554ab0809ddc2e2e76388cd5eb994702f81cf1046499edb94",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "118c0db681c741a69621b3f604ab426e7c7007fb77e085a16ac5a7199b755c52",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_seed",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "seed",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": 123456789,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "7b6807fbe171eacb584e612df497787b9ac0a0b32962e628acd75a156f681a47"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 65,
+            "visible_text_sha256": "4883190744d34851d6db291021352a39ef134409ce8bd316d285588f94ba0638"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 4118,
+          "raw_sha256": "a2f7c44a5da9917efd00f1b1d023929920f4941855ae022ae17a6e6349446606",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 38,
+            "total_thought_tokens": 681,
+            "total_tokens": 739,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 7,
+        "request_sha256": "8adebb47045a0b6eb675a424b1baef40372f75c4feda400909e4422117f72f92",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "a2f7c44a5da9917efd00f1b1d023929920f4941855ae022ae17a6e6349446606",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_stop_sequences",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "stop_sequences",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stop": {
+              "contains_stop_marker": false,
+              "contains_tail": false,
+              "matches_expected_visible_output": true,
+              "paired_no_stop_control_verified": false,
+              "stop_effect_causally_verified": false
+            },
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "f244005a013caef47330b015a6267495d9ab5081ca01acfc86c08db4b8d29deb"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 14,
+            "visible_text_sha256": "872e505835bdde6202773d3dc80f2669d1416fe620e64c136677ce4f88b1f314"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 1418,
+          "raw_sha256": "44d4fb20cdda263b212d25699e7863d1b2ff34ee7b00b0b44ab5bd8b227471e7",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 23,
+            "total_output_tokens": 6,
+            "total_thought_tokens": 112,
+            "total_tokens": 141,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 8,
+        "request_sha256": "169ed1e9c73f63c85aeffcc6795f48906c1f201599a75299f9738c49cd984e71",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "44d4fb20cdda263b212d25699e7863d1b2ff34ee7b00b0b44ab5bd8b227471e7",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_thinking_low",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "thinking_low",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 4096,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": "low",
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "0b4f3147ca7c07403676e3c30c76ce0202d46b14195ddbe6234dde2265bcb3f6"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 61,
+            "visible_text_sha256": "b940585fc28d00db55bc17883096f14a3cacb30ef4b013399fe3e1841120a626"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 2984,
+          "raw_sha256": "8cd7f82014557ff3a521e5fc526e8ccf73ee3fc863833b435559b04bbc14aa23",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 38,
+            "total_thought_tokens": 549,
+            "total_tokens": 607,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 9,
+        "request_sha256": "047546eee5c3c82f97ea767ce1ff76a69b435c660136ac2fcf09114ac97ada22",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "8cd7f82014557ff3a521e5fc526e8ccf73ee3fc863833b435559b04bbc14aa23",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_reject_thinking_minimal",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "reject_thinking_minimal",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": "invalid_request",
+          "error_message_sha256": "0c67e8a26bf22fa599288cb888319cff6cd278a3a6e0d31b9eea0f0dac617ebf",
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 400,
+          "matches_catalog_expectation": false,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": false,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": null,
+            "max_output_tokens_requested": 4096,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": null,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": "minimal",
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 0,
+            "thought_signature_sha256": [],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": false,
+            "visible_text_characters": 0,
+            "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 147,
+          "raw_sha256": "f1bcc1c18409bcc053f8f8e5b353b3a80210515433ed281411d2ea10049e8952",
+          "rejection_field": "generation_config.thinking_level",
+          "request_accepted": false,
+          "response_complete": true,
+          "returned_model": null,
+          "runtime_validation_error": "request_failed",
+          "unexpected_acceptance": false,
+          "usage": {}
+        },
+        "ordinal": 10,
+        "request_sha256": "51871cf57dfd5a457cdc2685f3d545b84b0d66c563cac7bdcffeeeed5dcad8e1",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "f1bcc1c18409bcc053f8f8e5b353b3a80210515433ed281411d2ea10049e8952",
+        "status_code": 400
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_thinking_medium",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "thinking_medium",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 4096,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": "medium",
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "85fb63f6768952e6a4f42a76718d91b60af98c4be7990546367f2ffc9bf902ae"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 70,
+            "visible_text_sha256": "a903c1635a73b250b6d051f159b4291d4ae50dda0791a3964b57fce174927197"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 4494,
+          "raw_sha256": "c4324a953d9a625290c5ce59b269ffe505b6e2d6d8fd874b56c4f4e7e7b60f52",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 40,
+            "total_thought_tokens": 949,
+            "total_tokens": 1009,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 11,
+        "request_sha256": "690ef17458fbf54dbc89f9f38d7dbcd1b353fe13a5d884233dcf8a038d4d7ab9",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "c4324a953d9a625290c5ce59b269ffe505b6e2d6d8fd874b56c4f4e7e7b60f52",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_thinking_high",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "thinking_high",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 4096,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": "high",
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "734897165a45224d3a6fa7ab82b68cf455eecad5911015647e68b41d4c5389cd"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 60,
+            "visible_text_sha256": "057bd14b01db20992d29f740f93d376887c0e4ed2872ea7707bab79eb5465a4c"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 3523,
+          "raw_sha256": "50e2c2bb2c2228ebb3afb36db351fee0b8128e43bbe7e2d2139bc08d9b66fa58",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 38,
+            "total_thought_tokens": 522,
+            "total_tokens": 580,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 12,
+        "request_sha256": "7c4be50c7c967cc8885896f6b86f9e6ac179c578418c0583535f79cbe52a0e47",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "50e2c2bb2c2228ebb3afb36db351fee0b8128e43bbe7e2d2139bc08d9b66fa58",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_thinking_summaries_auto",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "thinking_summaries_auto",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "completed",
+            "max_output_tokens_requested": 4096,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": "high",
+            "thinking_summaries_requested": "auto",
+            "thinking_summary_effect_observed": true,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "d90c042ce3982e961aa764965931db8513124c7896900edddf314fc2e425fe5a"
+            ],
+            "thought_summary_characters": 2370,
+            "thought_summary_count": 1,
+            "thought_summary_sha256": [
+              "2cbbb4f25b78c49df2a3c61992cf6bcbd4f5d3cd4d489c8359eb0da354a5ce31"
+            ],
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 61,
+            "visible_text_sha256": "97c344c60cb143a4ccf586c837c74fb2456d8352312ea606361af300629bfd66"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 7831,
+          "raw_sha256": "4b6ef61736886bf57cc85b5b1909e04181fa8052a4c1b7124fd8e316ec6bf3ab",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": null,
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 20,
+            "total_output_tokens": 40,
+            "total_thought_tokens": 894,
+            "total_tokens": 954,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 13,
+        "request_sha256": "580fadaf90fe992f02f2dad99d84881b65aba297d48253f412a97545a53ddae6",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "4b6ef61736886bf57cc85b5b1909e04181fa8052a4c1b7124fd8e316ec6bf3ab",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_tools_auto",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "tools_auto",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "requires_action",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "7b17d78a36875fed92440771d036ccf2236fbaf831392f7f9d86f7bc1127d88f"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "tools": {
+              "call_count": 1,
+              "calls": [
+                {
+                  "arguments_sha256": "a66adbb39c9cd3c47cc3ca6002d05e611f06dbf79add9437f95717923da2f47a",
+                  "call_id_present": true,
+                  "declared": true,
+                  "failed_keywords": [],
+                  "matches_schema": true,
+                  "name": "get_weather",
+                  "schema_checkable": true
+                }
+              ],
+              "direct_text_response": false,
+              "mode": "auto",
+              "mode_observation_matches": true,
+              "schema_adherence_observed": true,
+              "schema_enforcement_proven": false,
+              "tool_execution_performed": false
+            },
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 0,
+            "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 1087,
+          "raw_sha256": "8b4151a4e7256f1e1e430aa570432b72c4860de77cbda7b40c07a6194f6dab0c",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": "interaction_id_missing",
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 58,
+            "total_output_tokens": 16,
+            "total_thought_tokens": 30,
+            "total_tokens": 104,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 14,
+        "request_sha256": "29c3cad80faa97675d36927de6fbfe452fcbbb9a660292cdb7e4fbcd70e0a261",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "8b4151a4e7256f1e1e430aa570432b72c4860de77cbda7b40c07a6194f6dab0c",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_tools_any",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "tools_any",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "requires_action",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "044ba1211a2b776fedb9f9930d2d54ccee6990523107522b77df2925e695f349"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "tools": {
+              "call_count": 1,
+              "calls": [
+                {
+                  "arguments_sha256": "a66adbb39c9cd3c47cc3ca6002d05e611f06dbf79add9437f95717923da2f47a",
+                  "call_id_present": true,
+                  "declared": true,
+                  "failed_keywords": [],
+                  "matches_schema": true,
+                  "name": "get_weather",
+                  "schema_checkable": true
+                }
+              ],
+              "direct_text_response": false,
+              "mode": "any",
+              "mode_observation_matches": true,
+              "schema_adherence_observed": true,
+              "schema_enforcement_proven": false,
+              "tool_execution_performed": false
+            },
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 0,
+            "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 1079,
+          "raw_sha256": "85cae0e8ac956d93db955efdfe9a0637ebb1dd2d37cd4f7d698597270a1ea96e",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": "interaction_id_missing",
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 58,
+            "total_output_tokens": 16,
+            "total_thought_tokens": 30,
+            "total_tokens": 104,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 15,
+        "request_sha256": "98030421cede83cce4f900bb1503e974f95a59a9122ec7d59e074ac8a5bb6f43",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "85cae0e8ac956d93db955efdfe9a0637ebb1dd2d37cd4f7d698597270a1ea96e",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_tools_none",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "tools_none",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": "malformed_tool_call",
+          "error_message_sha256": "0192030c0c9059192fd7388d63385e58ab23bfb59fb359bf7bb4d25c45d0a257",
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 400,
+          "matches_catalog_expectation": false,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": false,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": null,
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": null,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 0,
+            "thought_signature_sha256": [],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "tools": {
+              "call_count": 0,
+              "calls": [],
+              "direct_text_response": false,
+              "mode": "none",
+              "mode_observation_matches": true,
+              "schema_adherence_observed": false,
+              "schema_enforcement_proven": false,
+              "tool_execution_performed": false
+            },
+            "usage_arithmetic_verified": false,
+            "visible_text_characters": 0,
+            "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 265,
+          "raw_sha256": "47bf2457a5e3a8a653b06bfdb4329f82cf76ce98f02803abd99319627c291aad",
+          "rejection_field": null,
+          "request_accepted": false,
+          "response_complete": true,
+          "returned_model": null,
+          "runtime_validation_error": "request_failed",
+          "usage": {}
+        },
+        "ordinal": 16,
+        "request_sha256": "188c745fcd4fc924cbdbbd8017985343d27012cb44da5502208ce2faca7c8911",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "47bf2457a5e3a8a653b06bfdb4329f82cf76ce98f02803abd99319627c291aad",
+        "status_code": 400
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_tools_validated",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "tools_validated",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": null,
+          "error_message_sha256": null,
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 200,
+          "matches_catalog_expectation": true,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": true,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": "requires_action",
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": true,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 1,
+            "thought_signature_sha256": [
+              "d441b0dc23f91cdb61caa8d2ea2f1c2e9120aaf739a359e0163b1452c335d8dd"
+            ],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "tools": {
+              "call_count": 1,
+              "calls": [
+                {
+                  "arguments_sha256": "a66adbb39c9cd3c47cc3ca6002d05e611f06dbf79add9437f95717923da2f47a",
+                  "call_id_present": true,
+                  "declared": true,
+                  "failed_keywords": [],
+                  "matches_schema": true,
+                  "name": "get_weather",
+                  "schema_checkable": true
+                }
+              ],
+              "direct_text_response": false,
+              "mode": "validated",
+              "mode_observation_matches": true,
+              "schema_adherence_observed": true,
+              "schema_enforcement_proven": false,
+              "tool_execution_performed": false
+            },
+            "usage_arithmetic_verified": true,
+            "visible_text_characters": 0,
+            "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 1087,
+          "raw_sha256": "6da55f20edc4197ed2aeb64ff599999dc5c6275eafbd697856317baf11125e09",
+          "rejection_field": null,
+          "request_accepted": true,
+          "response_complete": true,
+          "returned_model": "gemini-3.7-flash",
+          "runtime_validation_error": "interaction_id_missing",
+          "usage": {
+            "total_cached_tokens": 0,
+            "total_input_tokens": 58,
+            "total_output_tokens": 16,
+            "total_thought_tokens": 30,
+            "total_tokens": 104,
+            "total_tool_use_tokens": 0
+          }
+        },
+        "ordinal": 17,
+        "request_sha256": "240d05a5125c772ce0916de63db6c9ddff4ae876764a8ed1af8cd59bec4fd3e3",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "6da55f20edc4197ed2aeb64ff599999dc5c6275eafbd697856317baf11125e09",
+        "status_code": 200
+      },
+      {
+        "case_id": "gemini_3_7_flash_interactions_labels",
+        "client_entered": true,
+        "failure_type": null,
+        "label": "labels",
+        "observation": {
+          "case_behavior_matches": true,
+          "error_code": "invalid_request",
+          "error_message_sha256": "b7f17d6e20397979d08025336030b891bfbeeaacf1153ebc632efcdc7f4b9c4a",
+          "error_status": null,
+          "field_attributed_rejection": false,
+          "full_parameter_effect_verified": false,
+          "http_status": 400,
+          "matches_catalog_expectation": false,
+          "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+          "native_response_verified": false,
+          "new_api_requests": 0,
+          "observations": {
+            "interaction_id_present": false,
+            "interaction_id_required_for_full_json": false,
+            "interaction_id_required_for_stream_verification": false,
+            "interaction_status": null,
+            "labels": {
+              "echo_matches_request": false,
+              "echo_present": false,
+              "metadata_persistence_verified": false
+            },
+            "max_output_tokens_requested": 2048,
+            "output_limit_effect_verified": false,
+            "reasoning_strength_or_ordering_verified": false,
+            "reported_output_plus_thought_within_cap": null,
+            "seed_reproducibility_verified": false,
+            "seed_requested": null,
+            "server_nonretention_verified": false,
+            "stream": {
+              "requested": false
+            },
+            "thinking_level_requested": null,
+            "thinking_summaries_requested": null,
+            "thinking_summary_effect_observed": false,
+            "thought_signature_count": 0,
+            "thought_signature_sha256": [],
+            "thought_summary_characters": 0,
+            "thought_summary_count": 0,
+            "thought_summary_sha256": [],
+            "usage_arithmetic_verified": false,
+            "visible_text_characters": 0,
+            "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "positive_control_verified": true,
+          "raw_bytes": 167,
+          "raw_sha256": "6df5578366cc2028a7a1a45944fa320f16f12df260148c7fd71f12a37a48498f",
+          "rejection_field": "labels",
+          "request_accepted": false,
+          "response_complete": true,
+          "returned_model": null,
+          "runtime_validation_error": "request_failed",
+          "unexpected_acceptance": false,
+          "usage": {}
+        },
+        "ordinal": 18,
+        "request_sha256": "06ee4c3852c9afb27802b96a5b75f41c6da0b2b1503cdf57b37c94626127c0e4",
+        "response_complete": true,
+        "response_redacted": false,
+        "response_sha256": "6df5578366cc2028a7a1a45944fa320f16f12df260148c7fd71f12a37a48498f",
+        "status_code": 400
+      }
+    ],
+    "package_sha256": "d8482c9e9977b45688a62664ce9a1d243f4c09f6fda484b3fdb5ef1ad7b7c50e",
+    "report_retention": "P1M",
+    "request_acceptance_count": 15,
+    "requests_sent": 18,
+    "skipped_cases": [],
+    "terminal_state": "completed",
+    "whole_parameter_effect_matrix_verified": false
+  },
+  "output_budget_adjustments": [
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_basic",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_system_instruction",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 1024,
+      "case_id": "gemini_3_7_flash_interactions_response_format_json",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_stream",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_store_false",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 768,
+      "before": 768,
+      "case_id": "gemini_3_7_flash_interactions_max_output_tokens",
+      "output_limit_case_preserved": true
+    },
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_seed",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_stop_sequences",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 4096,
+      "before": 4096,
+      "case_id": "gemini_3_7_flash_interactions_thinking_low",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 4096,
+      "before": 4096,
+      "case_id": "gemini_3_7_flash_interactions_reject_thinking_minimal",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 4096,
+      "before": 4096,
+      "case_id": "gemini_3_7_flash_interactions_thinking_medium",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 4096,
+      "before": 4096,
+      "case_id": "gemini_3_7_flash_interactions_thinking_high",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 4096,
+      "before": 4096,
+      "case_id": "gemini_3_7_flash_interactions_thinking_summaries_auto",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 1024,
+      "case_id": "gemini_3_7_flash_interactions_tools_auto",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 1024,
+      "case_id": "gemini_3_7_flash_interactions_tools_any",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 1024,
+      "case_id": "gemini_3_7_flash_interactions_tools_none",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 1024,
+      "case_id": "gemini_3_7_flash_interactions_tools_validated",
+      "output_limit_case_preserved": false
+    },
+    {
+      "after": 2048,
+      "before": 512,
+      "case_id": "gemini_3_7_flash_interactions_labels",
+      "output_limit_case_preserved": false
+    }
+  ],
+  "owned_artifacts_verified": 59,
+  "parameter_observations": [
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_basic",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_01_attempt.json",
+          "sha256": "727c427940b2426d54b8f23d04fe3fb112c75b39370faeab85fe72cda1854aed"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_01_response.txt",
+          "sha256": "ec7bcc083d1117102bdb880ca68813bc1ab81775c8f96d952c506f36c80348db"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_01_observation.json",
+          "sha256": "73edd1e1d49baa70216cdeb0dfa59f1b293ce9567bb45baad55ad9d481f84d9c"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "basic",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 1,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "aeb84ed61f182261c8fdf9dbc289efda447edb070e3c919fb283c8c601c2d567"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 58,
+          "visible_text_sha256": "3002af731e33580c088823ba809c8302b82dd19c88278bba2ba226237180014c"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 4227,
+        "raw_sha256": "ec7bcc083d1117102bdb880ca68813bc1ab81775c8f96d952c506f36c80348db",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 40,
+          "total_thought_tokens": 853,
+          "total_tokens": 913,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 1,
+      "parameter_fields": [
+        "model",
+        "input"
+      ],
+      "parameter_label": "input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_basic",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "49c9aa3ef337c02106e98ff38c9371de8cf13ad3ff272dbb73fcca4aac310182",
+      "response_complete": true,
+      "response_sha256": "ec7bcc083d1117102bdb880ca68813bc1ab81775c8f96d952c506f36c80348db",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_system_instruction",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_02_attempt.json",
+          "sha256": "1d07da47440e4964a87fe77159a33ddaed81786a916174c27f361490ad3ac747"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_02_response.txt",
+          "sha256": "8bd3db6421d7500f4c1c083c2371bbcd7ed66bff290f360744f9c98f54750ace"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_02_observation.json",
+          "sha256": "a4d27d46966192687aff4cae15b1c4f1451ddc9e882cafdcf968942044485367"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "system_instruction",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 2,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "e5c780898f782831998acb45e9e698a0409cbe70ee1a577ca68488a5f82fe152"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 71,
+          "visible_text_sha256": "4998111d75643ee4737fc494751b0b94072cc369dd9a2c212d2814b82b5667a7"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 3264,
+        "raw_sha256": "8bd3db6421d7500f4c1c083c2371bbcd7ed66bff290f360744f9c98f54750ace",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 30,
+          "total_output_tokens": 45,
+          "total_thought_tokens": 484,
+          "total_tokens": 559,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 2,
+      "parameter_fields": [
+        "system_instruction"
+      ],
+      "parameter_label": "input, response.id, response.model, response.status, response.steps, response.usage, system_instruction",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_system_instruction",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "1d9055f376581a1dbf0c9e82d899544482de0cb156fa7598a4cae8678dd00760",
+      "response_complete": true,
+      "response_sha256": "8bd3db6421d7500f4c1c083c2371bbcd7ed66bff290f360744f9c98f54750ace",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_response_format_json",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_03_attempt.json",
+          "sha256": "3aed63091aa3724855c1cf27c84d651ec474c63d5b678113055ecc79c6aadb85"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_03_response.txt",
+          "sha256": "3dd050b2aa4f88cdb532a77d88455eec2a35504e6b4cd756f73ff5d673c1e04f"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_03_observation.json",
+          "sha256": "b933a80d04550a04b826a1aec8774e4b3db1f7d3940c676c7575bf8552b6b95a"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "response_format_json",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 3,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "json": {
+            "failed_keywords": [],
+            "matches_schema": true,
+            "parse_valid": true,
+            "schema_checkable": true,
+            "schema_enforcement_proven": false
+          },
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "524e88dfc697bce082909986e3b941dfd31e6eb7fb5c4429664f02c1cbf8efd3"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 317,
+          "visible_text_sha256": "ddc99d85adf50f79d5d7ad752c5aa89eb89d311364562f7ab07f0fbf88ab4d86"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 3571,
+        "raw_sha256": "3dd050b2aa4f88cdb532a77d88455eec2a35504e6b4cd756f73ff5d673c1e04f",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 60,
+          "total_output_tokens": 164,
+          "total_thought_tokens": 368,
+          "total_tokens": 592,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 3,
+      "parameter_fields": [
+        "response_format.type",
+        "response_format.mime_type",
+        "response_format.schema"
+      ],
+      "parameter_label": "input, response.id, response.model, response.status, response.steps, response.usage, response_format",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_response_format_json",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "cf9fd551eabd9d9b1a78be211ffe8a53e5113164266d4412a7fbcc68cc28d192",
+      "response_complete": true,
+      "response_sha256": "3dd050b2aa4f88cdb532a77d88455eec2a35504e6b4cd756f73ff5d673c1e04f",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_stream",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_04_attempt.json",
+          "sha256": "5ce8afe53ec7d8417042f5ebb0c8456059189a18a2a889ace2297b8f5c5518d2"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_04_response.txt",
+          "sha256": "32578bc529b242969338225bc611541c9d39f74f8544e2a7baa5ca22c2a0b04f"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_04_observation.json",
+          "sha256": "57aa99e5346252c219c1963f2376fcb14d43ecfe576c96c45ac70779f9549390"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "stream",
+      "observed": {
+        "catalog_expectation_matched": false,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "interaction_id_missing",
+        "sample_pass": false
+      },
+      "ordinal": 4,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": false,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": false,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": true,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "completed_event_seen": true,
+            "created_event_seen": true,
+            "data_after_done": false,
+            "done_count": 1,
+            "done_seen": true,
+            "event_count": 11,
+            "event_id_missing_count": 11,
+            "event_id_observed_count": 0,
+            "event_ids_all_observable": false,
+            "event_types": {
+              "interaction.completed": 1,
+              "interaction.created": 1,
+              "interaction.status_update": 1,
+              "step.delta": 4,
+              "step.start": 2,
+              "step.stop": 2
+            },
+            "events_complete": true,
+            "interaction_id_observed": false,
+            "interaction_id_sha256": [],
+            "interaction_ids_consistent": false,
+            "lifecycle_event_count": 3,
+            "lifecycle_identity_verified": false,
+            "lifecycle_interaction_id_missing_count": 3,
+            "requested": true
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "a1e78b4aa01ce4d72842eaaad8e4639a52b49057135f44e1efcb9a998bb0ce53"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 73,
+          "visible_text_sha256": "85b5a8a920807e130949d59d64b71a956c8cc5a89a50e59edc393b2b5ad343cc"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 4537,
+        "raw_sha256": "32578bc529b242969338225bc611541c9d39f74f8544e2a7baa5ca22c2a0b04f",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": "interaction_id_missing",
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 43,
+          "total_thought_tokens": 446,
+          "total_tokens": 509,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 4,
+      "parameter_fields": [
+        "stream"
+      ],
+      "parameter_label": "input, response.id, response.model, response.status, response.steps, response.usage, stream",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_stream",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "bb706ff94dd5378a37b879485d77612440edc0c0461471f4772fb1f63ec035f5",
+      "response_complete": true,
+      "response_sha256": "32578bc529b242969338225bc611541c9d39f74f8544e2a7baa5ca22c2a0b04f",
+      "response_storage_format": "sse_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_store_false",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_05_attempt.json",
+          "sha256": "3ad4857fb0dcb1242649a926ff6986129505f8e2acf676c27347e120d7ac208f"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_05_response.txt",
+          "sha256": "647c82f2d75f4b1a6d1562cd5f044bf0305500e1b932b8fb2811b067eae05073"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_05_observation.json",
+          "sha256": "17cbe3bffc9a6aa4ea5c790be9cd24bd000c0d91a240ed9d798941d1376d363c"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "store_false",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 5,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "63b7ad4ae1eaaee084c5e86ccc10ce4e4035bdd731ba70518075e79230fe9796"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 66,
+          "visible_text_sha256": "3de31e815bde448f753dcdc7d24872e6068c861a9eb32205ea1d9357f5944abd"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 3565,
+        "raw_sha256": "647c82f2d75f4b1a6d1562cd5f044bf0305500e1b932b8fb2811b067eae05073",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 38,
+          "total_thought_tokens": 724,
+          "total_tokens": 782,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 5,
+      "parameter_fields": [
+        "store"
+      ],
+      "parameter_label": "input, response.id, response.model, response.status, response.steps, response.usage, store",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_store_false",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "49c9aa3ef337c02106e98ff38c9371de8cf13ad3ff272dbb73fcca4aac310182",
+      "response_complete": true,
+      "response_sha256": "647c82f2d75f4b1a6d1562cd5f044bf0305500e1b932b8fb2811b067eae05073",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_max_output_tokens",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_06_attempt.json",
+          "sha256": "2bd79b6e7acc1c63aa7de48857d6d4d00eef56542f676ac1c30b3dae2eb5918e"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_06_response.txt",
+          "sha256": "118c0db681c741a69621b3f604ab426e7c7007fb77e085a16ac5a7199b755c52"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_06_observation.json",
+          "sha256": "7f76e8dec979a524f77268f9093fb6012c8da3645d85718cbe4cd6f83eb57ad3"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "max_output_tokens",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 6,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 768,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "bcce24efbd674a8c634dc29c849c4b4ec03f1623a7eaf1a4d73eb60aac1d348c"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 62,
+          "visible_text_sha256": "06491213ec782390bd63a64f998a503f0888f9c81aeb53b68c567cb9a02f75cb"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 4069,
+        "raw_sha256": "118c0db681c741a69621b3f604ab426e7c7007fb77e085a16ac5a7199b755c52",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 36,
+          "total_thought_tokens": 653,
+          "total_tokens": 709,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 6,
+      "parameter_fields": [
+        "generation_config.max_output_tokens"
+      ],
+      "parameter_label": "generation_config.max_output_tokens, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_max_output_tokens",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "5b0bbde6c8365f2554ab0809ddc2e2e76388cd5eb994702f81cf1046499edb94",
+      "response_complete": true,
+      "response_sha256": "118c0db681c741a69621b3f604ab426e7c7007fb77e085a16ac5a7199b755c52",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_seed",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_07_attempt.json",
+          "sha256": "98878053737067debceb5a7c1a05d2fb4129866883fa98e3965acbbd21e9091c"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_07_response.txt",
+          "sha256": "a2f7c44a5da9917efd00f1b1d023929920f4941855ae022ae17a6e6349446606"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_07_observation.json",
+          "sha256": "f64780202ed9eb0f32b4c9ec48e38ae55d07ea203b42cb79b44d4c5f419c7961"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "seed",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 7,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": 123456789,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "7b6807fbe171eacb584e612df497787b9ac0a0b32962e628acd75a156f681a47"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 65,
+          "visible_text_sha256": "4883190744d34851d6db291021352a39ef134409ce8bd316d285588f94ba0638"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 4118,
+        "raw_sha256": "a2f7c44a5da9917efd00f1b1d023929920f4941855ae022ae17a6e6349446606",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 38,
+          "total_thought_tokens": 681,
+          "total_tokens": 739,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 7,
+      "parameter_fields": [
+        "generation_config.seed"
+      ],
+      "parameter_label": "generation_config.seed, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_seed",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "8adebb47045a0b6eb675a424b1baef40372f75c4feda400909e4422117f72f92",
+      "response_complete": true,
+      "response_sha256": "a2f7c44a5da9917efd00f1b1d023929920f4941855ae022ae17a6e6349446606",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_stop_sequences",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_08_attempt.json",
+          "sha256": "59af56fed0aa9b343597460684cfd22368771ccbbe907677dea1d1967ebb847d"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_08_response.txt",
+          "sha256": "44d4fb20cdda263b212d25699e7863d1b2ff34ee7b00b0b44ab5bd8b227471e7"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_08_observation.json",
+          "sha256": "3db713eee847d9823ec1c691b50b2a13829735706113b9c4a3f31005cb687749"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "stop_sequences",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 8,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stop": {
+            "contains_stop_marker": false,
+            "contains_tail": false,
+            "matches_expected_visible_output": true,
+            "paired_no_stop_control_verified": false,
+            "stop_effect_causally_verified": false
+          },
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "f244005a013caef47330b015a6267495d9ab5081ca01acfc86c08db4b8d29deb"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 14,
+          "visible_text_sha256": "872e505835bdde6202773d3dc80f2669d1416fe620e64c136677ce4f88b1f314"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 1418,
+        "raw_sha256": "44d4fb20cdda263b212d25699e7863d1b2ff34ee7b00b0b44ab5bd8b227471e7",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 23,
+          "total_output_tokens": 6,
+          "total_thought_tokens": 112,
+          "total_tokens": 141,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 8,
+      "parameter_fields": [
+        "generation_config.stop_sequences"
+      ],
+      "parameter_label": "generation_config.stop_sequences, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_stop_sequences",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "169ed1e9c73f63c85aeffcc6795f48906c1f201599a75299f9738c49cd984e71",
+      "response_complete": true,
+      "response_sha256": "44d4fb20cdda263b212d25699e7863d1b2ff34ee7b00b0b44ab5bd8b227471e7",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_thinking_low",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_09_attempt.json",
+          "sha256": "219a916ebf627678031557609f26a7d7e05c382fa46ac203de4a5b7d456c0e12"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_09_response.txt",
+          "sha256": "8cd7f82014557ff3a521e5fc526e8ccf73ee3fc863833b435559b04bbc14aa23"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_09_observation.json",
+          "sha256": "9dc7e757f873d163718412edb3c4ae5157b2ca58cc6592d1c496e393f3b45763"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "thinking_low",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 9,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 4096,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": "low",
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "0b4f3147ca7c07403676e3c30c76ce0202d46b14195ddbe6234dde2265bcb3f6"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 61,
+          "visible_text_sha256": "b940585fc28d00db55bc17883096f14a3cacb30ef4b013399fe3e1841120a626"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 2984,
+        "raw_sha256": "8cd7f82014557ff3a521e5fc526e8ccf73ee3fc863833b435559b04bbc14aa23",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 38,
+          "total_thought_tokens": 549,
+          "total_tokens": 607,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 10,
+      "parameter_fields": [
+        "generation_config.thinking_level"
+      ],
+      "parameter_label": "generation_config.thinking_level.low, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_thinking_low",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "047546eee5c3c82f97ea767ce1ff76a69b435c660136ac2fcf09114ac97ada22",
+      "response_complete": true,
+      "response_sha256": "8cd7f82014557ff3a521e5fc526e8ccf73ee3fc863833b435559b04bbc14aa23",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_reject_thinking_minimal",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "unsupported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_10_attempt.json",
+          "sha256": "52fd7a70d25e862fbd73bd5098a6c4ffa16e626debf7bb27f63ed9d0748d1901"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_10_response.txt",
+          "sha256": "f1bcc1c18409bcc053f8f8e5b353b3a80210515433ed281411d2ea10049e8952"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_10_observation.json",
+          "sha256": "201f0d922ab20e76e6dadb8d5eab92ecfed009128bfdbb8993c4b5239775558b"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 400,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "reject_thinking_minimal",
+      "observed": {
+        "catalog_expectation_matched": false,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "request_failed",
+        "sample_pass": false
+      },
+      "ordinal": 10,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": "invalid_request",
+        "error_message_sha256": "0c67e8a26bf22fa599288cb888319cff6cd278a3a6e0d31b9eea0f0dac617ebf",
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 400,
+        "matches_catalog_expectation": false,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": false,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": null,
+          "max_output_tokens_requested": 4096,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": null,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": "minimal",
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 0,
+          "thought_signature_sha256": [],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": false,
+          "visible_text_characters": 0,
+          "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 147,
+        "raw_sha256": "f1bcc1c18409bcc053f8f8e5b353b3a80210515433ed281411d2ea10049e8952",
+        "rejection_field": "generation_config.thinking_level",
+        "request_accepted": false,
+        "response_complete": true,
+        "returned_model": null,
+        "runtime_validation_error": "request_failed",
+        "unexpected_acceptance": false,
+        "usage": {}
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 9,
+      "parameter_fields": [
+        "generation_config.thinking_level"
+      ],
+      "parameter_label": "generation_config.thinking_level.minimal, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": "gemini_3_7_flash_interactions_thinking_low",
+      "profile": "gemini_3_7_flash_interactions_reject_thinking_minimal",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "51871cf57dfd5a457cdc2685f3d545b84b0d66c563cac7bdcffeeeed5dcad8e1",
+      "response_complete": true,
+      "response_sha256": "f1bcc1c18409bcc053f8f8e5b353b3a80210515433ed281411d2ea10049e8952",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_thinking_medium",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_11_attempt.json",
+          "sha256": "9c13a05574781632fc2e936a098f0eafa8868f0c5f7c57651a854cc6111188bc"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_11_response.txt",
+          "sha256": "c4324a953d9a625290c5ce59b269ffe505b6e2d6d8fd874b56c4f4e7e7b60f52"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_11_observation.json",
+          "sha256": "f528170f5310bf997bc116cd7c9cce317da7858dfcaf319d376c84199cd061f3"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "thinking_medium",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 11,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 4096,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": "medium",
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "85fb63f6768952e6a4f42a76718d91b60af98c4be7990546367f2ffc9bf902ae"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 70,
+          "visible_text_sha256": "a903c1635a73b250b6d051f159b4291d4ae50dda0791a3964b57fce174927197"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 4494,
+        "raw_sha256": "c4324a953d9a625290c5ce59b269ffe505b6e2d6d8fd874b56c4f4e7e7b60f52",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 40,
+          "total_thought_tokens": 949,
+          "total_tokens": 1009,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 11,
+      "parameter_fields": [
+        "generation_config.thinking_level"
+      ],
+      "parameter_label": "generation_config.thinking_level.medium, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_thinking_medium",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "690ef17458fbf54dbc89f9f38d7dbcd1b353fe13a5d884233dcf8a038d4d7ab9",
+      "response_complete": true,
+      "response_sha256": "c4324a953d9a625290c5ce59b269ffe505b6e2d6d8fd874b56c4f4e7e7b60f52",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_thinking_high",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_12_attempt.json",
+          "sha256": "4d429abd4e9abcf6803412617b080545af787aa816cf9b192e5ffb5cec452d40"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_12_response.txt",
+          "sha256": "50e2c2bb2c2228ebb3afb36db351fee0b8128e43bbe7e2d2139bc08d9b66fa58"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_12_observation.json",
+          "sha256": "4712c4bcf88dd030d931a3646232ea0f1fb60a0ea3a4cbc6de33accd634ff5d5"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "thinking_high",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 12,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 4096,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": "high",
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "734897165a45224d3a6fa7ab82b68cf455eecad5911015647e68b41d4c5389cd"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 60,
+          "visible_text_sha256": "057bd14b01db20992d29f740f93d376887c0e4ed2872ea7707bab79eb5465a4c"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 3523,
+        "raw_sha256": "50e2c2bb2c2228ebb3afb36db351fee0b8128e43bbe7e2d2139bc08d9b66fa58",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 38,
+          "total_thought_tokens": 522,
+          "total_tokens": 580,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 12,
+      "parameter_fields": [
+        "generation_config.thinking_level"
+      ],
+      "parameter_label": "generation_config.thinking_level.high, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_thinking_high",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "7c4be50c7c967cc8885896f6b86f9e6ac179c578418c0583535f79cbe52a0e47",
+      "response_complete": true,
+      "response_sha256": "50e2c2bb2c2228ebb3afb36db351fee0b8128e43bbe7e2d2139bc08d9b66fa58",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_thinking_summaries_auto",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_13_attempt.json",
+          "sha256": "38335a842a3b2539a476d403b89f7f74abfb8bfa0688f60fbf28333557de3874"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_13_response.txt",
+          "sha256": "4b6ef61736886bf57cc85b5b1909e04181fa8052a4c1b7124fd8e316ec6bf3ab"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_13_observation.json",
+          "sha256": "0a08ff65cad3b0d23f5c6761ac40237f032a1c9677171ab3b53b0a793035abe3"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "thinking_summaries_auto",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": null,
+        "sample_pass": true
+      },
+      "ordinal": 13,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "completed",
+          "max_output_tokens_requested": 4096,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": "high",
+          "thinking_summaries_requested": "auto",
+          "thinking_summary_effect_observed": true,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "d90c042ce3982e961aa764965931db8513124c7896900edddf314fc2e425fe5a"
+          ],
+          "thought_summary_characters": 2370,
+          "thought_summary_count": 1,
+          "thought_summary_sha256": [
+            "2cbbb4f25b78c49df2a3c61992cf6bcbd4f5d3cd4d489c8359eb0da354a5ce31"
+          ],
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 61,
+          "visible_text_sha256": "97c344c60cb143a4ccf586c837c74fb2456d8352312ea606361af300629bfd66"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 7831,
+        "raw_sha256": "4b6ef61736886bf57cc85b5b1909e04181fa8052a4c1b7124fd8e316ec6bf3ab",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": null,
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 20,
+          "total_output_tokens": 40,
+          "total_thought_tokens": 894,
+          "total_tokens": 954,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 13,
+      "parameter_fields": [
+        "generation_config.thinking_level",
+        "generation_config.thinking_summaries"
+      ],
+      "parameter_label": "generation_config.thinking_summaries, input, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_thinking_summaries_auto",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "580fadaf90fe992f02f2dad99d84881b65aba297d48253f412a97545a53ddae6",
+      "response_complete": true,
+      "response_sha256": "4b6ef61736886bf57cc85b5b1909e04181fa8052a4c1b7124fd8e316ec6bf3ab",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_tools_auto",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_14_attempt.json",
+          "sha256": "3c0f21db6582280a2335f9ae593c912b95c4576c9b68367d57e130e1dea585c4"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_14_response.txt",
+          "sha256": "8b4151a4e7256f1e1e430aa570432b72c4860de77cbda7b40c07a6194f6dab0c"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_14_observation.json",
+          "sha256": "b7d96dd06caec40d888de82bff60596d9d50730d5c68b9858ea8b2dbb3344ebb"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "tools_auto",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "interaction_id_missing",
+        "sample_pass": true
+      },
+      "ordinal": 14,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "requires_action",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "7b17d78a36875fed92440771d036ccf2236fbaf831392f7f9d86f7bc1127d88f"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "tools": {
+            "call_count": 1,
+            "calls": [
+              {
+                "arguments_sha256": "a66adbb39c9cd3c47cc3ca6002d05e611f06dbf79add9437f95717923da2f47a",
+                "call_id_present": true,
+                "declared": true,
+                "failed_keywords": [],
+                "matches_schema": true,
+                "name": "get_weather",
+                "schema_checkable": true
+              }
+            ],
+            "direct_text_response": false,
+            "mode": "auto",
+            "mode_observation_matches": true,
+            "schema_adherence_observed": true,
+            "schema_enforcement_proven": false,
+            "tool_execution_performed": false
+          },
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 0,
+          "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 1087,
+        "raw_sha256": "8b4151a4e7256f1e1e430aa570432b72c4860de77cbda7b40c07a6194f6dab0c",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": "interaction_id_missing",
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 58,
+          "total_output_tokens": 16,
+          "total_thought_tokens": 30,
+          "total_tokens": 104,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 14,
+      "parameter_fields": [
+        "tools",
+        "generation_config.tool_choice"
+      ],
+      "parameter_label": "generation_config.tool_choice, input, response.id, response.model, response.status, response.steps, response.usage, tools",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_tools_auto",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "29c3cad80faa97675d36927de6fbfe452fcbbb9a660292cdb7e4fbcd70e0a261",
+      "response_complete": true,
+      "response_sha256": "8b4151a4e7256f1e1e430aa570432b72c4860de77cbda7b40c07a6194f6dab0c",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_tools_any",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_15_attempt.json",
+          "sha256": "a20c8d31dc9959d75dde1059c5c6608d8d638ee735bbd27aa24fe146e40ee822"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_15_response.txt",
+          "sha256": "85cae0e8ac956d93db955efdfe9a0637ebb1dd2d37cd4f7d698597270a1ea96e"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_15_observation.json",
+          "sha256": "338faf388f703f4ec642c26028d98d64b3d78be45658c7b1509ac88d56a2a748"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "tools_any",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "interaction_id_missing",
+        "sample_pass": true
+      },
+      "ordinal": 15,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "requires_action",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "044ba1211a2b776fedb9f9930d2d54ccee6990523107522b77df2925e695f349"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "tools": {
+            "call_count": 1,
+            "calls": [
+              {
+                "arguments_sha256": "a66adbb39c9cd3c47cc3ca6002d05e611f06dbf79add9437f95717923da2f47a",
+                "call_id_present": true,
+                "declared": true,
+                "failed_keywords": [],
+                "matches_schema": true,
+                "name": "get_weather",
+                "schema_checkable": true
+              }
+            ],
+            "direct_text_response": false,
+            "mode": "any",
+            "mode_observation_matches": true,
+            "schema_adherence_observed": true,
+            "schema_enforcement_proven": false,
+            "tool_execution_performed": false
+          },
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 0,
+          "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 1079,
+        "raw_sha256": "85cae0e8ac956d93db955efdfe9a0637ebb1dd2d37cd4f7d698597270a1ea96e",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": "interaction_id_missing",
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 58,
+          "total_output_tokens": 16,
+          "total_thought_tokens": 30,
+          "total_tokens": 104,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 15,
+      "parameter_fields": [
+        "tools",
+        "generation_config.tool_choice"
+      ],
+      "parameter_label": "generation_config.tool_choice, input, response.id, response.model, response.status, response.steps, response.usage, tools",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_tools_any",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "98030421cede83cce4f900bb1503e974f95a59a9122ec7d59e074ac8a5bb6f43",
+      "response_complete": true,
+      "response_sha256": "85cae0e8ac956d93db955efdfe9a0637ebb1dd2d37cd4f7d698597270a1ea96e",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_tools_none",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_16_attempt.json",
+          "sha256": "97c58573be8257abb2f933d5134d6ba4cb0cb334fcd81618513c510ab7ccd452"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_16_response.txt",
+          "sha256": "47bf2457a5e3a8a653b06bfdb4329f82cf76ce98f02803abd99319627c291aad"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_16_observation.json",
+          "sha256": "3ef03e316d4c5f487c8e44aad2757a37bc7984efab33a6753754e6be3ab21dcc"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 400,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "tools_none",
+      "observed": {
+        "catalog_expectation_matched": false,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "request_failed",
+        "sample_pass": false
+      },
+      "ordinal": 16,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": "malformed_tool_call",
+        "error_message_sha256": "0192030c0c9059192fd7388d63385e58ab23bfb59fb359bf7bb4d25c45d0a257",
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 400,
+        "matches_catalog_expectation": false,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": false,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": null,
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": null,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 0,
+          "thought_signature_sha256": [],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "tools": {
+            "call_count": 0,
+            "calls": [],
+            "direct_text_response": false,
+            "mode": "none",
+            "mode_observation_matches": true,
+            "schema_adherence_observed": false,
+            "schema_enforcement_proven": false,
+            "tool_execution_performed": false
+          },
+          "usage_arithmetic_verified": false,
+          "visible_text_characters": 0,
+          "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 265,
+        "raw_sha256": "47bf2457a5e3a8a653b06bfdb4329f82cf76ce98f02803abd99319627c291aad",
+        "rejection_field": null,
+        "request_accepted": false,
+        "response_complete": true,
+        "returned_model": null,
+        "runtime_validation_error": "request_failed",
+        "usage": {}
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 16,
+      "parameter_fields": [
+        "tools",
+        "generation_config.tool_choice"
+      ],
+      "parameter_label": "generation_config.tool_choice, input, response.id, response.model, response.status, response.steps, response.usage, tools",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_tools_none",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "188c745fcd4fc924cbdbbd8017985343d27012cb44da5502208ce2faca7c8911",
+      "response_complete": true,
+      "response_sha256": "47bf2457a5e3a8a653b06bfdb4329f82cf76ce98f02803abd99319627c291aad",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_tools_validated",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "supported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_17_attempt.json",
+          "sha256": "c1b1af78d6ca68a95e24ba682bc1baf30fbdb836c76c04f812328fcf99aabb83"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_17_response.txt",
+          "sha256": "6da55f20edc4197ed2aeb64ff599999dc5c6275eafbd697856317baf11125e09"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_17_observation.json",
+          "sha256": "49bc17859d63be52c9d1ef4b23ae467ac70a4e2dfb4f6bdeab2c1e3f48a8d634"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 200,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "tools_validated",
+      "observed": {
+        "catalog_expectation_matched": true,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "interaction_id_missing",
+        "sample_pass": true
+      },
+      "ordinal": 17,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": null,
+        "error_message_sha256": null,
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 200,
+        "matches_catalog_expectation": true,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": true,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": "requires_action",
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": true,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 1,
+          "thought_signature_sha256": [
+            "d441b0dc23f91cdb61caa8d2ea2f1c2e9120aaf739a359e0163b1452c335d8dd"
+          ],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "tools": {
+            "call_count": 1,
+            "calls": [
+              {
+                "arguments_sha256": "a66adbb39c9cd3c47cc3ca6002d05e611f06dbf79add9437f95717923da2f47a",
+                "call_id_present": true,
+                "declared": true,
+                "failed_keywords": [],
+                "matches_schema": true,
+                "name": "get_weather",
+                "schema_checkable": true
+              }
+            ],
+            "direct_text_response": false,
+            "mode": "validated",
+            "mode_observation_matches": true,
+            "schema_adherence_observed": true,
+            "schema_enforcement_proven": false,
+            "tool_execution_performed": false
+          },
+          "usage_arithmetic_verified": true,
+          "visible_text_characters": 0,
+          "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 1087,
+        "raw_sha256": "6da55f20edc4197ed2aeb64ff599999dc5c6275eafbd697856317baf11125e09",
+        "rejection_field": null,
+        "request_accepted": true,
+        "response_complete": true,
+        "returned_model": "gemini-3.7-flash",
+        "runtime_validation_error": "interaction_id_missing",
+        "usage": {
+          "total_cached_tokens": 0,
+          "total_input_tokens": 58,
+          "total_output_tokens": 16,
+          "total_thought_tokens": 30,
+          "total_tokens": 104,
+          "total_tool_use_tokens": 0
+        }
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 17,
+      "parameter_fields": [
+        "tools",
+        "generation_config.tool_choice"
+      ],
+      "parameter_label": "generation_config.tool_choice, input, response.id, response.model, response.status, response.steps, response.usage, tools",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_tools_validated",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "240d05a5125c772ce0916de63db6c9ddff4ae876764a8ed1af8cd59bec4fd3e3",
+      "response_complete": true,
+      "response_sha256": "6da55f20edc4197ed2aeb64ff599999dc5c6275eafbd697856317baf11125e09",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    },
+    {
+      "api_form": "gemini_interactions",
+      "api_version": "v1beta",
+      "case_id": "gemini_3_7_flash_interactions_labels",
+      "client_entered": true,
+      "contract_id": "gemini_3_7_flash_interactions",
+      "current_expectation": "unsupported",
+      "decoder_error_type": null,
+      "dispatch_state": "sent",
+      "evidence_links": [
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_18_attempt.json",
+          "sha256": "911bc55780f68143aa7174bfedcd626a9dd1391e914370151787154c55c41ea3"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_18_response.txt",
+          "sha256": "6df5578366cc2028a7a1a45944fa320f16f12df260148c7fd71f12a37a48498f"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_18_observation.json",
+          "sha256": "d5b6b0dbaf44e67d9add4fb40ef0931f61909b0c6d0545bfb34222e88c134c6e"
+        },
+        {
+          "expires_at": "2026-10-09T21:33:20Z",
+          "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+          "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+        }
+      ],
+      "evidence_requirement": "effect",
+      "execution_provider": "gemini",
+      "failure_type": null,
+      "google_direct": true,
+      "http_status": 400,
+      "interface_id": "text/google_ai_studio/gemini/gemini-3.7-flash#gemini-interactions-default",
+      "label": "labels",
+      "observed": {
+        "catalog_expectation_matched": false,
+        "pass_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "runtime_validation_error": "request_failed",
+        "sample_pass": false
+      },
+      "ordinal": 18,
+      "ordinary_mpdb_gates_changed": false,
+      "original_evaluation": {
+        "case_behavior_matches": true,
+        "error_code": "invalid_request",
+        "error_message_sha256": "b7f17d6e20397979d08025336030b891bfbeeaacf1153ebc632efcdc7f4b9c4a",
+        "error_status": null,
+        "field_attributed_rejection": false,
+        "full_parameter_effect_verified": false,
+        "http_status": 400,
+        "matches_catalog_expectation": false,
+        "matches_catalog_expectation_scope": "native acceptance plus deterministic case checks, or attributed rejection with positive control",
+        "native_response_verified": false,
+        "new_api_requests": 0,
+        "observations": {
+          "interaction_id_present": false,
+          "interaction_id_required_for_full_json": false,
+          "interaction_id_required_for_stream_verification": false,
+          "interaction_status": null,
+          "labels": {
+            "echo_matches_request": false,
+            "echo_present": false,
+            "metadata_persistence_verified": false
+          },
+          "max_output_tokens_requested": 2048,
+          "output_limit_effect_verified": false,
+          "reasoning_strength_or_ordering_verified": false,
+          "reported_output_plus_thought_within_cap": null,
+          "seed_reproducibility_verified": false,
+          "seed_requested": null,
+          "server_nonretention_verified": false,
+          "stream": {
+            "requested": false
+          },
+          "thinking_level_requested": null,
+          "thinking_summaries_requested": null,
+          "thinking_summary_effect_observed": false,
+          "thought_signature_count": 0,
+          "thought_signature_sha256": [],
+          "thought_summary_characters": 0,
+          "thought_summary_count": 0,
+          "thought_summary_sha256": [],
+          "usage_arithmetic_verified": false,
+          "visible_text_characters": 0,
+          "visible_text_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "positive_control_verified": true,
+        "raw_bytes": 167,
+        "raw_sha256": "6df5578366cc2028a7a1a45944fa320f16f12df260148c7fd71f12a37a48498f",
+        "rejection_field": "labels",
+        "request_accepted": false,
+        "response_complete": true,
+        "returned_model": null,
+        "runtime_validation_error": "request_failed",
+        "unexpected_acceptance": false,
+        "usage": {}
+      },
+      "original_evaluation_replayed": true,
+      "original_ordinal": 18,
+      "parameter_fields": [
+        "labels"
+      ],
+      "parameter_label": "input, labels, response.id, response.model, response.status, response.steps, response.usage",
+      "positive_control_case_id": null,
+      "profile": "gemini_3_7_flash_interactions_labels",
+      "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+      "request_model_id": "gemini-3.7-flash",
+      "request_sha256": "06ee4c3852c9afb27802b96a5b75f41c6da0b2b1503cdf57b37c94626127c0e4",
+      "response_complete": true,
+      "response_sha256": "6df5578366cc2028a7a1a45944fa320f16f12df260148c7fd71f12a37a48498f",
+      "response_storage_format": "json_bytes",
+      "scope": "One frozen source/form/profile observation; no complete parameter-effect certification.",
+      "source_id": "google_ai_studio",
+      "whole_parameter_effect_matrix_verified": false
+    }
+  ],
+  "parent_fact_rewritten": false,
+  "parent_low_budget_fact": {
+    "not_sent_cases": 17,
+    "package_canonical_sha256": "066f1a5190877dcdea1203874b17bf83852975f61e3189b7ec4205b29f00a65e",
+    "path": "references/gemini_interactions_parameter_facts_20260909.json",
+    "requests_sent": 1,
+    "sha256": "661185688115ba67eb78d6bbdc445e001fdcd3316e546bbd06f1bbd77804edd8"
+  },
+  "planned_requests": 18,
+  "profile_id": "text/google_ai_studio/gemini/gemini-3.7-flash",
+  "raw_artifacts": [
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_01_attempt.json",
+      "sha256": "727c427940b2426d54b8f23d04fe3fb112c75b39370faeab85fe72cda1854aed"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_01_observation.json",
+      "sha256": "73edd1e1d49baa70216cdeb0dfa59f1b293ce9567bb45baad55ad9d481f84d9c"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_01_response.txt",
+      "sha256": "ec7bcc083d1117102bdb880ca68813bc1ab81775c8f96d952c506f36c80348db"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_02_attempt.json",
+      "sha256": "1d07da47440e4964a87fe77159a33ddaed81786a916174c27f361490ad3ac747"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_02_observation.json",
+      "sha256": "a4d27d46966192687aff4cae15b1c4f1451ddc9e882cafdcf968942044485367"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_02_response.txt",
+      "sha256": "8bd3db6421d7500f4c1c083c2371bbcd7ed66bff290f360744f9c98f54750ace"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_03_attempt.json",
+      "sha256": "3aed63091aa3724855c1cf27c84d651ec474c63d5b678113055ecc79c6aadb85"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_03_observation.json",
+      "sha256": "b933a80d04550a04b826a1aec8774e4b3db1f7d3940c676c7575bf8552b6b95a"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_03_response.txt",
+      "sha256": "3dd050b2aa4f88cdb532a77d88455eec2a35504e6b4cd756f73ff5d673c1e04f"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_04_attempt.json",
+      "sha256": "5ce8afe53ec7d8417042f5ebb0c8456059189a18a2a889ace2297b8f5c5518d2"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_04_observation.json",
+      "sha256": "57aa99e5346252c219c1963f2376fcb14d43ecfe576c96c45ac70779f9549390"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_04_response.txt",
+      "sha256": "32578bc529b242969338225bc611541c9d39f74f8544e2a7baa5ca22c2a0b04f"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_05_attempt.json",
+      "sha256": "3ad4857fb0dcb1242649a926ff6986129505f8e2acf676c27347e120d7ac208f"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_05_observation.json",
+      "sha256": "17cbe3bffc9a6aa4ea5c790be9cd24bd000c0d91a240ed9d798941d1376d363c"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_05_response.txt",
+      "sha256": "647c82f2d75f4b1a6d1562cd5f044bf0305500e1b932b8fb2811b067eae05073"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_06_attempt.json",
+      "sha256": "2bd79b6e7acc1c63aa7de48857d6d4d00eef56542f676ac1c30b3dae2eb5918e"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_06_observation.json",
+      "sha256": "7f76e8dec979a524f77268f9093fb6012c8da3645d85718cbe4cd6f83eb57ad3"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_06_response.txt",
+      "sha256": "118c0db681c741a69621b3f604ab426e7c7007fb77e085a16ac5a7199b755c52"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_07_attempt.json",
+      "sha256": "98878053737067debceb5a7c1a05d2fb4129866883fa98e3965acbbd21e9091c"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_07_observation.json",
+      "sha256": "f64780202ed9eb0f32b4c9ec48e38ae55d07ea203b42cb79b44d4c5f419c7961"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_07_response.txt",
+      "sha256": "a2f7c44a5da9917efd00f1b1d023929920f4941855ae022ae17a6e6349446606"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_08_attempt.json",
+      "sha256": "59af56fed0aa9b343597460684cfd22368771ccbbe907677dea1d1967ebb847d"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_08_observation.json",
+      "sha256": "3db713eee847d9823ec1c691b50b2a13829735706113b9c4a3f31005cb687749"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_08_response.txt",
+      "sha256": "44d4fb20cdda263b212d25699e7863d1b2ff34ee7b00b0b44ab5bd8b227471e7"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_09_attempt.json",
+      "sha256": "219a916ebf627678031557609f26a7d7e05c382fa46ac203de4a5b7d456c0e12"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_09_observation.json",
+      "sha256": "9dc7e757f873d163718412edb3c4ae5157b2ca58cc6592d1c496e393f3b45763"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_09_response.txt",
+      "sha256": "8cd7f82014557ff3a521e5fc526e8ccf73ee3fc863833b435559b04bbc14aa23"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_10_attempt.json",
+      "sha256": "52fd7a70d25e862fbd73bd5098a6c4ffa16e626debf7bb27f63ed9d0748d1901"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_10_observation.json",
+      "sha256": "201f0d922ab20e76e6dadb8d5eab92ecfed009128bfdbb8993c4b5239775558b"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_10_response.txt",
+      "sha256": "f1bcc1c18409bcc053f8f8e5b353b3a80210515433ed281411d2ea10049e8952"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_11_attempt.json",
+      "sha256": "9c13a05574781632fc2e936a098f0eafa8868f0c5f7c57651a854cc6111188bc"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_11_observation.json",
+      "sha256": "f528170f5310bf997bc116cd7c9cce317da7858dfcaf319d376c84199cd061f3"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_11_response.txt",
+      "sha256": "c4324a953d9a625290c5ce59b269ffe505b6e2d6d8fd874b56c4f4e7e7b60f52"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_12_attempt.json",
+      "sha256": "4d429abd4e9abcf6803412617b080545af787aa816cf9b192e5ffb5cec452d40"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_12_observation.json",
+      "sha256": "4712c4bcf88dd030d931a3646232ea0f1fb60a0ea3a4cbc6de33accd634ff5d5"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_12_response.txt",
+      "sha256": "50e2c2bb2c2228ebb3afb36db351fee0b8128e43bbe7e2d2139bc08d9b66fa58"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_13_attempt.json",
+      "sha256": "38335a842a3b2539a476d403b89f7f74abfb8bfa0688f60fbf28333557de3874"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_13_observation.json",
+      "sha256": "0a08ff65cad3b0d23f5c6761ac40237f032a1c9677171ab3b53b0a793035abe3"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_13_response.txt",
+      "sha256": "4b6ef61736886bf57cc85b5b1909e04181fa8052a4c1b7124fd8e316ec6bf3ab"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_14_attempt.json",
+      "sha256": "3c0f21db6582280a2335f9ae593c912b95c4576c9b68367d57e130e1dea585c4"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_14_observation.json",
+      "sha256": "b7d96dd06caec40d888de82bff60596d9d50730d5c68b9858ea8b2dbb3344ebb"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_14_response.txt",
+      "sha256": "8b4151a4e7256f1e1e430aa570432b72c4860de77cbda7b40c07a6194f6dab0c"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_15_attempt.json",
+      "sha256": "a20c8d31dc9959d75dde1059c5c6608d8d638ee735bbd27aa24fe146e40ee822"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_15_observation.json",
+      "sha256": "338faf388f703f4ec642c26028d98d64b3d78be45658c7b1509ac88d56a2a748"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_15_response.txt",
+      "sha256": "85cae0e8ac956d93db955efdfe9a0637ebb1dd2d37cd4f7d698597270a1ea96e"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_16_attempt.json",
+      "sha256": "97c58573be8257abb2f933d5134d6ba4cb0cb334fcd81618513c510ab7ccd452"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_16_observation.json",
+      "sha256": "3ef03e316d4c5f487c8e44aad2757a37bc7984efab33a6753754e6be3ab21dcc"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_16_response.txt",
+      "sha256": "47bf2457a5e3a8a653b06bfdb4329f82cf76ce98f02803abd99319627c291aad"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_17_attempt.json",
+      "sha256": "c1b1af78d6ca68a95e24ba682bc1baf30fbdb836c76c04f812328fcf99aabb83"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_17_observation.json",
+      "sha256": "49bc17859d63be52c9d1ef4b23ae467ac70a4e2dfb4f6bdeab2c1e3f48a8d634"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_17_response.txt",
+      "sha256": "6da55f20edc4197ed2aeb64ff599999dc5c6275eafbd697856317baf11125e09"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_18_attempt.json",
+      "sha256": "911bc55780f68143aa7174bfedcd626a9dd1391e914370151787154c55c41ea3"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_18_observation.json",
+      "sha256": "d5b6b0dbaf44e67d9add4fb40ef0931f61909b0c6d0545bfb34222e88c134c6e"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/case_18_response.txt",
+      "sha256": "6df5578366cc2028a7a1a45944fa320f16f12df260148c7fd71f12a37a48498f"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/dispatch_finished.json",
+      "sha256": "96317a3b9a78216c0e71a213721fab0b453a6e6b8a65d9d6f8945b92cfc335e3"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/dispatch_started.json",
+      "sha256": "1fdb31dbbcc9fd00d04513b1c2c3639441b2e629f68313e4bf4ab594a253a761"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/execution_sources.zip",
+      "sha256": "2063ed3eeeb943e83d9382d8691c9678f8424a3cc07b1917ac92dcf7d501c119"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+      "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+    },
+    {
+      "expires_at": "2026-10-09T21:33:20Z",
+      "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/summary.json",
+      "sha256": "9512a63571bb5edc33541900ec7e69adb1ec7195f35cf5e0160c541e4eec61e3"
+    }
+  ],
+  "report_retention": "P1M",
+  "request_acceptance_count": 15,
+  "request_model_id": "gemini-3.7-flash",
+  "request_package": {
+    "canonical_sha256": "d8482c9e9977b45688a62664ce9a1d243f4c09f6fda484b3fdb5ef1ad7b7c50e",
+    "expires_at": "2026-10-09T21:33:20Z",
+    "path": "reports/approved_live_20260907/gemini_interactions_budgeted_20260909T213320Z_8a4ac7a8/request_package.json",
+    "sha256": "54b6440b167cf0a6b00bfbf34458fc861d91263d5523ad94c361b77b00eb1426"
+  },
+  "requests_sent": 18,
+  "reviewed_candidate_artifact": {
+    "path": "references/gemini_interactions_18_profile_review_20260909.json",
+    "sha256": "baa9ca262ed8264c8e553d197208b737b37cc43600c1a7c015b4dde119374a0b"
+  },
+  "schema_version": 1,
+  "scope": "Separate budget-adjusted 18-case terminal batch. Prior 512-token incomplete response and 17 unissued cases remain in their original fact. Native, runtime, and catalog verdicts are preserved separately; no posthoc reinterpretation is substituted.",
+  "source_id": "google_ai_studio",
+  "terminal_state": "completed",
+  "test_extension_digest_at_execution": "80b6988fd6edf0a133c3164dd82d1de71c743c5b5b19ecc8e90ac593eebb0abb",
+  "whole_parameter_effect_matrix_verified": false
+}

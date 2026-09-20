@@ -23,14 +23,17 @@ from .config import (
 )
 from .deepseek_params import (
     _claude_native_tools,
+    _openai_responses_tools,
     build_claude_tool_followup_request,
     build_native_tool_followup_request,
+    build_openai_responses_tool_followup_request,
     build_request,
     build_tool_followup_request,
     cache_tokens_from_usage,
     extract_claude_tool_uses,
     extract_message,
     extract_native_function_calls,
+    extract_openai_responses_function_calls,
     extract_tool_calls,
     prompt_tokens_from_usage,
 )
@@ -46,14 +49,245 @@ from .metrics import (
     summarize_records,
     write_json,
 )
+from .model_profile_catalog import (
+    binding_from_database_snapshot,
+    database_snapshot,
+    require_official_reference_binding,
+    resolve_runtime_profile_binding,
+    resolve_runtime_test_policy,
+)
+
+
+_CACHE_TRANSPORT_PATHS = {
+    "chat_completions": "/v1/chat/completions",
+    "claude_messages": "/v1/messages",
+    "gemini_generate_content": "/models/{model}:generateContent",
+    "openai_responses": "/v1/responses",
+}
 
 
 def _send_cache_request(client: DeepSeekClient, transport: str, body: dict[str, Any], model: str):
+    if transport == "chat_completions":
+        return client.chat_completion(body)
     if transport == "claude_messages":
         return client.claude_messages(body)
     if transport == "gemini_generate_content":
         return client.gemini_generate_content(model, body)
-    return client.chat_completion(body)
+    if transport == "openai_responses":
+        return client.openai_responses(body)
+    raise ValueError(
+        f"Cache testing does not support transport {transport!r}; refusing to "
+        "fall back to Chat Completions."
+    )
+
+
+def _cache_snapshot_target(binding: dict[str, Any]) -> dict[str, Any]:
+    target = binding.get("execution_target")
+    if isinstance(target, dict) and target:
+        return target
+    interface = binding.get("interface") or {}
+    return {
+        "provider_id": binding.get("runtime_provider_id"),
+        "request_model_id": binding.get("runtime_model_id"),
+        "route_profile": binding.get("runtime_route_profile"),
+        "api_form": interface.get("api_form") if isinstance(interface, dict) else None,
+    }
+
+
+def _validate_cache_snapshot_target(
+    binding: dict[str, Any],
+    *,
+    provider: str,
+    model: str,
+    family: str,
+    route_profile: str,
+    api_form: str,
+    transport: str,
+) -> None:
+    target = _cache_snapshot_target(binding)
+    expected = {
+        "provider_id": provider,
+        "request_model_id": model,
+        "route_profile": route_profile,
+        "api_form": api_form,
+    }
+    missing = [field for field in expected if not str(target.get(field) or "")]
+    if missing:
+        raise ValueError(
+            "Cache MPDB snapshot is missing execution target fields: "
+            + ", ".join(missing)
+        )
+    conflicts = [
+        field
+        for field, value in expected.items()
+        if str(target.get(field)) != str(value)
+    ]
+    binding_family = str(
+        binding.get("suite_family_id") or binding.get("canonical_family_id") or ""
+    )
+    if binding_family != family:
+        conflicts.append("suite_family_id")
+    interface = binding.get("interface") or {}
+    if str(interface.get("api_form") or "") != api_form:
+        conflicts.append("interface.api_form")
+    if str(interface.get("transport_adapter_id") or "") != transport:
+        conflicts.append("interface.transport_adapter_id")
+    if target.get("transport") not in (None, "", transport):
+        conflicts.append("execution_target.transport")
+    if conflicts:
+        raise ValueError(
+            "Cache runtime conflicts with immutable MPDB snapshot: "
+            + ", ".join(conflicts)
+        )
+
+
+def _prepare_cache_model_profile(
+    config: dict[str, Any], provider: str, model: str, family: str
+) -> tuple[str, str, str]:
+    route_profile = get_model_route_profile(config, model, provider)
+    api_form = get_model_api_form(
+        config, model, provider, route_profile=route_profile
+    )
+    transport = get_model_transport(
+        config,
+        model,
+        provider,
+        route_profile=route_profile,
+        api_form=api_form,
+    )
+    if transport not in _CACHE_TRANSPORT_PATHS:
+        raise ValueError(
+            f"Cache testing does not support transport {transport!r} for "
+            f"{provider}/{model}; refusing to fall back to Chat Completions."
+        )
+
+    existing_snapshot = config.get("_model_profile_database")
+    if isinstance(existing_snapshot, dict):
+        binding = binding_from_database_snapshot(existing_snapshot)
+        snapshot: dict[str, Any] | None = copy.deepcopy(existing_snapshot)
+    else:
+        binding = resolve_runtime_profile_binding(
+            config,
+            provider,
+            model,
+            family,
+            route_profile,
+            api_form,
+            modality="text",
+        )
+        require_official_reference_binding(binding)
+        snapshot = None
+
+    require_official_reference_binding(binding)
+    _validate_cache_snapshot_target(
+        binding,
+        provider=provider,
+        model=model,
+        route_profile=route_profile,
+        api_form=api_form,
+        family=family,
+        transport=transport,
+    )
+    policy = resolve_runtime_test_policy(binding)
+    if (
+        policy.get("pressure_test_enabled") is not True
+        or policy.get("disabled_reason") not in (None, "")
+        or any(
+            policy.get(field) is False
+            for field in ("enabled", "executable", "runner_enabled")
+        )
+    ):
+        raise ValueError(
+            f"Pressure testing is disabled for {family}/{model}: "
+            f"{policy.get('disabled_reason') or 'MPDB model test policy'}."
+        )
+    if snapshot is None:
+        snapshot = database_snapshot(binding, include_parameter_binding=False)
+    config["_model_profile_database"] = copy.deepcopy(snapshot)
+    return route_profile, api_form, transport
+
+
+def _build_cache_request(
+    config: dict[str, Any],
+    group: str,
+    profile: str,
+    *,
+    overrides: dict[str, Any] | None = None,
+) -> Any:
+    provider = get_active_provider_name(config)
+    model = get_selected_model(config, provider)
+    route_profile = get_model_route_profile(config, model, provider)
+    api_form = get_model_api_form(
+        config, model, provider, route_profile=route_profile
+    )
+    expected_transport = get_model_transport(
+        config,
+        model,
+        provider,
+        route_profile=route_profile,
+        api_form=api_form,
+    )
+    snapshot = config.get("_model_profile_database")
+    if not isinstance(snapshot, dict):
+        raise ValueError("Cache request construction requires an immutable MPDB snapshot.")
+    binding = binding_from_database_snapshot(snapshot)
+    pressure_policy = resolve_runtime_test_policy(binding)
+    built = build_request(
+        config,
+        group,
+        profile,
+        overrides=overrides,
+        route_profile_override=route_profile,
+        api_form_override=api_form,
+        pressure_policy_override=pressure_policy,
+    )
+    if (config.get("cache_test") or {}).get("exclude_pro", False) and (built.body.get("reasoning") or {}).get("mode") == "pro":
+        raise ValueError("Pro reasoning mode is excluded from the current cache testing scope.")
+    actual_transport = str(built.metadata.get("transport") or "")
+    if actual_transport != expected_transport:
+        raise ValueError(
+            "Cache request transport conflicts with the selected MPDB Interface: "
+            f"expected={expected_transport!r}, actual={actual_transport!r}."
+        )
+    if actual_transport == "openai_responses":
+        _enable_stateless_responses_reasoning_replay(built.body, binding)
+    return built
+
+
+def _enable_stateless_responses_reasoning_replay(
+    body: dict[str, Any], binding: dict[str, Any]
+) -> None:
+    """Request replayable reasoning items for OpenAI stateless conversations."""
+
+    reasoning = body.get("reasoning")
+    if (
+        str(binding.get("source_id") or "") != "openai"
+        or body.get("store") is not False
+        or not isinstance(reasoning, dict)
+        or str(reasoning.get("effort") or "").lower() in {"", "none"}
+    ):
+        return
+    contract = binding.get("reference_contract")
+    capabilities = (
+        contract.get("parameter_capabilities")
+        if isinstance(contract, dict)
+        else None
+    )
+    include_capability = (
+        capabilities.get("include") if isinstance(capabilities, dict) else None
+    )
+    if not isinstance(include_capability, dict) or (
+        include_capability.get("state") != "supported"
+    ):
+        raise ValueError(
+            "MPDB Contract does not approve Responses include for stateless "
+            "reasoning replay."
+        )
+    include = body.setdefault("include", [])
+    if not isinstance(include, list):
+        raise ValueError("OpenAI Responses include must be a list.")
+    if "reasoning.encrypted_content" not in include:
+        include.append("reasoning.encrypted_content")
 
 
 def run_cache_suite(
@@ -63,11 +297,18 @@ def run_cache_suite(
     measured_requests: int | None = None,
 ) -> dict[str, Any]:
     cache_cfg = config.get("cache_test") or {}
-    report_dir = ensure_dir(output_dir)
     provider = get_active_provider_name(config)
     provider_cfg = get_provider_config(config, provider)
     model = get_selected_model(config, provider)
     family = get_model_family(config, model, provider)
+    if cache_cfg.get("exclude_pro", False):
+        from .cache_acceptance import is_pro_model
+        if is_pro_model(model):
+            raise ValueError("Pro models are excluded from the current cache testing scope.")
+    _prepare_cache_model_profile(config, provider, model, family)
+    if cache_plan_requires_tool_profile(cache_cfg):
+        _tool_profile(config, family, _customer_transport(config, provider, model))
+    report_dir = ensure_dir(output_dir)
     warmup_requests = int(cache_cfg.get("warmup_requests", 2))
     measured_request_count = int(
         measured_requests
@@ -239,9 +480,15 @@ def _run_progressive_customer_session_cache_suite(
     )
     transport = _customer_transport(config, provider, model)
     request_path = _transport_path(transport)
-    profile = _tool_profile(family, transport) if tool_enabled else "cache_long_context"
+    profile = (
+        _tool_profile(config, family, transport)
+        if tool_enabled
+        else "cache_long_context"
+    )
     group = "compatibility_profiles" if tool_enabled else "cache_profiles"
-    built = build_request(config, group, profile, overrides={"max_tokens": max_tokens})
+    built = _build_cache_request(
+        config, group, profile, overrides={"max_tokens": max_tokens}
+    )
     aborted_reason: str | None = None
     session_states: list[dict[str, Any]] = []
     _write_cache_progress(report_dir, "starting", 0, total_steps)
@@ -480,7 +727,7 @@ def _run_progressive_customer_session_cache_suite(
 
         cold_bodies: list[dict[str, Any]] = []
         for pair in range(positive_pairs):
-            control_request = build_request(
+            control_request = _build_cache_request(
                 config,
                 "cache_profiles",
                 "cache_long_context",
@@ -524,7 +771,7 @@ def _run_progressive_customer_session_cache_suite(
             )
 
         for index in range(negative_requests):
-            control_request = build_request(
+            control_request = _build_cache_request(
                 config,
                 "cache_profiles",
                 "cache_long_context",
@@ -625,12 +872,15 @@ def _run_kilocode_agent_session_cache_suite(
         "分析该代码库结构并修复 lint 错误。先了解项目布局，再定位 lint 失败点，"
         "逐项修复并验证。你可以使用提供的工具读取文件、搜索代码并执行命令。"
     )
-    profile = _tool_profile(family, transport)
-    built = build_request(
+    profile = _tool_profile(config, family, transport)
+    request_overrides: dict[str, Any] = {"max_tokens": max_tokens}
+    if "temperature" in cache_cfg:
+        request_overrides["temperature"] = cache_cfg["temperature"]
+    built = _build_cache_request(
         config,
         "compatibility_profiles",
         profile,
-        overrides={"max_tokens": max_tokens},
+        overrides=request_overrides,
     )
     base_body = _kilocode_base_body(
         built.body,
@@ -639,7 +889,6 @@ def _run_kilocode_agent_session_cache_suite(
         tools,
         task_text,
         max_tokens,
-        temperature=cache_cfg.get("temperature", 0),
     )
     aborted_reason: str | None = None
     step_records: list[dict[str, Any]] = []
@@ -756,7 +1005,7 @@ def _run_kilocode_agent_session_cache_suite(
 
         cold_bodies: list[dict[str, Any]] = []
         for pair in range(positive_pairs):
-            control_request = build_request(
+            control_request = _build_cache_request(
                 config,
                 "cache_profiles",
                 "cache_long_context",
@@ -800,7 +1049,7 @@ def _run_kilocode_agent_session_cache_suite(
             )
 
         for index in range(negative_requests):
-            control_request = build_request(
+            control_request = _build_cache_request(
                 config,
                 "cache_profiles",
                 "cache_long_context",
@@ -1048,17 +1297,32 @@ def _kilocode_base_body(
     tools: list[dict[str, Any]],
     task_text: str,
     max_tokens: int,
-    temperature: float | int | None = 0,
 ) -> dict[str, Any]:
     body = copy.deepcopy(original)
+    if transport == "openai_responses":
+        body["instructions"] = system_prompt
+        body["input"] = [{"role": "user", "content": task_text}]
+        body["tools"] = _openai_responses_tools(tools)
+        body["max_output_tokens"] = max_tokens
+        body["stream"] = False
+        body.pop("messages", None)
+        body.pop("max_tokens", None)
+        body.pop("max_completion_tokens", None)
+        body.pop("stream_options", None)
+        if "tool_choice" in body:
+            body["tool_choice"] = "auto"
+        return body
     if transport == "gemini_generate_content":
         body["systemInstruction"] = {"parts": [{"text": system_prompt}]}
         body["contents"] = [{"role": "user", "parts": [{"text": task_text}]}]
         body["tools"] = _kilocode_gemini_tools(tools)
         generation = body.setdefault("generationConfig", {})
         generation["maxOutputTokens"] = max_tokens
-        if temperature is not None:
-            generation["temperature"] = temperature
+        tool_config = body.get("toolConfig")
+        if isinstance(tool_config, dict):
+            function_config = tool_config.get("functionCallingConfig")
+            if isinstance(function_config, dict):
+                function_config["mode"] = "AUTO"
         return body
     if transport == "claude_messages":
         body["system"] = system_prompt
@@ -1066,19 +1330,22 @@ def _kilocode_base_body(
         body["tools"] = _claude_native_tools(tools)
         body["max_tokens"] = max_tokens
         body["stream"] = False
+        body.pop("tool_choice", None)
         return body
     body["messages"] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": task_text},
     ]
     body["tools"] = copy.deepcopy(tools)
-    body["max_tokens"] = max_tokens
-    if temperature is not None:
-        body["temperature"] = temperature
+    if "max_completion_tokens" in body or "max_completion_tokens" in original:
+        body["max_completion_tokens"] = max_tokens
+        body.pop("max_tokens", None)
     else:
-        body.pop("temperature", None)
+        body["max_tokens"] = max_tokens
     body["stream"] = False
     body.pop("stream_options", None)
+    if "tool_choice" in body:
+        body["tool_choice"] = "auto"
     return body
 
 
@@ -1095,6 +1362,31 @@ def _append_scripted_tool_exchange(
     # per-step copying and prefix comparison O(appended entries) instead of
     # O(accumulated conversation size).
     updated = dict(body)
+    if transport == "openai_responses":
+        response_input = updated.get("input")
+        if not isinstance(response_input, list):
+            raise ValueError("OpenAI Responses cache conversation requires input items.")
+        items = list(response_input)
+        items.append(
+            {
+                "type": "function_call",
+                "call_id": call["id"],
+                "name": call["name"],
+                "arguments": json.dumps(call["arguments"], ensure_ascii=False),
+            }
+        )
+        items.append(
+            {
+                "type": "function_call_output",
+                "call_id": call["id"],
+                "output": result_text,
+            }
+        )
+        items.append({"role": "user", "content": instruction})
+        updated["input"] = items
+        updated["stream"] = False
+        updated.pop("stream_options", None)
+        return updated
     if transport == "gemini_generate_content":
         contents = list(updated.get("contents") or [])
         contents.append(
@@ -1234,6 +1526,33 @@ def _append_response_and_user(
 ) -> dict[str, Any]:
     response_json = getattr(result, "response_json", None) or {}
     body = copy.deepcopy(previous_body)
+    if transport == "openai_responses":
+        previous_input = copy.deepcopy(previous_body.get("input"))
+        if isinstance(previous_input, str):
+            previous_items: list[dict[str, Any]] = [
+                {"role": "user", "content": previous_input}
+            ]
+        elif isinstance(previous_input, list):
+            previous_items = [
+                copy.deepcopy(item) for item in previous_input if isinstance(item, dict)
+            ]
+        else:
+            raise ValueError("OpenAI Responses request contains no reusable input.")
+        output = response_json.get("output") or []
+        reusable_output = [
+            copy.deepcopy(item) for item in output if isinstance(item, dict)
+        ]
+        if not reusable_output:
+            fallback = str(getattr(result, "text", "") or "").strip()
+            if not fallback:
+                raise ValueError("OpenAI Responses response contains no reusable output.")
+            reusable_output = [{"role": "assistant", "content": fallback}]
+        body["input"] = previous_items + reusable_output + [
+            {"role": "user", "content": user_text}
+        ]
+        body["stream"] = False
+        body.pop("stream_options", None)
+        return body
     if transport == "gemini_generate_content":
         candidates = response_json.get("candidates") or []
         content = copy.deepcopy(candidates[0].get("content") or {}) if candidates else {}
@@ -1279,6 +1598,8 @@ def _append_response_and_user(
 
 
 def _response_has_tool_call(transport: str, response_json: dict[str, Any]) -> bool:
+    if transport == "openai_responses":
+        return bool(extract_openai_responses_function_calls(response_json))
     if transport == "gemini_generate_content":
         return bool(extract_native_function_calls(response_json))
     if transport == "claude_messages":
@@ -1291,14 +1612,23 @@ def _assert_strict_conversation_extension(
     next_body: dict[str, Any],
     transport: str,
 ) -> None:
-    conversation_key = "contents" if transport == "gemini_generate_content" else "messages"
+    conversation_key = (
+        "input"
+        if transport == "openai_responses"
+        else "contents" if transport == "gemini_generate_content" else "messages"
+    )
     previous = previous_body.get(conversation_key)
     current = next_body.get(conversation_key)
     if not isinstance(previous, list) or not isinstance(current, list):
         raise ValueError("Progressive request has no conversation list.")
     if len(current) <= len(previous) or current[: len(previous)] != previous:
         raise ValueError("Progressive request is not a strict conversation-prefix extension.")
-    for key in ("system", "systemInstruction", "tools", "tool_choice", "toolConfig"):
+    for key in (
+        "instructions",
+        "system",
+        "systemInstruction",
+        "tools",
+    ):
         if key in previous_body or key in next_body:
             if previous_body.get(key) != next_body.get(key):
                 raise ValueError(f"Progressive request changed stable field {key}.")
@@ -1319,25 +1649,94 @@ def _customer_transport(config: dict[str, Any], provider: str, model: str) -> st
 
 
 def _transport_path(transport: str) -> str:
-    return {
-        "chat_completions": "/v1/chat/completions",
-        "claude_messages": "/v1/messages",
-        "gemini_generate_content": "/models/{model}:generateContent",
-    }.get(transport, "/v1/chat/completions")
+    try:
+        return _CACHE_TRANSPORT_PATHS[transport]
+    except KeyError as exc:
+        raise ValueError(
+            f"Cache testing does not support transport {transport!r}."
+        ) from exc
 
 
-def _tool_profile(family: str, transport: str) -> str:
-    if transport == "claude_messages":
-        return "claude_native_tool_choice_auto"
-    if transport == "gemini_generate_content":
-        return "gemini_native_tool_config"
-    return {
-        "qwen": "qwen_tool_choice_auto",
-        "gemini": "gemini_tool_choice_auto",
-        "claude": "claude_tool_choice_auto",
-        "claude_fable": "claude_tool_choice_auto",
-        "glm": "glm_tool_choice_auto",
-    }.get(family, "tool_calls")
+def approved_cache_tool_profile(
+    policy: dict[str, Any], family: str, transport: str
+) -> str:
+    """Return the MPDB-approved tool profile for a cache scenario.
+
+    The console uses this same selector before creating a job, while the
+    runner calls it again from the frozen MPDB snapshot.  Keeping one selector
+    prevents a pressure-enabled leaf from being advertised for a tool-bearing
+    cache scenario when its model policy approves only non-tool traffic.
+    """
+    configured = {
+        str(profile)
+        for profiles in (policy.get("pressure_profiles") or {}).values()
+        for profile in (profiles or [])
+    }
+    expectations = policy.get("expectations")
+    if not isinstance(expectations, dict):
+        expectations = {}
+    defaults = dict(policy.get("default_expectations") or {})
+    defaults.update(dict(policy.get("model_expectations") or {}))
+    approved = {
+        profile
+        for profile in configured
+        if str(expectations.get(profile, defaults.get(profile, "supported"))).lower()
+        == "supported"
+    }
+    if transport == "openai_responses":
+        preferred = [
+            "grok_responses_tools" if family == "grok" else "openai_responses_tools"
+        ]
+    elif transport == "claude_messages":
+        preferred = ["claude_native_tools"]
+    elif transport == "gemini_generate_content":
+        preferred = ["gemini_native_tools", "gemini_native_tool_config"]
+    else:
+        preferred = {
+            "qwen": ["qwen_tools", "qwen_tool_choice_auto"],
+            "gemini": ["gemini_tools", "gemini_tool_choice_auto"],
+            "claude": ["claude_tools", "claude_tool_choice_auto"],
+            "claude_fable": ["claude_tools", "claude_tool_choice_auto"],
+            "glm": ["glm53_tools", "glm_tools", "aliyun_tools"],
+            "kimi": ["kimi_k3_dynamic_tools", "tool_calls", "aliyun_tools"],
+        }.get(family, ["tool_calls"])
+    for profile in preferred:
+        if profile in approved:
+            return profile
+    fallback = sorted(
+        profile
+        for profile in approved
+        if "tool" in profile and "reject" not in profile
+    )
+    if fallback:
+        return fallback[0]
+    raise ValueError(
+        "MPDB pressure policy does not approve a tool profile for cache testing: "
+        f"family={family!r}, transport={transport!r}. Disable cache_test.tool_stage "
+        "for progressive_customer_session or select an approved Interface."
+    )
+
+
+def cache_plan_requires_tool_profile(cache_plan: dict[str, Any] | None) -> bool:
+    """Whether a normalized (or direct-CLI) cache plan sends tool traffic."""
+    plan = cache_plan if isinstance(cache_plan, dict) else {}
+    scenario = str(plan.get("scenario") or "progressive_customer_session")
+    if scenario == "kilocode_agent_session":
+        return True
+    if scenario != "progressive_customer_session":
+        return False
+    tool_stage = plan.get("tool_stage")
+    if not isinstance(tool_stage, dict):
+        return True
+    return tool_stage.get("enabled", True) is not False
+
+
+def _tool_profile(config: dict[str, Any], family: str, transport: str) -> str:
+    snapshot = config.get("_model_profile_database")
+    if not isinstance(snapshot, dict):
+        raise ValueError("Tool cache testing requires an immutable MPDB snapshot.")
+    policy = resolve_runtime_test_policy(binding_from_database_snapshot(snapshot))
+    return approved_cache_tool_profile(policy, family, transport)
 
 
 def _customer_body(
@@ -1348,25 +1747,50 @@ def _customer_body(
     max_tokens: int,
 ) -> dict[str, Any]:
     body = copy.deepcopy(original)
+    if transport == "openai_responses":
+        body["instructions"] = system
+        body["input"] = [{"role": "user", "content": user}]
+        body["max_output_tokens"] = max_tokens
+        body["stream"] = False
+        body.pop("messages", None)
+        body.pop("max_tokens", None)
+        body.pop("max_completion_tokens", None)
+        body.pop("stream_options", None)
+        if "tool_choice" in body:
+            body["tool_choice"] = "auto"
+        return body
     if transport == "gemini_generate_content":
         body["systemInstruction"] = {"parts": [{"text": system}]}
         body["contents"] = [{"role": "user", "parts": [{"text": user}]}]
         generation = body.setdefault("generationConfig", {})
         generation["maxOutputTokens"] = max_tokens
+        tool_config = body.get("toolConfig")
+        if isinstance(tool_config, dict):
+            function_config = tool_config.get("functionCallingConfig")
+            if isinstance(function_config, dict):
+                function_config["mode"] = "AUTO"
         return body
     if transport == "claude_messages":
         body["system"] = system
         body["messages"] = [{"role": "user", "content": user}]
         body["max_tokens"] = max_tokens
         body["stream"] = False
+        body.pop("tool_choice", None)
         return body
     body["messages"] = [
         {"role": "system", "content": system},
         {"role": "user", "content": user},
     ]
-    body["max_tokens"] = max_tokens
+    # GPT-5.x chat rejects max_tokens; keep the template's completion-token field.
+    if "max_completion_tokens" in body or "max_completion_tokens" in original:
+        body["max_completion_tokens"] = max_tokens
+        body.pop("max_tokens", None)
+    else:
+        body["max_tokens"] = max_tokens
     body["stream"] = False
     body.pop("stream_options", None)
+    if "tool_choice" in body:
+        body["tool_choice"] = "auto"
     return body
 
 
@@ -1392,21 +1816,47 @@ def _tool_followup_body(
     initial_body: dict[str, Any],
     response_json: dict[str, Any],
 ) -> dict[str, Any]:
-    if transport == "claude_messages":
+    if transport == "openai_responses":
+        followup = build_openai_responses_tool_followup_request(
+            initial_body, response_json
+        )
+        original_input = initial_body.get("input")
+        if isinstance(original_input, str):
+            prefix: list[dict[str, Any]] = [
+                {"role": "user", "content": original_input}
+            ]
+        elif isinstance(original_input, list):
+            prefix = [
+                copy.deepcopy(item)
+                for item in original_input
+                if isinstance(item, dict)
+            ]
+        else:
+            raise ValueError("OpenAI Responses request contains no reusable input.")
+        followup["input"] = prefix + list(followup.get("input") or [])
+    elif transport == "claude_messages":
         followup = build_claude_tool_followup_request(initial_body, response_json)
     elif transport == "gemini_generate_content":
         followup = build_native_tool_followup_request(initial_body, response_json)
     else:
         followup = build_tool_followup_request(initial_body, response_json)
-    for key in ("tools", "tool_choice", "toolConfig"):
-        if key in initial_body:
-            followup[key] = copy.deepcopy(initial_body[key])
     return followup
 
 
 def _replace_tool_results(
     body: dict[str, Any], transport: str, result_text: str
 ) -> None:
+    if transport == "openai_responses":
+        changed = False
+        for item in body.get("input") or []:
+            if isinstance(item, dict) and item.get("type") == "function_call_output":
+                item["output"] = result_text
+                changed = True
+        if not changed:
+            raise ValueError(
+                "OpenAI Responses follow-up contains no function_call_output."
+            )
+        return
     if transport == "gemini_generate_content":
         contents = body.get("contents") or []
         parts = contents[-1].get("parts") if contents and isinstance(contents[-1], dict) else []
@@ -1535,7 +1985,7 @@ def _append_legacy_cache_controls(
 
     cold_bodies: list[dict[str, Any]] = []
     for pair in range(positive_pairs):
-        built = build_request(
+        built = _build_cache_request(
             config,
             "cache_profiles",
             "cache_long_context",
@@ -1573,7 +2023,7 @@ def _append_legacy_cache_controls(
             },
         )
     for index in range(negative_requests):
-        built = build_request(
+        built = _build_cache_request(
             config,
             "cache_profiles",
             "cache_long_context",
@@ -1631,7 +2081,7 @@ def _run_shared_prefix_cache_suite(
     run_nonce = secrets.token_hex(16)
     _write_cache_progress(report_dir, "starting", completed_steps, total_steps)
 
-    warmup_request = build_request(
+    warmup_request = _build_cache_request(
         config,
         "cache_profiles",
         "cache_long_context",
@@ -1694,7 +2144,7 @@ def _run_shared_prefix_cache_suite(
         completed_steps += 1
         _write_cache_progress(report_dir, "cache_wait_done", completed_steps, total_steps)
 
-    repeat_request = build_request(
+    repeat_request = _build_cache_request(
         config,
         "cache_profiles",
         "cache_long_context_repeat",
@@ -1797,7 +2247,7 @@ def _run_growing_conversation_cache_suite(
     run_nonce = secrets.token_hex(16)
     _write_cache_progress(report_dir, "starting", completed_steps, total_steps)
 
-    request_template = build_request(
+    request_template = _build_cache_request(
         config,
         "cache_profiles",
         "cache_long_context",
@@ -1809,7 +2259,8 @@ def _run_growing_conversation_cache_suite(
         str(request_template.metadata.get("transport") or "chat_completions"),
         run_nonce,
     )
-    _validate_growing_conversation_body(conversation_body)
+    transport = str(request_template.metadata.get("transport") or "chat_completions")
+    _validate_growing_conversation_body(conversation_body, transport)
     assistant_history_max_chars = int(
         (config.get("cache_test") or {}).get("assistant_history_max_chars", 1000)
     )
@@ -1818,7 +2269,7 @@ def _run_growing_conversation_cache_suite(
 
     for index in range(warmup_requests):
         if request_index > 0:
-            _append_growing_user_turn(conversation_body, request_index)
+            _append_growing_user_turn(conversation_body, request_index, transport)
         body = copy.deepcopy(conversation_body)
         result = _send_cache_request(
             client,
@@ -1858,6 +2309,7 @@ def _run_growing_conversation_cache_suite(
             result,
             request_index,
             assistant_history_max_chars,
+            transport,
         )
         request_index += 1
         completed_steps += 1
@@ -1872,7 +2324,7 @@ def _run_growing_conversation_cache_suite(
 
     for index in range(measured_request_count):
         if request_index > 0:
-            _append_growing_user_turn(conversation_body, request_index)
+            _append_growing_user_turn(conversation_body, request_index, transport)
         phase = "cache_cold" if index == 0 else "cache_repeat"
         body = copy.deepcopy(conversation_body)
         result = _send_cache_request(
@@ -1912,6 +2364,7 @@ def _run_growing_conversation_cache_suite(
             result,
             request_index,
             assistant_history_max_chars,
+            transport,
         )
         request_index += 1
         completed_steps += 1
@@ -1954,12 +2407,19 @@ def _finalize_cache_suite(
         measured,
         business_prefix="cache:",
         business_group="cache_profiles",
-        cache_min_prompt_tokens=int(config.get("metrics", {}).get("cache_min_prompt_tokens", 4000)),
+        cache_min_prompt_tokens=(0 if ((config.get("thresholds") or {}).get("cache") or {}).get("control_evaluation") == "hit_expectations"
+                                 else int(config.get("metrics", {}).get("cache_min_prompt_tokens", 4000))),
     )
+    if ((config.get("thresholds") or {}).get("cache") or {}).get("control_evaluation") == "hit_expectations":
+        from .cache_acceptance import apply_summary
+        apply_summary(summary, measured)
     result = {
         "summary": summary,
         "latency_speedup_ratio": _latency_speedup_ratio(measured),
         "events": events,
+        "model_profile_database": copy.deepcopy(
+            config.get("_model_profile_database") or {}
+        ),
     }
     first_extra = (measured[0].extra if measured else records[0].extra) if records else {}
     for key in (
@@ -1970,6 +2430,13 @@ def _finalize_cache_suite(
         "api_form",
         "route_profile",
         "transport",
+        "source_id",
+        "profile_id",
+        "interface_id",
+        "test_binding_id",
+        "catalog_version",
+        "catalog_digest",
+        "test_extension_digest",
     ):
         if first_extra.get(key) is not None:
             result[key if key != "requested_model" else "model"] = first_extra[key]
@@ -2040,14 +2507,74 @@ def _route_metadata(
     config: dict[str, Any],
     provider: str,
     model: str,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     route_profile = get_model_route_profile(config, model, provider)
     api_form = get_model_api_form(
         config, model, provider, route_profile=route_profile
     )
+    family = get_model_family(config, model, provider)
+    transport = get_model_transport(
+        config,
+        model,
+        provider,
+        route_profile=route_profile,
+        api_form=api_form,
+    )
+    snapshot = config.get("_model_profile_database")
+    binding = (
+        binding_from_database_snapshot(snapshot)
+        if isinstance(snapshot, dict) and snapshot
+        else resolve_runtime_profile_binding(
+            config,
+            provider,
+            model,
+            family,
+            route_profile,
+            api_form,
+            modality="text",
+        )
+    )
+    require_official_reference_binding(binding)
+    _validate_cache_snapshot_target(
+        binding,
+        provider=provider,
+        model=model,
+        family=family,
+        route_profile=route_profile,
+        api_form=api_form,
+        transport=transport,
+    )
+    policy = resolve_runtime_test_policy(binding)
+    reference_contract_id = str(
+        policy.get("default_reference_contract_id") or ""
+    )
     return {
         "api_form": api_form,
         "route_profile": route_profile,
+        "source_id": binding.get("source_id"),
+        "profile_id": binding.get("profile_id"),
+        "interface_id": binding.get("interface_id"),
+        "test_binding_id": str(policy.get("test_binding_id") or ""),
+        "catalog_version": binding.get("catalog_version"),
+        "catalog_digest": binding.get("catalog_digest"),
+        "test_extension_digest": binding.get("test_extension_digest"),
+        "execution_target": {
+            "provider_id": provider,
+            "request_model_id": model,
+            "route_profile": route_profile,
+            "api_form": api_form,
+            "transport": transport,
+        },
+        "reference_identity": {
+            "source_id": binding.get("source_id"),
+            "profile_id": binding.get("profile_id"),
+            "interface_id": binding.get("interface_id"),
+            "test_binding_id": policy.get("test_binding_id"),
+            "reference_contract_id": reference_contract_id,
+            "reference_contract_ids": list(
+                policy.get("reference_contract_ids") or []
+            ),
+        },
     }
 
 
@@ -2091,13 +2618,35 @@ def _prepend_cache_run_nonce(
 
 def _with_random_suffix(body: dict[str, Any], digits: str) -> dict[str, Any]:
     result = copy.deepcopy(body)
+    marker = "\n\n请求唯一随机串（仅用于区分请求，不参与共享前缀命中率统计）："
+    if "input" in result:
+        response_input = result.get("input")
+        if isinstance(response_input, str):
+            result["input"] = f"{response_input}{marker}{digits}"
+            return result
+        if isinstance(response_input, list):
+            for item in reversed(response_input):
+                if not isinstance(item, dict) or item.get("role") != "user":
+                    continue
+                content = item.get("content")
+                if isinstance(content, str):
+                    item["content"] = f"{content}{marker}{digits}"
+                    return result
+                if isinstance(content, list):
+                    for block in reversed(content):
+                        if not isinstance(block, dict):
+                            continue
+                        for key in ("text", "input_text"):
+                            if isinstance(block.get(key), str):
+                                block[key] = f"{block[key]}{marker}{digits}"
+                                return result
+        raise ValueError("OpenAI Responses cache request has no final user text.")
     messages = result.get("messages") or []
     if not messages or not isinstance(messages[-1], dict):
         raise ValueError("cache request must contain a final message")
     content = messages[-1].get("content")
     if not isinstance(content, str):
         raise ValueError("cache request final message content must be text")
-    marker = "\n\n请求唯一随机串（仅用于区分请求，不参与共享前缀命中率统计）："
     messages[-1]["content"] = f"{content}{marker}{digits}"
     return result
 
@@ -2113,7 +2662,24 @@ def _unique_random_digits(
             return value
 
 
-def _validate_growing_conversation_body(body: dict[str, Any]) -> None:
+def _validate_growing_conversation_body(
+    body: dict[str, Any], transport: str = "chat_completions"
+) -> None:
+    if transport == "openai_responses":
+        response_input = body.get("input")
+        if isinstance(response_input, str):
+            body["input"] = [{"role": "user", "content": response_input}]
+            return
+        if (
+            isinstance(response_input, list)
+            and response_input
+            and isinstance(response_input[-1], dict)
+            and response_input[-1].get("role") == "user"
+        ):
+            return
+        raise ValueError(
+            "growing OpenAI Responses cache conversation must end in user input"
+        )
     messages = body.get("messages")
     # Claude Messages keeps system top-level, so a single user message is valid.
     if not isinstance(messages, list) or len(messages) < 1:
@@ -2122,26 +2688,30 @@ def _validate_growing_conversation_body(body: dict[str, Any]) -> None:
         raise ValueError("growing cache conversation must start from a final user message")
 
 
-def _append_growing_user_turn(body: dict[str, Any], turn_index: int) -> None:
+def _append_growing_user_turn(
+    body: dict[str, Any], turn_index: int, transport: str = "chat_completions"
+) -> None:
     questions = [
         "请基于前文补充两个评估 cache 命中率时最容易误判的因素。",
         "请说明上一轮结论里哪些指标最适合排查长上下文延迟。",
         "请把当前对话中关于 cache 分母的规则压缩成三条检查项。",
         "请指出如果命中率为零，下一步应优先核查哪些请求字段。",
     ]
-    messages = body.get("messages")
-    if not isinstance(messages, list):
-        raise ValueError("growing cache conversation requires messages")
     question = questions[(turn_index - 1) % len(questions)]
-    messages.append(
-        {
-            "role": "user",
-            "content": (
-                f"对话缓存测试第 {turn_index + 1} 轮：{question}"
-                "回答不超过 80 个汉字。"
-            ),
-        }
-    )
+    message = {
+        "role": "user",
+        "content": (
+            f"对话缓存测试第 {turn_index + 1} 轮：{question}"
+            "回答不超过 80 个汉字。"
+        ),
+    }
+    conversation_key = "input" if transport == "openai_responses" else "messages"
+    conversation = body.get(conversation_key)
+    if not isinstance(conversation, list):
+        raise ValueError(
+            f"growing cache conversation requires {conversation_key} items"
+        )
+    conversation.append(message)
 
 
 def _append_assistant_turn(
@@ -2149,7 +2719,28 @@ def _append_assistant_turn(
     result: Any,
     turn_index: int,
     max_chars: int,
+    transport: str = "chat_completions",
 ) -> None:
+    if transport == "openai_responses":
+        response_input = body.get("input")
+        if not isinstance(response_input, list):
+            raise ValueError("growing OpenAI Responses cache conversation requires input")
+        response_json = getattr(result, "response_json", None) or {}
+        output = [
+            copy.deepcopy(item)
+            for item in response_json.get("output") or []
+            if isinstance(item, dict)
+        ]
+        if output:
+            response_input.extend(output)
+            return
+        text = str(getattr(result, "text", "") or "").strip()
+        if not text:
+            text = f"缓存测试第 {turn_index + 1} 轮占位回答。"
+        if max_chars > 0 and len(text) > max_chars:
+            text = text[:max_chars]
+        response_input.append({"role": "assistant", "content": text})
+        return
     messages = body.get("messages")
     if not isinstance(messages, list):
         raise ValueError("growing cache conversation requires messages")

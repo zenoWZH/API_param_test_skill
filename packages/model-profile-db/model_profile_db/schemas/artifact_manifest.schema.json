@@ -1,0 +1,206 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://yibu.example/schemas/model-profile-db/artifact-manifest-v1.json",
+  "title": "Yibu Model Profile Database Artifact Manifest",
+  "type": "object",
+  "required": [
+    "manifest_schema_version",
+    "schema_id",
+    "artifact_format_versions",
+    "mpdb_schema_version",
+    "catalog_version",
+    "catalog_digest",
+    "test_extension_digest",
+    "generated_at",
+    "identity_contract",
+    "counts",
+    "artifacts"
+  ],
+  "properties": {
+    "manifest_schema_version": {"const": 1},
+    "schema_id": {
+      "const": "https://yibu.example/schemas/model-profile-db/artifact-manifest-v1.json"
+    },
+    "artifact_format_versions": {
+      "type": "object",
+      "required": [
+        "source_catalog",
+        "compiled_core",
+        "test_extensions",
+        "sqlite",
+        "manifest"
+      ],
+      "properties": {
+        "source_catalog": {"const": 1},
+        "compiled_core": {"const": 1},
+        "test_extensions": {"const": 2},
+        "sqlite": {"const": 3},
+        "manifest": {"const": 1}
+      },
+      "additionalProperties": false
+    },
+    "mpdb_schema_version": {"enum": [2, 3]},
+    "catalog_version": {"type": "string", "minLength": 1},
+    "catalog_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "test_extension_digest": {
+      "type": "string",
+      "pattern": "^(?:|[0-9a-f]{64})$"
+    },
+    "generated_at": {"type": "string"},
+    "identity_contract": {"type": "object"},
+    "counts": {
+      "type": "object",
+      "required": ["profiles", "interfaces", "contracts", "test_bindings", "provenance_records", "test_binding_provenance_records"],
+      "properties": {
+        "profiles": {"type": "integer", "minimum": 0},
+        "interfaces": {"type": "integer", "minimum": 0},
+        "contracts": {"type": "integer", "minimum": 0},
+        "test_bindings": {"type": "integer", "minimum": 0},
+        "provenance_records": {"type": "integer", "minimum": 0},
+        "test_binding_provenance_records": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "artifacts": {
+      "type": "object",
+      "required": [
+        "source_yaml",
+        "json",
+        "sqlite",
+        "source_catalog_schema",
+        "compiled_core_schema",
+        "test_extensions_schema",
+        "artifact_manifest_schema"
+      ],
+      "properties": {
+        "source_yaml": {
+          "$ref": "#/$defs/sourceCatalogArtifact"
+        },
+        "json": {
+          "$ref": "#/$defs/compiledCoreArtifact"
+        },
+        "sqlite": {
+          "$ref": "#/$defs/sqliteArtifact"
+        },
+        "source_catalog_schema": {
+          "$ref": "#/$defs/sourceCatalogArtifact"
+        },
+        "compiled_core_schema": {
+          "$ref": "#/$defs/compiledCoreArtifact"
+        },
+        "test_extensions_schema": {
+          "$ref": "#/$defs/testExtensionsArtifact"
+        },
+        "artifact_manifest_schema": {
+          "$ref": "#/$defs/artifactManifestArtifact"
+        },
+        "test_extensions_yaml": {
+          "$ref": "#/$defs/testExtensionsArtifact"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "test_extension_digest": {"pattern": "^[0-9a-f]{64}$"}
+        },
+        "required": ["test_extension_digest"]
+      },
+      "then": {
+        "properties": {
+          "artifacts": {"required": ["test_extensions_yaml"]}
+        }
+      },
+      "else": {
+        "properties": {
+          "artifacts": {
+            "not": {"required": ["test_extensions_yaml"]}
+          },
+          "counts": {
+            "properties": {
+              "test_bindings": {"const": 0},
+              "test_binding_provenance_records": {"const": 0}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "artifactRecord": {
+      "type": "object",
+      "required": ["path", "sha256", "size", "schema_id"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "size": {"type": "integer", "minimum": 1},
+        "schema_id": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "sourceCatalogArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifactRecord"},
+        {
+          "properties": {
+            "schema_id": {
+              "const": "https://yibu.example/schemas/model-profile-db/source-catalog-v3.json"
+            }
+          }
+        }
+      ]
+    },
+    "compiledCoreArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifactRecord"},
+        {
+          "properties": {
+            "schema_id": {
+              "const": "https://yibu.example/schemas/model-profile-db/compiled-core-format-v1.json"
+            }
+          }
+        }
+      ]
+    },
+    "testExtensionsArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifactRecord"},
+        {
+          "properties": {
+            "schema_id": {
+              "const": "https://yibu.example/schemas/model-profile-db/test-extensions-v2.json"
+            }
+          }
+        }
+      ]
+    },
+    "artifactManifestArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifactRecord"},
+        {
+          "properties": {
+            "schema_id": {
+              "const": "https://yibu.example/schemas/model-profile-db/artifact-manifest-v1.json"
+            }
+          }
+        }
+      ]
+    },
+    "sqliteArtifact": {
+      "allOf": [
+        {"$ref": "#/$defs/artifactRecord"},
+        {
+          "properties": {
+            "schema_id": {
+              "const": "urn:yibu:model-profile-db:sqlite-core-v3"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

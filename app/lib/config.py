@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+from .gemini_api_version import build_gemini_api_url, is_ai_studio_origin
+
 try:
     import yaml
 except ImportError as exc:  # pragma: no cover - exercised only before deps install
@@ -40,11 +42,28 @@ SKIP_DOTENV_ENV = "LOADTEST_SKIP_DOTENV"
 PROVIDER_ALIASES = {
     "serveice_gemini": "inferenceai",
     "service_gemini": "inferenceai",
+    "openai": "openai_official",
+    "anthropic": "anthropic_official",
+    "google": "gemini",
+    "deepseek": "deepseek_official",
+    "xai": "xai_official",
+    "zhipu": "zhipu_official",
+    "zai": "zhipu_official",
+    "kimi": "kimi_official",
+    "moonshot": "kimi_official",
+    "minimax": "minimax_official",
+    "aws": "bedrock_mantle",
+    "bedrock": "bedrock_mantle",
+    "bedrock-mantle-prod": "bedrock_mantle",
+    "bedrock_mantle_prod": "bedrock_mantle",
 }
 SUPPORTED_TRANSPORTS = {
     "chat_completions",
+    "deepseek-beta-chat-prefix",
     "claude_messages",
     "gemini_generate_content",
+    "gemini_interactions",
+    "fim_completions",
     "openai_responses",
 }
 SUPPORTED_BACKENDS = {
@@ -72,21 +91,33 @@ SUPPORTED_API_FORMS = {
     "anthropic_messages",
     "gemini_generate_content",
     "openai_images_generations",
+    "openai_images_edits",
     "gemini_interactions",
+    "openai_fim_completions_beta",
+    # Catalog-only until the runner has an AWS SigV4 Runtime Messages transport.
+    "aws_bedrock_runtime_messages",
+    # Dedicated fixed Pro0813 parameter suite; no generic/pressure dispatch.
+    "deepseek_beta_chat_prefix",
 }
 TEXT_API_FORM_BY_TRANSPORT = {
     "chat_completions": "openai_chat_completions",
+    "deepseek-beta-chat-prefix": "deepseek_beta_chat_prefix",
     "openai_responses": "openai_responses",
     "claude_messages": "anthropic_messages",
     "gemini_generate_content": "gemini_generate_content",
+    "gemini_interactions": "gemini_interactions",
+    "fim_completions": "openai_fim_completions_beta",
 }
 TEXT_TRANSPORT_BY_API_FORM = {
     api_form: transport for transport, api_form in TEXT_API_FORM_BY_TRANSPORT.items()
 }
 IMAGE_API_FORM_BY_TRANSPORT = {
     "images-generations": "openai_images_generations",
+    "images-edits": "openai_images_edits",
+    "openai-responses-image": "openai_responses",
     "chat-completions": "openai_chat_completions",
     "gemini-interactions": "gemini_interactions",
+    "gemini-generate-content": "gemini_generate_content",
 }
 IMAGE_TRANSPORT_BY_API_FORM = {
     api_form: transport for transport, api_form in IMAGE_API_FORM_BY_TRANSPORT.items()
@@ -94,26 +125,38 @@ IMAGE_TRANSPORT_BY_API_FORM = {
 SUPPORTED_IMAGE_FAMILIES = {"gpt-image-2", "banana", "grok-imagine"}
 SUPPORTED_IMAGE_TRANSPORTS = {
     "images-generations",
+    "images-edits",
+    "openai-responses-image",
     "chat-completions",
     "gemini-interactions",
+    "gemini-generate-content",
 }
 IMAGE_TRANSPORT_INTERFACES = {
     "images-generations": "images_generations",
+    "images-edits": "images_edits",
+    "openai-responses-image": "openai_responses",
     "chat-completions": "chat_completions",
     "gemini-interactions": "gemini_interactions",
+    "gemini-generate-content": "gemini_generate_content",
 }
 IMAGE_TRANSPORT_AUTH_MODES = {
     "images-generations": {"bearer"},
+    "images-edits": {"bearer"},
+    "openai-responses-image": {"bearer"},
     "chat-completions": {"bearer"},
     "gemini-interactions": {"bearer", "google_api_key"},
+    "gemini-generate-content": {"google_api_key"},
 }
 DEFAULT_INTERFACE_PATHS = {
     "chat_completions": "/chat/completions",
+    "deepseek-beta-chat-prefix": "/beta/chat/completions",
     "claude_messages": "/messages",
     "gemini_generate_content": "/models/{model}:generateContent",
     "openai_responses": "/responses",
     "images_generations": "/images/generations",
+    "images_edits": "/images/edits",
     "gemini_interactions": "/v1beta/interactions",
+    "fim_completions": "/beta/completions",
 }
 
 
@@ -148,6 +191,9 @@ def load_config(path: str | Path | None = None) -> dict[str, Any]:
     if local_path.exists():
         config = deep_merge(config, _without_inline_api_keys(_read_yaml(local_path)))
 
+    # Functional request scopes are ephemeral; never inherit YAML or overlay state.
+    config.pop("_functional_parameter_target", None)
+    config.pop("_parameter_test_exact_input", None)
     api = config.setdefault("api", {})
     if "base_url" in api:
         api["base_url"] = str(api["base_url"]).rstrip("/")
@@ -203,6 +249,12 @@ def get_api_key(config: dict[str, Any] | None = None, provider: str | None = Non
 
 
 def get_active_provider_name(config: dict[str, Any]) -> str:
+    scoped = config.get("_functional_parameter_target")
+    if config.get("_parameter_test_exact_input") is True and isinstance(scoped, dict):
+        provider = scoped.get("provider")
+        if not isinstance(provider, str) or not provider:
+            raise ValueError("Functional parameter target requires an exact provider")
+        return normalize_provider_name(provider)
     return normalize_provider_name(str(os.getenv("LOADTEST_PROVIDER") or config.get("active_provider") or "yibu"))
 
 
@@ -223,6 +275,13 @@ def get_provider_config(config: dict[str, Any], provider: str | None = None) -> 
 
 
 def get_selected_model(config: dict[str, Any], provider: str | None = None) -> str:
+    scoped = config.get("_functional_parameter_target")
+    if (config.get("_parameter_test_exact_input") is True and isinstance(scoped, dict)
+            and (provider is None or normalize_provider_name(provider) == scoped.get("provider"))):
+        model = scoped.get("model")
+        if not isinstance(model, str) or not model:
+            raise ValueError("Functional parameter target requires an exact model")
+        return model
     env_model = os.getenv("LOADTEST_MODEL")
     if env_model:
         return env_model
@@ -377,9 +436,12 @@ def get_model_route_profile(
     available = get_model_route_profiles(
         config, selected_model, provider_cfg["name"]
     )
-    requested = str(
-        route_profile or os.getenv("LOADTEST_ROUTE_PROFILE") or ""
-    ).strip()
+    scoped = config.get("_functional_parameter_target")
+    scoped_route = None
+    if (config.get("_parameter_test_exact_input") is True and isinstance(scoped, dict)
+            and scoped.get("provider") == provider_cfg["name"] and scoped.get("model") == selected_model):
+        scoped_route = scoped.get("route_profile")
+    requested = str(route_profile or scoped_route or os.getenv("LOADTEST_ROUTE_PROFILE") or "").strip()
     if requested:
         if requested not in available:
             raise ValueError(
@@ -540,7 +602,23 @@ def get_provider_interface(
     interface["base_url"] = str(
         interface.get("base_url") or provider_cfg.get("base_url") or ""
     ).rstrip("/")
-    interface.setdefault("path", DEFAULT_INTERFACE_PATHS[transport])
+    default_path = DEFAULT_INTERFACE_PATHS[transport]
+    if transport == "gemini_interactions" and is_ai_studio_origin(interface["base_url"]):
+        default_path = "/v1beta/interactions"
+    interface.setdefault("path", default_path)
+    if is_ai_studio_origin(interface["base_url"]):
+        url = build_gemini_api_url(
+            interface["base_url"], interface["path"],
+            api_version=interface.get("api_version") or interface.get("default_api_version"),
+        )
+        if url.startswith(interface["base_url"] + "/"):
+            # Keep compatibility base paths for callers that also list models.
+            interface["path"] = url[len(interface["base_url"]):]
+        else:
+            parsed = urlsplit(url)
+            interface["base_url"] = f"{parsed.scheme}://{parsed.netloc}"
+            interface["path"] = parsed.path + (f"?{parsed.query}" if parsed.query else "")
+        interface["default_api_version"] = "v1beta"
     return interface
 
 
@@ -548,6 +626,7 @@ def infer_model_family(model: str) -> str:
     """Infer a vendor model family without treating an API standard as a family."""
     lowered = str(model).strip().casefold()
     leaf = lowered.rsplit("/", 1)[-1]
+    dotted_leaf = leaf.rsplit(".", 1)[-1]
     if leaf.startswith("deepseek"):
         return "deepseek"
     if leaf.startswith("glm"):
@@ -556,9 +635,9 @@ def infer_model_family(model: str) -> str:
         return "qwen"
     if leaf.startswith("gemini") or lowered.startswith("models/gemini"):
         return "gemini"
-    if "fable" in leaf:
+    if "fable" in leaf or "fable" in dotted_leaf:
         return "claude_fable"
-    if leaf.startswith("claude"):
+    if leaf.startswith("claude") or dotted_leaf.startswith("claude"):
         return "claude"
     if leaf.startswith("grok"):
         return "grok"
@@ -670,7 +749,7 @@ def _image_contract_route(
     if family == "banana":
         return (
             "google_ai_studio"
-            if api_form == "gemini_interactions"
+            if api_form in {"gemini_interactions", "gemini_generate_content"}
             and _infer_legacy_route_profile(provider_name, backend)
             == "google_ai_studio"
             else "provider_compat"
@@ -1119,6 +1198,9 @@ def _contract_route_for_legacy_form(
         "grok_responses",
         "grok_chat_completions",
         "glm_openai_compat",
+        "zhipu_glm_4_5_openai_compat",
+        "zhipu_glm_5_3_openai_compat",
+        "zhipu_glm_5_3_flash_openai_compat",
         "claude_native_messages",
         "claude_fable_native_messages",
         "deepseek_chat",
@@ -1217,11 +1299,25 @@ def _normalize_provider_config(
         # public provider block. Drop inherited per-model API declarations that
         # are no longer candidates in the effective provider.
         if prune_unknown_models:
-            for configured_model in list(routes):
-                if str(configured_model) not in candidates:
-                    routes.pop(configured_model, None)
-                    default_routes.pop(configured_model, None)
-                    default_api_forms.pop(configured_model, None)
+            per_model_maps = [
+                transports,
+                routes,
+                default_routes,
+                default_api_forms,
+                families,
+                provider_cfg["models"].get("bindings"),
+                provider_cfg["models"].get("reference_bindings"),
+                provider_cfg["models"].get("reference_model_ids"),
+                provider_cfg["models"].get("reference_source_ids"),
+                provider_cfg["models"].get("identity_aliases"),
+                provider_cfg["models"].get("token_counters"),
+            ]
+            for mapping in per_model_maps:
+                if not isinstance(mapping, dict):
+                    continue
+                for configured_model in list(mapping):
+                    if str(configured_model) not in candidates:
+                        mapping.pop(configured_model, None)
         for model in candidates:
             families[model] = normalize_model_family(model, families.get(model))
             transport = str(
@@ -1691,7 +1787,12 @@ def _validate_image_capability(name: str, provider: dict[str, Any]) -> None:
         if invalid:
             raise ValueError(f"{prefix} contains unsupported transports: {invalid}.")
         banana_only = sorted(
-            set(allowed) & {"chat-completions", "gemini-interactions"}
+            set(allowed)
+            & {
+                "chat-completions",
+                "gemini-interactions",
+                "gemini-generate-content",
+            }
         )
         if family != "banana" and banana_only:
             raise ValueError(

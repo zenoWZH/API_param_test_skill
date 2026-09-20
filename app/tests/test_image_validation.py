@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import base64
+import copy
+import io
 import json
+import os
 import struct
 import tempfile
 import unittest
 import zlib
 from pathlib import Path
+from contextlib import redirect_stderr
 from unittest.mock import Mock, patch
 
 from lib.image_validation import (
@@ -20,7 +24,11 @@ from lib.image_validation import (
     inspect_image_bytes,
     validate_gpt_image_2_size,
 )
+from lib.image_url_safety import RemoteImage
 from lib.credential_security import ProviderCredential
+from lib.config import load_config
+from lib.model_profile_catalog import resolve_runtime_parameter_config
+import scripts.image_param_test as image_param_test
 from scripts.image_param_test import (
     _image_bytes,
     _request_body,
@@ -30,6 +38,7 @@ from scripts.image_param_test import (
     normalize_image_endpoint,
     normalize_image_generation_endpoint,
     run_case,
+    validate_configured_image_endpoint,
 )
 
 
@@ -71,6 +80,167 @@ class FakeSession:
 
 
 class ImageValidationTest(unittest.TestCase):
+    def test_image_alias_summary_reuses_the_preflight_snapshot(self) -> None:
+        config = copy.deepcopy(load_config())
+        provider = config["providers"]["openai_official"]
+        canonical = "gpt-image-2"
+        alias = "vendor-image-model"
+        canonical_row = next(
+            row
+            for row in provider["image"]["models"]
+            if row["id"] == canonical
+        )
+        alias_row = copy.deepcopy(canonical_row)
+        alias_row["id"] = alias
+        alias_row["reference_model_id"] = canonical
+        provider["image"]["models"].append(alias_row)
+        provider["image"]["default"] = alias
+
+        def fake_execute(_config, plan, _registry, *, credential, report_dir):
+            rows = [{"case": name, "status": "passed", "status_code": 200,
+                     "latency_ms": 1, "pass": True} for name in plan["selected_cases"]]
+            (report_dir / "model_check.json").write_text(json.dumps({"model_ids": [alias]}))
+            (report_dir / "case_results.json").write_text(json.dumps(rows))
+            return rows, {"workflow_status": "passed", "workflow_result": {"status": "passed", "runs": []}}
+
+        key_env = "IMAGE_ALIAS_TEST_API_KEY"
+        with tempfile.TemporaryDirectory() as temp_dir, patch.dict(
+            os.environ, {key_env: "fake-image-alias-key-123"}
+        ), patch.object(
+            image_param_test, "load_config", return_value=config
+        ), patch.object(
+            image_param_test,
+            "_list_models",
+            return_value={"status_code": 200, "model_ids": [alias]},
+        ), patch(
+            "lib.test_runner.adapters.image.execute_image_cli_cases", side_effect=fake_execute
+        ), patch.object(
+            image_param_test,
+            "summarize_token_audits",
+            return_value={"pass": True},
+        ), patch.object(
+            image_param_test,
+            "summarize_model_identity_audits",
+            return_value={"pass": True},
+        ), patch(
+            "lib.reference_specs.reference_param_rows",
+            side_effect=AssertionError("current Contract projection queried"),
+        ):
+            result = image_param_test.main(
+                [
+                    "--base-url",
+                    "https://api.openai.com/v1",
+                    "--provider",
+                    "openai_official",
+                    "--api-key-env",
+                    key_env,
+                    "--family",
+                    "gpt-image-2",
+                    "--transport",
+                    "images-generations",
+                    "--api-form",
+                    "openai_images_generations",
+                    "--route-profile",
+                    "vendor_direct",
+                    "--model",
+                    alias,
+                    "--suite",
+                    "smoke",
+                    "--no-cross-control",
+                    "--output-dir",
+                    temp_dir,
+                ]
+            )
+
+            summary = json.loads(
+                (Path(temp_dir) / "summary.json").read_text(encoding="utf-8")
+            )
+        self.assertEqual(result, 0)
+        self.assertEqual(summary["model"], alias)
+        self.assertEqual(
+            summary["model_capability_profile"]["model"], alias
+        )
+        self.assertEqual(
+            summary["model_capability_profile"]["canonical_model_slug"],
+            canonical,
+        )
+        self.assertEqual(
+            summary["model_capability_profile"]["profile_id"],
+            summary["model_profile_database"]["profile_id"],
+        )
+
+    def test_image_runtime_rejects_family_drift_before_provider_requests(self) -> None:
+        config = copy.deepcopy(load_config())
+        provider = config["providers"]["yibu"]
+        alias = "vendor-image"
+        provider["api_interfaces"]["images_generations"] = {
+            "path": "/images/generations",
+            "auth": "bearer",
+        }
+        provider["image"] = {
+            "enabled": True,
+            "default": alias,
+            "models": [
+                {
+                    "id": alias,
+                    "family": "gpt-image-2",
+                    "reference_model_id": "gpt-image-2",
+                    "transport": "images-generations",
+                }
+            ],
+        }
+        parameter = resolve_runtime_parameter_config(
+            config,
+            "yibu",
+            alias,
+            "gpt-image-2",
+            "dynamic_aggregator",
+            "openai_images_generations",
+            modality="image",
+        )
+        provider["image"]["models"][0]["family"] = "grok-imagine"
+
+        list_models = Mock(side_effect=AssertionError("provider request reached"))
+        stderr = io.StringIO()
+        with patch.dict(
+            os.environ, {"IMAGE_RUNTIME_DRIFT_KEY": "fake-runtime-key-123"}
+        ), patch.object(
+            image_param_test, "load_config", return_value=config
+        ), patch.object(
+            image_param_test,
+            "resolve_runtime_parameter_config",
+            return_value=parameter,
+        ), patch.object(
+            image_param_test, "_list_models", list_models
+        ), redirect_stderr(stderr), self.assertRaises(SystemExit):
+            image_param_test.main(
+                [
+                    "--base-url",
+                    "https://yibuapi.com/v1",
+                    "--provider",
+                    "yibu",
+                    "--api-key-env",
+                    "IMAGE_RUNTIME_DRIFT_KEY",
+                    "--family",
+                    "grok-imagine",
+                    "--transport",
+                    "images-generations",
+                    "--api-form",
+                    "openai_images_generations",
+                    "--route-profile",
+                    "dynamic_aggregator",
+                    "--model",
+                    alias,
+                    "--suite",
+                    "smoke",
+                ]
+            )
+        list_models.assert_not_called()
+        self.assertIn(
+            "Image runtime conflicts with immutable MPDB capability: family",
+            stderr.getvalue(),
+        )
+
     def test_gpt_image_2_size_constraints(self) -> None:
         self.assertEqual(validate_gpt_image_2_size("1024x1024"), [])
         self.assertEqual(validate_gpt_image_2_size("1536x864"), [])
@@ -195,6 +365,29 @@ class ImageValidationTest(unittest.TestCase):
             "7:5",
         )
 
+    def test_flash_31_lite_omits_512_without_2k_pixels(self) -> None:
+        cases = banana_variant_cases(
+            "resolution",
+            model_template="gemini-3.1-flash-lite-image",
+            include_cross_control=False,
+            transport="gemini-interactions",
+        )
+        by_name = {case.name: case for case in cases}
+        self.assertEqual(
+            list(by_name),
+            [
+                "banana_1k_aligned",
+                "banana_1k_landscape_16_9",
+                "banana_reject_lowercase_1k",
+                "banana_reject_aspect_ratio_7_5",
+            ],
+        )
+        self.assertNotIn("banana_512_square", by_name)
+        self.assertEqual(
+            by_name["banana_1k_landscape_16_9"].expected_size,
+            (1376, 768),
+        )
+
     def test_grok_matrix_uses_official_parameters_and_2k_billing_gate(self) -> None:
         smoke = grok_imagine_cases("smoke")
         self.assertEqual([case.name for case in smoke], ["grok_1k_square_b64"])
@@ -274,6 +467,18 @@ class ImageValidationTest(unittest.TestCase):
         damaged[-1] ^= 0x01
         with self.assertRaisesRegex(ValueError, "CRC"):
             inspect_image_bytes(bytes(damaged), visual_forensics=False)
+
+        truncated_ihdr = b"".join(
+            [
+                bytes.fromhex("89504e470d0a1a0a"),
+                struct.pack(">I", 13),
+                b"IHDR",
+                struct.pack(">II", 1, 1),
+                bytes([8, 2]),
+            ]
+        )
+        with self.assertRaisesRegex(ValueError, "truncated PNG IHDR"):
+            inspect_image_bytes(truncated_ihdr, visual_forensics=False)
 
     def test_positive_case_requires_actual_size_and_format(self) -> None:
         case = gpt_image_2_cases("smoke")[0]
@@ -401,7 +606,7 @@ class ImageValidationTest(unittest.TestCase):
             {
                 "created": 1,
                 "data": [{"b64_json": base64.b64encode(raw).decode("ascii")}],
-                "usage": {"input_tokens": 10, "output_tokens": 272, "total_tokens": 282},
+                "usage": {"input_tokens": 10, "output_tokens": 196, "total_tokens": 206},
             },
             {"content-type": "application/json", "x-request-id": "request-1"},
         )
@@ -420,6 +625,8 @@ class ImageValidationTest(unittest.TestCase):
                 visual_forensics=False,
             )
             self.assertTrue(result["pass"])
+            self.assertTrue(result["token_validation_pass"])
+            self.assertTrue(result["overall_pass"])
             self.assertEqual(result["response_headers"]["x-request-id"], "request-1")
             self.assertEqual(len(result["artifacts"]), 1)
             self.assertEqual(result["token_audit"]["exchanges"][0]["reported"]["input_tokens"], 10)
@@ -481,6 +688,9 @@ class ImageValidationTest(unittest.TestCase):
             )
 
         self.assertTrue(result["pass"])
+        self.assertFalse(result["token_validation_pass"])
+        self.assertFalse(result["overall_pass"])
+        self.assertIn("token_validation_failed", result["overall_failures"])
         self.assertEqual(result["actual_images"][0]["format"], "PNG")
         self.assertEqual(
             session.calls[0][1],
@@ -497,25 +707,82 @@ class ImageValidationTest(unittest.TestCase):
         self.assertNotIn("quality", session.calls[0][1])
         self.assertNotIn("output_format", session.calls[0][1])
 
-    def test_url_image_download_uses_safe_user_agent_without_provider_auth(self) -> None:
-        response = Mock()
-        response.content = _png(8, 8)
-        response.raise_for_status.return_value = None
+    def test_live_runner_records_token_audit_exception_as_overall_failure(self) -> None:
+        raw = _png(1024, 1024)
+        session = FakeSession(
+            FakeResponse(
+                200,
+                {
+                    "data": [{"b64_json": base64.b64encode(raw).decode("ascii")}],
+                    "usage": {"input_tokens": 10, "output_tokens": 272},
+                },
+            )
+        )
+        case = gpt_image_2_cases("smoke")[0]
+
+        with tempfile.TemporaryDirectory() as tmpdir, patch(
+            "scripts.image_param_test.audit_image_usage",
+            side_effect=RuntimeError("synthetic audit failure"),
+        ):
+            result = run_case(
+                session,  # type: ignore[arg-type]
+                "https://provider.example/v1/images/generations",
+                "gpt-image-2",
+                "test prompt",
+                case,
+                timeout=300,
+                images_dir=Path(tmpdir),
+                visual_forensics=False,
+            )
+
+        self.assertTrue(result["compatibility_pass"])
+        self.assertFalse(result["token_validation_pass"])
+        self.assertFalse(result["overall_pass"])
+        self.assertEqual(result["token_audit"]["validation_status"], "fail")
+        self.assertIn(
+            "token audit error: RuntimeError",
+            result["token_audit"]["validation_failures"],
+        )
+
+    def test_url_image_download_delegates_to_hardened_fetcher(self) -> None:
+        raw_image = _png(8, 8)
         with patch(
-            "scripts.image_param_test.requests.get",
-            return_value=response,
-        ) as mocked_get:
+            "scripts.image_param_test.fetch_remote_image",
+            return_value=RemoteImage(
+                data=raw_image,
+                mime_type="image/png",
+                peer_ip="93.184.216.34",
+            ),
+        ) as mocked_fetch:
             raw, delivery = _image_bytes(
                 {"url": "https://imgen.example/output.jpg"},
                 300,
             )
 
-        self.assertEqual(raw, response.content)
+        self.assertEqual(raw, raw_image)
         self.assertEqual(delivery, "url")
-        headers = mocked_get.call_args.kwargs["headers"]
-        self.assertEqual(headers["Accept"], "image/*")
-        self.assertIn("yibuapi-image-param-test", headers["User-Agent"])
-        self.assertNotIn("Authorization", headers)
+        mocked_fetch.assert_called_once_with(
+            "https://imgen.example/output.jpg", 300
+        )
+
+    def test_base64_size_limit_is_checked_before_decoding(self) -> None:
+        with patch(
+            "scripts.image_param_test.MAX_IMAGE_BASE64_CHARS", 4
+        ), patch("scripts.image_param_test.base64.b64decode") as decoder:
+            with self.assertRaisesRegex(ValueError, "encoded image byte limit"):
+                _image_bytes({"b64_json": "A" * 8}, 300)
+            with self.assertRaisesRegex(ValueError, "encoded image byte limit"):
+                _image_bytes(
+                    {"url": "data:image/png;base64," + "A" * 8},
+                    300,
+                )
+        decoder.assert_not_called()
+
+    def test_inline_base64_requires_a_complete_decoder_valid_image(self) -> None:
+        truncated_jpeg = _jpeg(1024, 1024)
+        encoded = base64.b64encode(truncated_jpeg).decode("ascii")
+        with self.assertRaisesRegex(ValueError, "decoding failed"):
+            _image_bytes({"b64_json": encoded}, 300)
 
     def test_chat_image_runner_uses_image_config_and_decodes_markdown_data_url(self) -> None:
         raw = _png(1024, 1024)
@@ -578,7 +845,7 @@ class ImageValidationTest(unittest.TestCase):
         self.assertNotIn("output_format", sent_body)
 
     def test_gemini_interactions_runner_uses_native_contract_and_decodes_steps(self) -> None:
-        raw = _jpeg(1024, 1024)
+        raw = _valid_jpeg(1024, 1024)
         encoded = base64.b64encode(raw).decode("ascii")
         response = FakeResponse(
             200,
@@ -760,6 +1027,35 @@ class ImageValidationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "HTTPS"):
             normalize_image_generation_endpoint("http://provider.example")
 
+    def test_configured_provider_endpoint_is_credential_bound(self) -> None:
+        config = {
+            "providers": {
+                "image-provider": {
+                    "name": "image-provider",
+                    "base_url": "https://configured.example/v1",
+                    "api_interfaces": {
+                        "images_generations": {
+                            "path": "/images/generations",
+                            "auth": "bearer",
+                        }
+                    },
+                }
+            }
+        }
+        validate_configured_image_endpoint(
+            config,
+            provider="image-provider",
+            endpoint="https://configured.example/v1/images/generations",
+            transport="images-generations",
+        )
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            validate_configured_image_endpoint(
+                config,
+                provider="image-provider",
+                endpoint="https://attacker.example/v1/images/generations",
+                transport="images-generations",
+            )
+
 
 def _png(width: int, height: int) -> bytes:
     signature = bytes.fromhex("89504e470d0a1a0a")
@@ -787,6 +1083,18 @@ def _jpeg(width: int, height: int) -> bytes:
             bytes.fromhex("ffd9"),
         ]
     )
+
+
+def _valid_jpeg(width: int, height: int) -> bytes:
+    import io
+
+    from PIL import Image
+
+    output = io.BytesIO()
+    Image.new("RGB", (width, height), color=(32, 96, 160)).save(
+        output, format="JPEG"
+    )
+    return output.getvalue()
 
 
 def _png_chunk(chunk_type: bytes, payload: bytes) -> bytes:

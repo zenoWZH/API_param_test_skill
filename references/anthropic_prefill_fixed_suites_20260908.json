@@ -1,0 +1,813 @@
+{
+  "capability_states_changed": false,
+  "execution_gates_changed": false,
+  "generic_parameter_coverage_changed": false,
+  "generic_test_cases_changed": false,
+  "kind": "exact_anthropic_claude45_explicit_prefill_fixed_suites",
+  "preconditions": {
+    "generic_parameter_coverage_sha256": "c7688cf74359815fe7d1ccca11085626142370edf61a5d04e30fc3077a36ebf5",
+    "generic_test_cases_sha256": "e10a247614df62d56eb1d5ea494c8f9ab9e900d390feecac5a6601f0b765adc1",
+    "historical_observation_key": "bounded_prefix_observations_20260908",
+    "historical_observation_sha256": {
+      "claude-haiku-4-5-20251001": "966c71d1b92371ebe5c9c826d239a831e4e59bc3079e50f465f0be999d91d2ba",
+      "claude-opus-4-5-20251101": "5bc6762f9e946b7a614dc395c1fad5c1b8b22358c1c1a60057f43c13db4e1231",
+      "claude-sonnet-4-5-20250929": "c0c81133a26b92076259fc0f4f20416e90232da1fc871c406703c9c55e918c30"
+    }
+  },
+  "raw_verification": {
+    "batch": {
+      "artifacts": {
+        "case_01_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_attempt.json",
+          "sha256": "685d52e2acf4293b5ac5a71b57354921bd91284a9a25d3ef36b9cde8e3b23f65"
+        },
+        "case_01_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_observation.json",
+          "sha256": "8486720445b834d70910cae2d24a33f10a68e62a6a5ae5e3ddec911a5b1745a1"
+        },
+        "case_01_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_01_response.txt",
+          "sha256": "907c02a59f5277b1dd0b9fa6ba31ea88eaa570de3ef133640115849f9ecde41b"
+        },
+        "case_02_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_attempt.json",
+          "sha256": "806c9c6cb4bf0a4e67acd7d9c3e59b977804499a299725eb0379f31cce4a66db"
+        },
+        "case_02_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_observation.json",
+          "sha256": "270dd27fd8841ccff4dd3e3585fb774507b69c6ae27ebaf73e853b467d7b24d3"
+        },
+        "case_02_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_02_response.txt",
+          "sha256": "9c48f5ca7bee07bac96f6fd17d4b1b6d11c77fc2bad68575ed9040ef7f73a18f"
+        },
+        "case_03_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_attempt.json",
+          "sha256": "53add4f64fece2a1b4352fe8cc4950c28d4fff4939b937587b16d294902e4810"
+        },
+        "case_03_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_observation.json",
+          "sha256": "299f2a65d0113c7d8248441cf9200ecf9be812b426159393732d34142bcb6361"
+        },
+        "case_03_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_03_response.txt",
+          "sha256": "3a45db9eb54ae160ea3b17b0430fd6de42b537946d7a208abe73007210ac49d7"
+        },
+        "case_04_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_attempt.json",
+          "sha256": "e7faee7a54057b25074feaa5611c86976b27bc668cba4f83b8df0964ca05e767"
+        },
+        "case_04_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_observation.json",
+          "sha256": "f187c7eae859f6bcd6269f41b571e5acd14c04f227513d9d7450d5e945b12c8f"
+        },
+        "case_04_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_04_response.txt",
+          "sha256": "acd2c097a295c54c51599200779742bc1a8f51d3e7be53cefb37b6df36cec669"
+        },
+        "case_05_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_attempt.json",
+          "sha256": "1d70701cd45c1f14300acd1e19c67d35731c392d6e74ad1fc9fd5c40b8a31e44"
+        },
+        "case_05_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_observation.json",
+          "sha256": "6643760df487f4bf29f626c5d94dcc3999cbbbffb40e31fb2c56b72d39dcf24c"
+        },
+        "case_05_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_05_response.txt",
+          "sha256": "e8b2035f422e8dec455ddcf1bc4313e4c5c89b5c7dfb02f6df12ea7dfb87d585"
+        },
+        "case_06_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_attempt.json",
+          "sha256": "763005bddd564b901cd278e54007287b583012002c1ec6f93864a3b4e64e6d29"
+        },
+        "case_06_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_observation.json",
+          "sha256": "461d0755ce463d4e37cfb8f730ab27e7c0a6e863ede55ef684b5e2ef11815f7f"
+        },
+        "case_06_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_06_response.txt",
+          "sha256": "22e01b65358f24014a92931801735f7ac4c1b2b9f3836112e2b0ebebefda8666"
+        },
+        "case_07_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_attempt.json",
+          "sha256": "6e7ee93da48d884fba8c94a190805dfb93805e5295f6e19bfbe05d3fa6ee90de"
+        },
+        "case_07_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_observation.json",
+          "sha256": "a5b1f98b65350b3cf5984ba90489a875e00b0c8459a95f53f03cfe8c4274b550"
+        },
+        "case_07_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_07_response.txt",
+          "sha256": "61d981d7174c45c3bf20a30fc753b9e104e9ac803edd96d66f7f0f4c2aed8dac"
+        },
+        "case_08_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_attempt.json",
+          "sha256": "041163564cbf2e117a2c9a750d8b6ad702454cc3ef57ef2cf24f0d7e75b5c3b5"
+        },
+        "case_08_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_observation.json",
+          "sha256": "28881a4a35204ede0fec2c73afc4469359b173be6d79b755301b06e3aeb49752"
+        },
+        "case_08_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_08_response.txt",
+          "sha256": "f3001cb49d0e65fbb20a1407a347335467d9b4e75cb99d3f6f28624138c9fcb1"
+        },
+        "case_09_attempt.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_attempt.json",
+          "sha256": "7f6e0ba26cc3eaaff4e509da672070af6ec6f4ffda4139bc279090e8ba0fd177"
+        },
+        "case_09_observation.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_observation.json",
+          "sha256": "42bd091eab8cc96ba6fb4523c7ffb4b176fd17e1f144db55c82c6f572265e950"
+        },
+        "case_09_response.txt": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/case_09_response.txt",
+          "sha256": "5268ab9e716fa2f19c76a089230ab22b2d6a84df02594708567bda2b0058c719"
+        },
+        "dispatch_finished.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/dispatch_finished.json",
+          "sha256": "9f4340abb4173ced5bec35c9ab543a0b021c83aee04f2ccd15803a676f8e98fc"
+        },
+        "dispatch_started.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/dispatch_started.json",
+          "sha256": "56a7729d90977d355b50761917c3e84af0cc5eb2380ee6c6648e0771038935ec"
+        },
+        "request_package.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/request_package.json",
+          "sha256": "7163faf72f2221646c4a500394181863f576aadab0db901ed7bd2eb44b4582cf"
+        },
+        "summary.json": {
+          "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/summary.json",
+          "sha256": "22353b654406f2476e6039e20d24d66aba96825776a3676f5ddd4abb95cbf328"
+        }
+      },
+      "batch": "anthropic_prefill_20260908T050152Z_d0961d",
+      "created_at": "2026-09-08T05:01:52Z",
+      "expires_at": "2026-10-08T05:01:52Z",
+      "report_retention": "P1M",
+      "retention_metadata": {
+        "path": "reports/approved_live_20260907/anthropic_prefill_20260908T050152Z_d0961d/.report-retention.json",
+        "sha256": "1183dffb04caac5bf9e7468ff8bc18f046bae0b4cb16fbbc0c874a6eee6c430f"
+      }
+    },
+    "current_sender_execution_revalidated": false,
+    "execution_code_sha256_at_dispatch": {
+      "lib/config.py": "4bab265f9d09c05de80b396d56b2bdb80fbff2c31f63ff0c27e476148aaa03ee",
+      "lib/credential_security.py": "4e767d0c304c2eaaeb4c67ec9af80c75eb4a65cd17d45bbb4eebbb1370c0c2c6",
+      "lib/model_profile_catalog.py": "d783446721553e5e83dfce6891a814ed15eb30f074fb5ba454baacc8d76c4032",
+      "lib/parameter_output_limit.py": "3664edf47cb96fc4c8f6b29fc3b28382b0443ed43f805c4ae7a835ba76252fb2",
+      "lib/report_retention.py": "217f6e7f49d23834fe80c0c4a9e67d34d52533aa934bbcad87a9c005b97c2c12",
+      "scripts/prepare_zai_general_reference.py": "9bf48dd52df8e9e2c7a2f59cddc08c684aaee436559778f4e0d97671339880a6",
+      "scripts/run_anthropic_approved_proofs.py": "0817d00e7876921f9cfcd7c7dd6dd8a81374231cd85a6f47132af4e64276b25e",
+      "scripts/run_anthropic_automatic_cache_reference.py": "4846ad845b675e8a294cdc3c8eddafc4e320d457f9a6191689e169a87411c44d",
+      "scripts/run_anthropic_prefill_reference.py": "a5c3c6327ac2bcc624ffc31656d2b2d6971a8a8eff169336c5268f4743fc2ab9"
+    },
+    "original_package_sha256": "42be86205d06714156e641c604fde02b72d4379a94a914fe0645f76374696f0c",
+    "original_verdicts_reproduced": true,
+    "raw_artifact_count": 31,
+    "raw_request_and_response_hashes_verified": true,
+    "recorded_requests": 9,
+    "replayed_validator_sha256": {
+      "scripts/prepare_zai_general_reference.py": "9bf48dd52df8e9e2c7a2f59cddc08c684aaee436559778f4e0d97671339880a6",
+      "scripts/run_anthropic_prefill_reference.py": "a5c3c6327ac2bcc624ffc31656d2b2d6971a8a8eff169336c5268f4743fc2ab9"
+    },
+    "requests_during_replay": 0
+  },
+  "schema_version": 1,
+  "suites": {
+    "anthropic_prefill_claude_haiku_4_5_20251001_20260908": {
+      "api_form": "anthropic_messages",
+      "api_version": "2023-06-01",
+      "approval_leaf": "R7-APP-PARITY-CLAUDE-SOURCE-SCOPED",
+      "cache_test_enabled": false,
+      "case_definitions": [
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-haiku-4-5-20251001",
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "368b8c680234eb97fadc06d5176de9cd060c88b54bb1ff6fd949993005ecb9f1",
+          "case_id": "anthropic_prefill_claude_haiku_4_5_20251001_20260908/prefill",
+          "expectation": {
+            "assembled_json": {
+              "answer": 2,
+              "marker": "ALPHA",
+              "tail": "LEAD_CUT_HERE_OMEGA"
+            },
+            "content_block_types": [
+              "text"
+            ],
+            "expected_status": 200,
+            "kind": "assistant_prefill_json",
+            "native_role": "assistant",
+            "native_type": "message",
+            "native_usage_required": true,
+            "nonempty_message_id_required": true,
+            "prefix": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+            "required_stop_reason": "end_turn",
+            "required_stop_sequence": null,
+            "returned_model": "claude-haiku-4-5-20251001",
+            "usage_output_cap": 2048
+          },
+          "fact_control_id": "claude-haiku-4-5-20251001/prefill",
+          "historical_case_id": "claude-haiku-4-5-20251001/prefill",
+          "request_body_sha256": "df819a19b33d04f6ff9152e3850b4624eae11f4029046c010a5658d8f6e30582",
+          "target_parameter": "messages[1].content"
+        },
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-haiku-4-5-20251001",
+            "stop_sequences": [
+              "CUT_HERE"
+            ],
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "3e68a5d1b5cbfa5c4b6771e0356a2e37f03e9da5867e3abdc096572e7cb4da90",
+          "case_id": "anthropic_prefill_claude_haiku_4_5_20251001_20260908/stop",
+          "expectation": {
+            "content_block_types": [
+              "text"
+            ],
+            "expected_continuation": "LEAD_",
+            "expected_status": 200,
+            "kind": "assistant_prefill_stop",
+            "native_role": "assistant",
+            "native_type": "message",
+            "native_usage_required": true,
+            "nonempty_message_id_required": true,
+            "only_changed_request_field": "stop_sequences",
+            "positive_control": "anthropic_prefill_claude_haiku_4_5_20251001_20260908/prefill",
+            "required_stop_reason": "stop_sequence",
+            "required_stop_sequence": "CUT_HERE",
+            "returned_model": "claude-haiku-4-5-20251001",
+            "usage_output_cap": 2048
+          },
+          "fact_control_id": "claude-haiku-4-5-20251001/stop",
+          "historical_case_id": "claude-haiku-4-5-20251001/stop",
+          "request_body_sha256": "d897cea429801034f1e81b2df4f03461d048aeb37bfd3f56b21f14fa07a401a8",
+          "target_parameter": "stop_sequences"
+        },
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": 17,
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-haiku-4-5-20251001",
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "58c27cace805c0e37c18f9e726f292897d9325b5927e5e91561ee1e5df7d74be",
+          "case_id": "anthropic_prefill_claude_haiku_4_5_20251001_20260908/invalid_content_type",
+          "expectation": {
+            "error_types": [
+              "invalid_request_error"
+            ],
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "kind": "attributed_rejection",
+            "message_field_attribution_required": true,
+            "message_type_error_required": true,
+            "native_type": "error",
+            "only_changed_request_field": "messages[1].content",
+            "positive_control": "anthropic_prefill_claude_haiku_4_5_20251001_20260908/prefill",
+            "target_parameter": "messages[1].content"
+          },
+          "fact_control_id": "claude-haiku-4-5-20251001/invalid_content_type",
+          "historical_case_id": "claude-haiku-4-5-20251001/invalid_content_type",
+          "request_body_sha256": "e82f50089d1e660f67a981c15b87ad1835f6a149fe8532d8f709f65eef7dcbd9",
+          "target_parameter": "messages[1].content"
+        }
+      ],
+      "concurrency": 1,
+      "contract_id": "claude_native_messages",
+      "endpoint_constraint": {
+        "host": "api.anthropic.com",
+        "path": "/v1/messages",
+        "scheme": "https",
+        "url": "https://api.anthropic.com/v1/messages"
+      },
+      "extra_identity_requests": 0,
+      "facts_artifact": {
+        "path": "references/anthropic_prefill_facts_20260908.json",
+        "sha256": "bb4e878b9537d0c7549e9167a50320fac25d6fcba463756830e407bcd8c0f6cc"
+      },
+      "full_parameter_matrix_verified": false,
+      "generated_code_execution_allowed": false,
+      "generic_runner_dispatch": false,
+      "interface_id": "text/anthropic/claude/claude-haiku-4-5-20251001#anthropic-messages-default",
+      "limits": [
+        "Only this exact Anthropic Claude 4.5 dated model and native Messages interface.",
+        "No alias substitution, Claude 4.6 or later, Fable, third-party route or other API-form inference.",
+        "Explicitly select the complete three-request suite; generic test_cases and coverage are unchanged.",
+        "Future responses must satisfy fresh native identity, usage, semantic and paired-control validation.",
+        "Historical observations do not predetermine future passes or establish all possible parameter values.",
+        "No standalone thinking-switch, cache, input-token exactness or full billing proof.",
+        "Raw report replay is limited to its original UTC calendar-month P1M; hashes do not restore expired reports."
+      ],
+      "max_tokens": 2048,
+      "official_documents": {
+        "model_boundary": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+        "prefill": "https://platform.claude.com/docs/en/claude_api_primer",
+        "request": "https://platform.claude.com/docs/en/api/messages/create",
+        "retrieved_at": "2026-09-08",
+        "stop": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+      },
+      "pressure_test_enabled": false,
+      "profile_id": "text/anthropic/claude/claude-haiku-4-5-20251001",
+      "reference_approval_leaf": "R7-ALL-MODELS-PREFIX-COMPLETION-LIVE",
+      "report_retention": "P1M",
+      "request_cap": 3,
+      "request_model_id": "claude-haiku-4-5-20251001",
+      "required_control_pairs": [
+        {
+          "case_ids": [
+            "anthropic_prefill_claude_haiku_4_5_20251001_20260908/prefill",
+            "anthropic_prefill_claude_haiku_4_5_20251001_20260908/stop"
+          ],
+          "parameter": "stop_sequences"
+        },
+        {
+          "case_ids": [
+            "anthropic_prefill_claude_haiku_4_5_20251001_20260908/prefill",
+            "anthropic_prefill_claude_haiku_4_5_20251001_20260908/invalid_content_type"
+          ],
+          "parameter": "messages[1].content.type"
+        }
+      ],
+      "retries": 0,
+      "schema_version": 1,
+      "selection_mode": "explicit_only",
+      "source_id": "anthropic",
+      "stream": false,
+      "suite_id": "anthropic_prefill_claude_haiku_4_5_20251001_20260908",
+      "thinking": {
+        "type": "disabled"
+      },
+      "token_exact_proof": false,
+      "tools_allowed": false
+    },
+    "anthropic_prefill_claude_opus_4_5_20251101_20260908": {
+      "api_form": "anthropic_messages",
+      "api_version": "2023-06-01",
+      "approval_leaf": "R7-APP-PARITY-CLAUDE-SOURCE-SCOPED",
+      "cache_test_enabled": false,
+      "case_definitions": [
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-opus-4-5-20251101",
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "d454ee07ae5dd9d8044747be238a82816f193ab2a506a5e2c9e25ff0553abd22",
+          "case_id": "anthropic_prefill_claude_opus_4_5_20251101_20260908/prefill",
+          "expectation": {
+            "assembled_json": {
+              "answer": 2,
+              "marker": "ALPHA",
+              "tail": "LEAD_CUT_HERE_OMEGA"
+            },
+            "content_block_types": [
+              "text"
+            ],
+            "expected_status": 200,
+            "kind": "assistant_prefill_json",
+            "native_role": "assistant",
+            "native_type": "message",
+            "native_usage_required": true,
+            "nonempty_message_id_required": true,
+            "prefix": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+            "required_stop_reason": "end_turn",
+            "required_stop_sequence": null,
+            "returned_model": "claude-opus-4-5-20251101",
+            "usage_output_cap": 2048
+          },
+          "fact_control_id": "claude-opus-4-5-20251101/prefill",
+          "historical_case_id": "claude-opus-4-5-20251101/prefill",
+          "request_body_sha256": "57da2472ff33b17d526a09fe148932fa1b53116420390d316dd646eda7adb5c8",
+          "target_parameter": "messages[1].content"
+        },
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-opus-4-5-20251101",
+            "stop_sequences": [
+              "CUT_HERE"
+            ],
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "e42eaec84194eac57bcac34f8def19b69dd369f3aceb793c8f17f2ef4256b81c",
+          "case_id": "anthropic_prefill_claude_opus_4_5_20251101_20260908/stop",
+          "expectation": {
+            "content_block_types": [
+              "text"
+            ],
+            "expected_continuation": "LEAD_",
+            "expected_status": 200,
+            "kind": "assistant_prefill_stop",
+            "native_role": "assistant",
+            "native_type": "message",
+            "native_usage_required": true,
+            "nonempty_message_id_required": true,
+            "only_changed_request_field": "stop_sequences",
+            "positive_control": "anthropic_prefill_claude_opus_4_5_20251101_20260908/prefill",
+            "required_stop_reason": "stop_sequence",
+            "required_stop_sequence": "CUT_HERE",
+            "returned_model": "claude-opus-4-5-20251101",
+            "usage_output_cap": 2048
+          },
+          "fact_control_id": "claude-opus-4-5-20251101/stop",
+          "historical_case_id": "claude-opus-4-5-20251101/stop",
+          "request_body_sha256": "1599a9d233c564255849bf727d39496d0c5bbac5e2eb406059c710fad7d3da66",
+          "target_parameter": "stop_sequences"
+        },
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": 17,
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-opus-4-5-20251101",
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "6871ec032441ddad0748dd7351f704cd4d7c6b02020fb1c610a820ce4d235c24",
+          "case_id": "anthropic_prefill_claude_opus_4_5_20251101_20260908/invalid_content_type",
+          "expectation": {
+            "error_types": [
+              "invalid_request_error"
+            ],
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "kind": "attributed_rejection",
+            "message_field_attribution_required": true,
+            "message_type_error_required": true,
+            "native_type": "error",
+            "only_changed_request_field": "messages[1].content",
+            "positive_control": "anthropic_prefill_claude_opus_4_5_20251101_20260908/prefill",
+            "target_parameter": "messages[1].content"
+          },
+          "fact_control_id": "claude-opus-4-5-20251101/invalid_content_type",
+          "historical_case_id": "claude-opus-4-5-20251101/invalid_content_type",
+          "request_body_sha256": "7dc6bfff52e43e6fe8f197eded430c8bd762028136b15761766505a4af44f19f",
+          "target_parameter": "messages[1].content"
+        }
+      ],
+      "concurrency": 1,
+      "contract_id": "claude_native_messages",
+      "endpoint_constraint": {
+        "host": "api.anthropic.com",
+        "path": "/v1/messages",
+        "scheme": "https",
+        "url": "https://api.anthropic.com/v1/messages"
+      },
+      "extra_identity_requests": 0,
+      "facts_artifact": {
+        "path": "references/anthropic_prefill_facts_20260908.json",
+        "sha256": "bb4e878b9537d0c7549e9167a50320fac25d6fcba463756830e407bcd8c0f6cc"
+      },
+      "full_parameter_matrix_verified": false,
+      "generated_code_execution_allowed": false,
+      "generic_runner_dispatch": false,
+      "interface_id": "text/anthropic/claude/claude-opus-4-5-20251101#anthropic-messages-default",
+      "limits": [
+        "Only this exact Anthropic Claude 4.5 dated model and native Messages interface.",
+        "No alias substitution, Claude 4.6 or later, Fable, third-party route or other API-form inference.",
+        "Explicitly select the complete three-request suite; generic test_cases and coverage are unchanged.",
+        "Future responses must satisfy fresh native identity, usage, semantic and paired-control validation.",
+        "Historical observations do not predetermine future passes or establish all possible parameter values.",
+        "No standalone thinking-switch, cache, input-token exactness or full billing proof.",
+        "Raw report replay is limited to its original UTC calendar-month P1M; hashes do not restore expired reports."
+      ],
+      "max_tokens": 2048,
+      "official_documents": {
+        "model_boundary": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+        "prefill": "https://platform.claude.com/docs/en/claude_api_primer",
+        "request": "https://platform.claude.com/docs/en/api/messages/create",
+        "retrieved_at": "2026-09-08",
+        "stop": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+      },
+      "pressure_test_enabled": false,
+      "profile_id": "text/anthropic/claude/claude-opus-4-5-20251101",
+      "reference_approval_leaf": "R7-ALL-MODELS-PREFIX-COMPLETION-LIVE",
+      "report_retention": "P1M",
+      "request_cap": 3,
+      "request_model_id": "claude-opus-4-5-20251101",
+      "required_control_pairs": [
+        {
+          "case_ids": [
+            "anthropic_prefill_claude_opus_4_5_20251101_20260908/prefill",
+            "anthropic_prefill_claude_opus_4_5_20251101_20260908/stop"
+          ],
+          "parameter": "stop_sequences"
+        },
+        {
+          "case_ids": [
+            "anthropic_prefill_claude_opus_4_5_20251101_20260908/prefill",
+            "anthropic_prefill_claude_opus_4_5_20251101_20260908/invalid_content_type"
+          ],
+          "parameter": "messages[1].content.type"
+        }
+      ],
+      "retries": 0,
+      "schema_version": 1,
+      "selection_mode": "explicit_only",
+      "source_id": "anthropic",
+      "stream": false,
+      "suite_id": "anthropic_prefill_claude_opus_4_5_20251101_20260908",
+      "thinking": {
+        "type": "disabled"
+      },
+      "token_exact_proof": false,
+      "tools_allowed": false
+    },
+    "anthropic_prefill_claude_sonnet_4_5_20250929_20260908": {
+      "api_form": "anthropic_messages",
+      "api_version": "2023-06-01",
+      "approval_leaf": "R7-APP-PARITY-CLAUDE-SOURCE-SCOPED",
+      "cache_test_enabled": false,
+      "case_definitions": [
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-sonnet-4-5-20250929",
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "f37ad3a148cd5465e218bd7ff465786b03ad9f28224ee92d2f32c6f2f5da0332",
+          "case_id": "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/prefill",
+          "expectation": {
+            "assembled_json": {
+              "answer": 2,
+              "marker": "ALPHA",
+              "tail": "LEAD_CUT_HERE_OMEGA"
+            },
+            "content_block_types": [
+              "text"
+            ],
+            "expected_status": 200,
+            "kind": "assistant_prefill_json",
+            "native_role": "assistant",
+            "native_type": "message",
+            "native_usage_required": true,
+            "nonempty_message_id_required": true,
+            "prefix": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+            "required_stop_reason": "end_turn",
+            "required_stop_sequence": null,
+            "returned_model": "claude-sonnet-4-5-20250929",
+            "usage_output_cap": 2048
+          },
+          "fact_control_id": "claude-sonnet-4-5-20250929/prefill",
+          "historical_case_id": "claude-sonnet-4-5-20250929/prefill",
+          "request_body_sha256": "bcd44a65761447b97797f1476bf883f0523b13644f3644e8908ab52432530fc2",
+          "target_parameter": "messages[1].content"
+        },
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": "{\"marker\":\"ALPHA\",\"answer\":2,\"tail\":\"",
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-sonnet-4-5-20250929",
+            "stop_sequences": [
+              "CUT_HERE"
+            ],
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "492b05c62a55b4677b311f7bfac6729b41c895f70d10a44d72ac24c6400a762e",
+          "case_id": "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/stop",
+          "expectation": {
+            "content_block_types": [
+              "text"
+            ],
+            "expected_continuation": "LEAD_",
+            "expected_status": 200,
+            "kind": "assistant_prefill_stop",
+            "native_role": "assistant",
+            "native_type": "message",
+            "native_usage_required": true,
+            "nonempty_message_id_required": true,
+            "only_changed_request_field": "stop_sequences",
+            "positive_control": "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/prefill",
+            "required_stop_reason": "stop_sequence",
+            "required_stop_sequence": "CUT_HERE",
+            "returned_model": "claude-sonnet-4-5-20250929",
+            "usage_output_cap": 2048
+          },
+          "fact_control_id": "claude-sonnet-4-5-20250929/stop",
+          "historical_case_id": "claude-sonnet-4-5-20250929/stop",
+          "request_body_sha256": "c6a5ab64fb5d9065a43c440788e51d96cc0f3ac6ecd0bd4d88196e77d94b39dd",
+          "target_parameter": "stop_sequences"
+        },
+        {
+          "body": {
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "Complete the JSON object already started in the assistant message. Keep its existing marker and answer. The tail value must be exactly LEAD_CUT_HERE_OMEGA. Finish the object without commentary or Markdown.",
+                "role": "user"
+              },
+              {
+                "content": 17,
+                "role": "assistant"
+              }
+            ],
+            "model": "claude-sonnet-4-5-20250929",
+            "stream": false,
+            "thinking": {
+              "type": "disabled"
+            }
+          },
+          "case_definition_sha256": "bc1f56f8d507b8d6c5927c7bd59c21406d11b51e18acc5403608333156c8f542",
+          "case_id": "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/invalid_content_type",
+          "expectation": {
+            "error_types": [
+              "invalid_request_error"
+            ],
+            "expected_statuses": [
+              400,
+              422
+            ],
+            "kind": "attributed_rejection",
+            "message_field_attribution_required": true,
+            "message_type_error_required": true,
+            "native_type": "error",
+            "only_changed_request_field": "messages[1].content",
+            "positive_control": "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/prefill",
+            "target_parameter": "messages[1].content"
+          },
+          "fact_control_id": "claude-sonnet-4-5-20250929/invalid_content_type",
+          "historical_case_id": "claude-sonnet-4-5-20250929/invalid_content_type",
+          "request_body_sha256": "11c7cae4de3db283d9d8bc29ab1cc2a2d21ff6cb3f0e6d12308a5e0fef85c11e",
+          "target_parameter": "messages[1].content"
+        }
+      ],
+      "concurrency": 1,
+      "contract_id": "claude_native_messages",
+      "endpoint_constraint": {
+        "host": "api.anthropic.com",
+        "path": "/v1/messages",
+        "scheme": "https",
+        "url": "https://api.anthropic.com/v1/messages"
+      },
+      "extra_identity_requests": 0,
+      "facts_artifact": {
+        "path": "references/anthropic_prefill_facts_20260908.json",
+        "sha256": "bb4e878b9537d0c7549e9167a50320fac25d6fcba463756830e407bcd8c0f6cc"
+      },
+      "full_parameter_matrix_verified": false,
+      "generated_code_execution_allowed": false,
+      "generic_runner_dispatch": false,
+      "interface_id": "text/anthropic/claude/claude-sonnet-4-5-20250929#anthropic-messages-default",
+      "limits": [
+        "Only this exact Anthropic Claude 4.5 dated model and native Messages interface.",
+        "No alias substitution, Claude 4.6 or later, Fable, third-party route or other API-form inference.",
+        "Explicitly select the complete three-request suite; generic test_cases and coverage are unchanged.",
+        "Future responses must satisfy fresh native identity, usage, semantic and paired-control validation.",
+        "Historical observations do not predetermine future passes or establish all possible parameter values.",
+        "No standalone thinking-switch, cache, input-token exactness or full billing proof.",
+        "Raw report replay is limited to its original UTC calendar-month P1M; hashes do not restore expired reports."
+      ],
+      "max_tokens": 2048,
+      "official_documents": {
+        "model_boundary": "https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices",
+        "prefill": "https://platform.claude.com/docs/en/claude_api_primer",
+        "request": "https://platform.claude.com/docs/en/api/messages/create",
+        "retrieved_at": "2026-09-08",
+        "stop": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons"
+      },
+      "pressure_test_enabled": false,
+      "profile_id": "text/anthropic/claude/claude-sonnet-4-5-20250929",
+      "reference_approval_leaf": "R7-ALL-MODELS-PREFIX-COMPLETION-LIVE",
+      "report_retention": "P1M",
+      "request_cap": 3,
+      "request_model_id": "claude-sonnet-4-5-20250929",
+      "required_control_pairs": [
+        {
+          "case_ids": [
+            "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/prefill",
+            "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/stop"
+          ],
+          "parameter": "stop_sequences"
+        },
+        {
+          "case_ids": [
+            "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/prefill",
+            "anthropic_prefill_claude_sonnet_4_5_20250929_20260908/invalid_content_type"
+          ],
+          "parameter": "messages[1].content.type"
+        }
+      ],
+      "retries": 0,
+      "schema_version": 1,
+      "selection_mode": "explicit_only",
+      "source_id": "anthropic",
+      "stream": false,
+      "suite_id": "anthropic_prefill_claude_sonnet_4_5_20250929_20260908",
+      "thinking": {
+        "type": "disabled"
+      },
+      "token_exact_proof": false,
+      "tools_allowed": false
+    }
+  }
+}
