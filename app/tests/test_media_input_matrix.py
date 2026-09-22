@@ -50,23 +50,17 @@ def test_model_and_source_differences_are_preserved():
     assert find_reference("moonshot", "kimi-k2.5", "openai_chat_completions")["image"]["status"] == "supported"
     minimax = cases_for("minimax", "MiniMax-M3", "openai_chat_completions")
     assert {row["id"] for row in minimax} >= {"image_detail_low", "image_detail_default", "image_detail_high"}
+    assert {row["id"] for row in minimax} >= {"video_detail_low", "video_detail_default", "video_detail_high"}
     assert not any(row["id"].startswith("audio_") for row in minimax)
     kimi = cases_for("moonshot", "kimi-k3", "openai_chat_completions")
     assert not any("detail" in row["id"] for row in kimi)
 
 
-def test_minimax_uses_only_frozen_documented_fields_and_validates_final_answer():
+def test_minimax_selects_documented_split_format_without_relaxing_final_answer():
     cases = cases_for("minimax", "MiniMax-M3", "openai_chat_completions")
-    # The upstream root test was ahead of the frozen App reference/factory.
-    # A future documented split field must arrive with its registered factory;
-    # do not add an unregistered wire parameter merely to satisfy that test.
-    split_documented = any(row["id"] == "cn_minimax_reasoning_split_20260920" for row in REFERENCE["sources"])
-    if split_documented:
-        assert all(case["body"]["reasoning_split"] is True for case in cases)
-        assert all("cn_minimax_reasoning_split_20260920" in case["evidence"] for case in cases)
-    else:
-        assert all("reasoning_split" not in case["body"] for case in cases)
+    assert all(case["body"]["reasoning_split"] is True for case in cases)
     assert all("extra_body" not in case["body"] for case in cases)
+    assert all("cn_minimax_reasoning_split_20260920" in case["evidence"] for case in cases)
     case = next(c for c in cases if c["id"] == "real_photo_earth")
     response = receipt_for("chat_completions", "MiniMax-M3", "Earth")
     response["response"]["choices"][0]["message"]["reasoning_content"] = "Internal reasoning may mention another object."
@@ -130,6 +124,23 @@ def test_real_mp4_bytes_have_the_documented_protocol_specific_carrier(source, mo
     assert hashlib.sha256(raw).hexdigest() == fixture["sha256"] == case["fixtures"][0]["sha256"]
     assert case["expected_text"] == fixture["expected_text"]
     assert "earth" not in prompt.casefold() and "moon" not in prompt.casefold()
+
+
+def test_minimax_video_detail_enum_is_encoded_in_the_documented_video_url_carrier():
+    cases = {case["id"]: case for case in cases_for("minimax", "MiniMax-M3", "openai_chat_completions")}
+    fixture = video_fixture("earth_moon")
+    for value in ("low", "default", "high"):
+        case = cases["video_detail_" + value]
+        content = case["body"]["messages"][0]["content"]
+        video = next(part for part in content if part["type"] == "video_url")
+        assert video["video_url"]["detail"] == value
+        assert video["video_url"]["url"].startswith("data:video/mp4;base64,")
+        assert "messages[].content[].video_url.detail" in case["target_fields"]
+        assert case["expected_text"] == "earth,moon"
+        assert case["fixtures"][0]["sha256"] == fixture["sha256"]
+    baseline = next(part for part in cases["real_video_earth_moon"]["body"]["messages"][0]["content"]
+                    if part["type"] == "video_url")
+    assert "detail" not in baseline["video_url"]
 
 
 def test_glm_video_uses_only_the_pinned_official_public_url():

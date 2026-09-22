@@ -22367,7 +22367,7 @@ provenance_records:
       source facts retain their own retrieval dates. Existing generic reference policies
       and pressure gates remain unchanged. Factory digest freezes media cases and fixture
       bytes; it is not live compatibility or token-quantity proof. Media research evidence:
-      https://platform.minimax.io/docs/api-reference/text-openai-api'
+      https://platform.minimax.io/docs/api-reference/text-chat-openai; https://platform.minimax.io/docs/api-reference/text-openai-api'
     content_version:
       kind: unversioned_retrieval_snapshot
       snapshot_date: '2026-09-20'
@@ -124133,7 +124133,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -124167,7 +124167,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -124201,7 +124201,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124235,7 +124235,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124269,7 +124269,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124304,7 +124304,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124338,7 +124338,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124372,7 +124372,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124406,7 +124406,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124440,7 +124440,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124474,7 +124474,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124508,7 +124508,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124542,7 +124542,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124576,7 +124576,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124610,7 +124610,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124644,7 +124644,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124678,7 +124678,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124712,7 +124712,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124746,7 +124746,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124780,7 +124780,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124814,7 +124814,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124848,7 +124848,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124882,7 +124882,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -124916,7 +124916,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -124951,7 +124951,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -124990,7 +124990,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -125029,7 +125029,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125076,7 +125076,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125114,7 +125114,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125161,7 +125161,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125199,7 +125199,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125246,7 +125246,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125284,7 +125284,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125331,7 +125331,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125369,7 +125369,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125416,7 +125416,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125454,7 +125454,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125501,7 +125501,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125539,7 +125539,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125586,7 +125586,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125633,7 +125633,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125671,7 +125671,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125718,7 +125718,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125756,7 +125756,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125803,7 +125803,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125841,7 +125841,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -125887,7 +125887,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -125923,7 +125923,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -125959,7 +125959,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -125995,7 +125995,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -126013,6 +126013,9 @@ test_bindings:
       - image_reject_invalid_base64
       - real_video_earth_moon
       - real_video_moon_earth
+      - video_detail_low
+      - video_detail_default
+      - video_detail_high
     execution_permission:
       scope: exact_workflow
       mode: inherit
@@ -126034,7 +126037,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -126070,7 +126073,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126107,7 +126110,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126144,7 +126147,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126181,7 +126184,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126218,7 +126221,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126255,7 +126258,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126292,7 +126295,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126327,7 +126330,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126362,7 +126365,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126397,7 +126400,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126432,7 +126435,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126467,7 +126470,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126504,7 +126507,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126541,7 +126544,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126578,7 +126581,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126615,7 +126618,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126650,7 +126653,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126688,7 +126691,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126726,7 +126729,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126764,7 +126767,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126802,7 +126805,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126840,7 +126843,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126878,7 +126881,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126916,7 +126919,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126954,7 +126957,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -126989,7 +126992,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127027,7 +127030,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127065,7 +127068,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127103,7 +127106,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127141,7 +127144,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127179,7 +127182,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127217,7 +127220,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127255,7 +127258,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_png
       - image_jpeg
@@ -127293,7 +127296,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127328,7 +127331,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127361,7 +127364,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127396,7 +127399,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127429,7 +127432,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127462,7 +127465,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127497,7 +127500,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127530,7 +127533,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127565,7 +127568,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png
@@ -127598,7 +127601,7 @@ test_bindings:
     workflow:
       factory_id: media_input
       version: '1'
-      source_sha256: 64b04a890a845855d74094d5511eadcec91ab2218696d52b1eade442512f4f88
+      source_sha256: 786b8a0d1cd73f6a290198e75458549c155cc272cd0e54d0558952207311601a
       case_ids:
       - image_jpeg
       - image_png

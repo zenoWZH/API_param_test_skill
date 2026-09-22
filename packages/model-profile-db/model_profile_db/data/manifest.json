@@ -40,7 +40,7 @@
     "sqlite": {
       "path": "catalog.sqlite3",
       "schema_id": "urn:yibu:model-profile-db:sqlite-core-v3",
-      "sha256": "135d94171fb0b242e1b7ab6b014c33d92e19d7cd18f65084fa239a5c2a2ea091",
+      "sha256": "a77d3d99d3b78aa50e334cf182ee451af9411591d8146069d68518f9ce3f6d08",
       "size": 8658944
     },
     "test_extensions_schema": {
@@ -52,8 +52,8 @@
     "test_extensions_yaml": {
       "path": "test_extensions.yaml",
       "schema_id": "https://yibu.example/schemas/model-profile-db/test-extensions-v2.json",
-      "sha256": "5b4d221fcc3d697347da4cd804d48beef6ba17fb0f56decd9722cbe35acfc246",
-      "size": 5320203
+      "sha256": "ba9083c80c0287d68ef87d4e80d82e5412adb0a9c6d2badcc2ee4f8edcd39d95",
+      "size": 5320348
     }
   },
   "catalog_digest": "f7217d7595a6545a66a33e4d8599dda08706d290c885740d12d7561b5f9fc39a",
@@ -82,5 +82,5 @@
   "manifest_schema_version": 1,
   "mpdb_schema_version": 3,
   "schema_id": "https://yibu.example/schemas/model-profile-db/artifact-manifest-v1.json",
-  "test_extension_digest": "629ca0a5dfa6eceeeac73a6f5ee73546c43efb8dfe861032bba5a7a6b6658b51"
+  "test_extension_digest": "9150c1f45e9388474c4f20deed12cb1f38c50eca809400767f5d6c16989d4820"
 }

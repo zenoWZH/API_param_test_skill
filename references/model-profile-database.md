@@ -19,9 +19,9 @@ Model Profile Database（MPDB）。所有示例都从 skill 根目录运行，�
 | Contracts | `89` |
 | Test Bindings | `365` |
 | core catalog digest | `f7217d7595a6545a66a33e4d8599dda08706d290c885740d12d7561b5f9fc39a` |
-| test-extension digest | `629ca0a5dfa6eceeeac73a6f5ee73546c43efb8dfe861032bba5a7a6b6658b51` |
+| test-extension digest | `9150c1f45e9388474c4f20deed12cb1f38c50eca809400767f5d6c16989d4820` |
 
-以上是 2026-09-20 同步快照，包含已提交引擎与单独标明的工作树矩阵白名单；来源见
+core digest 仍是 2026-09-20 同步快照。test-extension digest 在 skill 2.1.1 随媒体工厂修订重算，catalog 版本未变。来源见
 [本轮审查](../MATRIX_REVIEW_20260919.md)。MPDB 随同源码使用，不依赖独立 registry 发布。
 package/catalog 版本号可能不变，升级必须比对两种 digest，不能仅比较版本号。
 

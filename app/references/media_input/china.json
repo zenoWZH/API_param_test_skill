@@ -557,6 +557,15 @@
         "官方video_url请求示例引用https://sfile.chatglm.cn/testpath/video/b844f8f1-5df9-556c-a515-3d3bfaa736e8_0.mp4。",
         "这里只记录公开视频样本来源，不新增GLM-4V-Plus-0111可执行能力，也不将旧型号能力传给其他型号。"
       ]
+    },
+    {
+      "id": "cn_minimax_reasoning_split_20260920",
+      "url": "https://platform.minimax.io/docs/api-reference/text-chat-openai",
+      "title": "MiniMax OpenAI Chat API: reasoning_split request and response fields",
+      "checked_at": "2026-09-20",
+      "facts": [
+        "The wire body has a top-level boolean reasoning_split. When enabled, reasoning is returned separately from message.content via reasoning_content and reasoning_details. The unsplit format may put think tags inside content."
+      ]
     }
   ],
   "models": [
@@ -1107,6 +1116,13 @@
           ],
           "carrier": "video_url"
         }
+      },
+      "request_encoding_evidence": [
+        "cn_minimax_reasoning_split_20260920"
+      ],
+      "request_encoding": {
+        "reasoning_split": true,
+        "scope": "Final-answer representation; this does not disable reasoning."
       }
     },
     {

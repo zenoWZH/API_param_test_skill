@@ -7,12 +7,15 @@ the load-test console. Its public hierarchy is:
 modality -> official reference source -> model family -> concrete model -> interfaces
 ```
 
+For package structure, consumer cutover, upgrades, validation, and rollback,
+see the standalone [migration guide](MIGRATION.md).
+
 `text`, `image`, and the reserved `video` category are explicit database rows.
-A source is either the origin vendor or an approved cloud (`aws_bedrock`,
-`azure_openai`, `azure_foundry`, `google_vertex`, or `aliyun_maas`). Third-party suppliers,
-aggregators, account routes, and API compatibility labels are runtime concerns
-and can never become Profile sources. Model family and API form are separate
-fields.
+A source is an origin vendor, an approved cloud (`aws_bedrock`, `azure_openai`,
+`azure_foundry`, `google_vertex`, or `aliyun_maas`), or a managed platform/marketplace
+with its own source-scoped official evidence. A supplier or route name alone
+does not establish such evidence. Account routes and API compatibility labels
+remain runtime concerns. Model family and API form are separate fields.
 
 The package contains no provider credentials, private/account endpoints, or
 load-test thresholds. Core model/interface contracts live in `catalog.yaml`;

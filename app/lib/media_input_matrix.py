@@ -96,7 +96,7 @@ def _part(fixture: dict, api_form: str, *, detail=None, video_sources=()) -> dic
     if fixture.get("external_url"):
         if not mime.startswith("video/") or api_form != "openai_chat_completions" or "url" not in video_sources:
             raise ValueError("External video URL has no source-documented API carrier")
-        return {"type": "video_url", "video_url": {"url": fixture["external_url"]}}
+        return {"type": "video_url", "video_url": {"url": fixture["external_url"], **({"detail": detail} if detail else {})}}
     data = fixture["data_base64"]
     image = mime.startswith("image/")
     if api_form == "gemini_generate_content":
@@ -104,7 +104,7 @@ def _part(fixture: dict, api_form: str, *, detail=None, video_sources=()) -> dic
     if mime.startswith("video/"):
         if api_form != "openai_chat_completions" or "base64" not in video_sources:
             raise ValueError("No source-documented inline video encoding for this model/API")
-        return {"type": "video_url", "video_url": {"url": f"data:{mime};base64,{data}"}}
+        return {"type": "video_url", "video_url": {"url": f"data:{mime};base64,{data}", **({"detail": detail} if detail else {})}}
     if api_form == "anthropic_messages":
         if not image:
             raise ValueError("No documented Anthropic audio content encoding")
@@ -134,6 +134,11 @@ def _body(row: dict, prompt: str, fixtures: list[dict], *, detail=None, text_fir
     body = {"model": model, "messages": [{"role": "user", "content": content}], "stream": False}
     limit = "max_completion_tokens" if row["source_id"] == "openai" and not model.startswith("gpt-4o") else "max_tokens"
     body[limit] = OUTPUT_TOKENS
+    if row["source_id"] == "minimax" and model == "MiniMax-M3" and form == "openai_chat_completions":
+        # The official API otherwise places <think> blocks in message.content.
+        # Keep the final-answer assertion strict by selecting its documented
+        # split representation before the request is frozen and sent.
+        body["reasoning_split"] = True
     return body
 
 
@@ -147,7 +152,8 @@ def _fields(api_form: str, modality: str, detail=None) -> list[str]:
     if modality == "audio":
         return ["messages[].content[].input_audio.data", "messages[].content[].input_audio.format"]
     if modality == "video":
-        return ["messages[].content[].type", "messages[].content[].video_url.url"]
+        return ["messages[].content[].type", "messages[].content[].video_url.url",
+                *(["messages[].content[].video_url.detail"] if detail else [])]
     return ["messages[].content[].image_url.url", *(["messages[].content[].image_url.detail"] if detail else [])]
 
 
@@ -180,7 +186,8 @@ def cases_for(source_id: str, model: str, api_form: str) -> list[dict]:
     def add(name, group, prompt, fixtures, expected, *, detail=None, text_first=False, negative=False, depends=(), variants=()):
         modalities = ("image", "audio") if group == "mixed" else (group,)
         evidence = list(dict.fromkeys([*protocol["evidence"], *(s for modality in modalities for s in row[modality]["evidence"]),
-                                       *(s for fixture in fixtures for s in fixture.get("evidence", []))]))
+                                       *(s for fixture in fixtures for s in fixture.get("evidence", [])),
+                                       *row.get("request_encoding_evidence", [])]))
         fields = list(dict.fromkeys(field for modality in modalities for field in _fields(api_form, modality, detail)))
         body = _body(row, prompt, fixtures, detail=detail, text_first=text_first)
         if negative:
@@ -255,6 +262,14 @@ def cases_for(source_id: str, model: str, api_form: str) -> list[dict]:
             first, second = expected.split(",")
             add("real_video_" + variant, "video", _VIDEO_PROMPT, [video_fixture(variant)], expected,
                 variants=(f"the {first},the {second}", f"{first},the {second}", f"the {first},{second}"))
+        details = (video.get("parameters") or {}).get("detail", [])
+        if details and api_form != "openai_chat_completions":
+            raise ValueError("Video detail enum declared without an installed API encoding")
+        for detail in details:
+            if detail not in {"auto", "low", "default", "high", "original", "xhigh"}:
+                raise ValueError("Unreviewed video detail value")
+            add("video_detail_" + detail, "video", _VIDEO_PROMPT, [video_fixture("earth_moon")], "earth,moon",
+                detail=detail, variants=("the earth,the moon", "earth,the moon", "the earth,moon"))
     if source_id == "zhipu" and video.get("status") == "supported" and "url" in video_sources:
         row = copy.deepcopy(row)
         row["video"].setdefault("parameters", {})["sources"] = list(video_sources)

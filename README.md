@@ -2,7 +2,7 @@
 
 面向编程代理与 OpenClaw 的自包含 LLM 供应商测试 skill。它将 `api_pressure` 的 portable 测试引擎、模型档案数据库和脚本放在同一安装目录，提供参数矩阵、冻结功能计划、返回模型身份、token/cache、图片参数、压力测试和供应商准入的统一 CLI。
 
-当前 skill 版本为 `2.1.0`，迁移优化与本地离线验收已完成。引擎同步到 `yibuapi-llm-loadtest@2df5ca4`，另按文件白名单纳入冻结于 `2026-09-20 08:02:38 UTC` 的公开矩阵工作树快照（DeepSeek V4.1、可选图像/视频/音频输入 workflow）；后者不代表源项目已提交或已发布。计划、差异与验收见[本轮审查记录](MATRIX_REVIEW_20260919.md)，旧迁移过程保存在 [MIGRATION_PLAN.md](MIGRATION_PLAN.md)。
+当前 skill 版本为 `2.1.1`。引擎基线仍是 `yibuapi-llm-loadtest@2df5ca4` 加上 2026-09-20 的公开矩阵工作树快照；2.1.1 只同步后续媒体矩阵修订（MiniMax `reasoning_split`、视频 `detail`、智谱端点校验）并重算 test-extension digest，catalog digest 未变。计划与旧迁移见[本轮审查记录](MATRIX_REVIEW_20260919.md)和 [MIGRATION_PLAN.md](MIGRATION_PLAN.md)。
 
 ## 已迁入的最新能力
 

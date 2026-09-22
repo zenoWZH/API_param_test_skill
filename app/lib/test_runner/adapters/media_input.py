@@ -52,6 +52,48 @@ def case_ids_for(source_id: str, model: str, api_form: str) -> list[str]:
     return [case["id"] for case in matrix.cases_for(source_id, model, api_form)]
 
 
+def _zhipu_endpoint(binding: dict, base_url: str, path: str) -> None:
+    """Keep Coding and general PaaS on their distinct MPDB references."""
+    from lib.model_profile_catalog import get_model_profile_catalog
+
+    catalog = get_model_profile_catalog()
+    try:
+        reference = catalog.get_interface(binding["interface_id"])
+        contract = catalog.get_contract(binding["contract_id"])
+        profile = catalog.get_profile(binding["profile_id"])
+    except KeyError as exc:
+        raise ValueError("Zhipu media endpoint requires a registered interface and contract") from exc
+    execution = binding["execution_target"]
+    if (reference["source_id"] != binding["source_id"]
+            or reference["profile_id"] != binding["profile_id"]
+            or reference["default_contract_id"] != binding["contract_id"]
+            or reference["api_form"] != execution["api_form"]
+            or execution["request_model_id"] not in (reference.get("request_model_ids") or profile["request_model_ids"])):
+        raise ValueError("Zhipu media endpoint differs from its registered interface and contract")
+    slug = reference["interface_slug"]
+    if slug in {"zai-coding-chat", "zai-general-chat"}:
+        scope = reference.get("reference_scope") or {}
+        if not scope or scope != contract.get("reference_scope") or scope.get("scheme") != "https":
+            raise ValueError("Zhipu media endpoint requires a consistent registered reference scope")
+        hosts, expected_path = {scope.get("host")}, scope.get("path")
+    elif slug == "openai-chat-default" and not reference.get("reference_scope") and not contract.get("reference_scope"):
+        hosts, expected_path = OFFICIAL_HOSTS["zhipu"], "/api/paas/v4/chat/completions"
+    else:
+        raise ValueError("Zhipu media endpoint has no reviewed interface scope")
+    # Reject spellings that requests/proxies may normalize onto another route.
+    # Resolve the remaining base/path split exactly as HttpDispatcher does.
+    if any(char in "%\\?#" or char.isspace() or ord(char) < 32 or ord(char) == 127
+           for char in base_url + path):
+        raise ValueError("Zhipu media endpoint contains an ambiguous URL spelling")
+    base = urlsplit(base_url.rstrip("/"))
+    if any(part in {".", ".."} for value in (base.path, path) for part in value.split("/")):
+        raise ValueError("Zhipu media endpoint contains a path traversal")
+    prefix = base.path.rstrip("/")
+    final_path = path if prefix and (path == prefix or path.startswith(prefix + "/")) else prefix + path
+    if base.hostname not in hosts or final_path != expected_path:
+        raise ValueError("Zhipu media endpoint differs from its exact registered interface scope")
+
+
 def _official_interface(config: dict, binding: dict) -> tuple[dict, str]:
     execution = binding["execution_target"]
     source, model, form = binding["source_id"], execution["request_model_id"], execution["api_form"]
@@ -85,6 +127,8 @@ def _official_interface(config: dict, binding: dict) -> tuple[dict, str]:
     if (not path.startswith("/") or path.startswith("//") or not path.endswith(expected_suffix)
             or urlsplit(path).query or urlsplit(path).fragment or ".." in path.split("/")):
         raise ValueError("Configured media interface path differs from its exact generation API")
+    if source == "zhipu":
+        _zhipu_endpoint(binding, interface["base_url"], path)
     return interface, path
 
 

@@ -2,7 +2,7 @@
 name: llm-api-test
 description: "Use for auditing or testing an LLM provider/model: API parameter compatibility, returned-model identity, token/cache telemetry, image parameters and safety, bounded smoke tests, fixed-rate load tests, multi-model sweeps, job results, or supplier onboarding evidence. Do not use for ordinary application development that merely calls an LLM."
 license: MIT
-metadata: {"author":"wangzhouhao","version":"2.1.0","openclaw":{"emoji":"🧪","os":["linux"],"requires":{"bins":["bash","python3","uv"]}}}
+metadata: {"author":"wangzhouhao","version":"2.1.1","openclaw":{"emoji":"🧪","os":["linux"],"requires":{"bins":["bash","python3","uv"]}}}
 ---
 
 # LLM API Test

@@ -32,8 +32,10 @@ def config():
 def binding(source="openai", provider="openai_official", model="gpt-4o", form="openai_chat_completions"):
     family = {"google_ai_studio": "gemini", "zhipu": "glm"}.get(source, "gpt")
     profile = f"text/{source}/{family}/{model}"
-    return {"source_id": source, "profile_id": profile, "interface_id": profile + "#offline",
-            "contract_id": "openai_chat_base", "test_binding_id": "test_workflow/media-input/offline",
+    slug = "zai-coding-chat" if source == "zhipu" else "offline"
+    contract = "zai_coding_" + model.replace("-", "_").replace(".", "_") + "_chat" if source == "zhipu" else "openai_chat_base"
+    return {"source_id": source, "profile_id": profile, "interface_id": profile + "#" + slug,
+            "contract_id": contract, "test_binding_id": "test_workflow/media-input/offline",
             "execution_target": {"provider_id": provider, "request_model_id": model, "api_form": form,
                                  "transport_adapter_id": media_input.TRANSPORTS[form]},
             "workflow_id": f"media-input/{source}/{model}/{form}"}

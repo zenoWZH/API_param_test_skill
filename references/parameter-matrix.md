@@ -88,6 +88,8 @@ bash "$SKILL_DIR/bin/llm-api-test" matrix preview \
 
 识别正确、HTTP 接受、usage 算术和媒体精确 token 计数分别报告；缺少独立计数证明时
 仍可能得到 inconclusive / 未验证结果，不能将其改写为完整参数认证或“模型不支持”。
+官方证据含 `reasoning_split` 或视频 `detail` 时，对应 workflow 会把这些字段冻结进请求；
+仍须显式 `--workflow-id`，识别通过不等于完整参数认证。
 
 ## DeepSeek V4.1 Flash 专用研究矩阵
 

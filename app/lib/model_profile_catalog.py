@@ -40,7 +40,7 @@ EXPECTED_MODEL_PROFILE_DATABASE = {
     ),
     "test_extension_schema_version": 2,
     "test_extension_digest": (
-        "629ca0a5dfa6eceeeac73a6f5ee73546c43efb8dfe861032bba5a7a6b6658b51"
+        "9150c1f45e9388474c4f20deed12cb1f38c50eca809400767f5d6c16989d4820"
     ),
 }
 
